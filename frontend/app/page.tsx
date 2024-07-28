@@ -10,7 +10,7 @@ export default function Home() {
   return (
     <SideBySideLayout>
       <div className='mx-3 flex flex-col gap-16 py-16 sm:mx-16'>
-        <div className='border-beeci-yellow-100 flex w-full flex-col items-center rounded-md border-2 border-dashed bg-gradient-to-br from-gray-950 to-gray-800 py-4 pb-10 md:py-8 lg:flex-row'>
+        <div className='flex w-full flex-col items-center rounded-md border-2 border-dashed border-beeci-yellow-100 bg-gradient-to-br from-gray-950 to-gray-800 py-4 pb-10 md:py-8 lg:flex-row'>
           <div className='w-1/2 sm:px-4 lg:w-2/5'>
             <ContainerizationLottie />
           </div>
@@ -40,8 +40,8 @@ export default function Home() {
             </p>
           </div>
         </div>
-        <div className='border-beeci-yellow-100 flex flex-col items-center rounded-md border-2 border-dashed bg-gradient-to-br from-gray-950 to-gray-800 py-12 lg:flex-row'>
-          <div className='xs:w-5/12 w-4/5 px-16 pb-6 sm:w-2/5 md:w-3/5 lg:w-2/5'>
+        <div className='flex flex-col items-center rounded-md border-2 border-dashed border-beeci-yellow-100 bg-gradient-to-br from-gray-950 to-gray-800 py-12 lg:flex-row'>
+          <div className='w-4/5 px-16 pb-6 xs:w-5/12 sm:w-2/5 md:w-3/5 lg:w-2/5'>
             <GithubLottie />
           </div>
           <div className='mb-2 w-3/5 sm:px-4'>
