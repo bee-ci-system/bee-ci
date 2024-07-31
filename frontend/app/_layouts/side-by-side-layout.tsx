@@ -32,14 +32,14 @@ export const SideBySideLayout = ({ children }: { children: ReactNode }) => {
             efficient, user-friendly, and designed to make your development
             lifecycle buzz 🐝 with productivity.
           </p>
-          <Button variant='link' className='mt-6 w-1/2'>
+          <Button className='mt-6 w-1/2 min-w-max py-4'>
             <a href={authUrl}>Sign in with GitHub</a>
           </Button>
         </div>
         <div className='flex w-full flex-col items-start text-sm md:flex-row md:gap-4 lg:gap-8'>
           <Button variant='link' className='px-0'>
             <BookOpen size={18} className='mr-1' />
-            Documentation
+            Read documentation
           </Button>
           <Button variant='link' className='px-0'>
             <a
@@ -48,7 +48,7 @@ export const SideBySideLayout = ({ children }: { children: ReactNode }) => {
               className='flex'
             >
               <GithubIcon className='mr-1 px-0' />
-              Github
+              View on GitHub
             </a>
           </Button>
         </div>
