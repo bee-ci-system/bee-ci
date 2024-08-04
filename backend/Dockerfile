@@ -10,7 +10,7 @@ COPY go.sum ./
 RUN go mod download 
 
 # Copy source files required for build
-COPY main.go ./
+COPY *.go ./
 RUN go build -o server .
 
 FROM alpine:3.20 AS runtime

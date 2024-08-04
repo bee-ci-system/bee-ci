@@ -193,7 +193,7 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		// extract installation ID from the request body
 
 		installationIDStr := payload["installation"].(map[string]interface{})["id"].(json.Number).String()
-		installationId, err := strconv.ParseInt(installationIDStr, 10, 64)
+		installationID, err := strconv.ParseInt(installationIDStr, 10, 64)
 		if err != nil {
 			slog.Error("error parsing installation id", slog.Any("error", err))
 			w.WriteHeader(http.StatusBadRequest)
@@ -203,7 +203,7 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 
 		// get app installation access token
 
-		url := fmt.Sprintf("https://api.github.com/app/installations/%d/access_tokens", installationId)
+		url := fmt.Sprintf("https://api.github.com/app/installations/%d/access_tokens", installationID)
 		appClient := r.Context().Value("gh_app_client").(http.Client)
 		res, err := appClient.Post(url, "application/json", nil)
 		if err != nil {
@@ -308,7 +308,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	installationIDStr := payload["installation"].(map[string]interface{})["id"].(json.Number).String()
-	installationId, err := strconv.ParseInt(installationIDStr, 10, 64)
+	installationID, err := strconv.ParseInt(installationIDStr, 10, 64)
 	if err != nil {
 		l.Error("error parsing installation id", slog.Any("error", err))
 		w.WriteHeader(http.StatusBadRequest)
@@ -320,7 +320,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	l.Info("new request",
 		slog.String("event", eventType),
 		slog.Any("action", action),
-		slog.Int64("id", installationId),
+		slog.Int64("id", installationID),
 	)
 
 	// transport, err := ghinstallation.New(roundTripper, githubAppId, installationId, privateKey)
