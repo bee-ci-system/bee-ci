@@ -27,18 +27,21 @@ import (
 const defaultPort = "8080"
 
 var (
-	githubAppId   int64
+	githubAppID   int64
 	webhookSecret string
 	rsaPrivateKey *rsa.PrivateKey
 )
 
-var roundTripper = http.DefaultTransport
+type (
+	ghInstallationKey struct{}
+	ghAppKey          struct{}
+)
 
 func main() {
 	slog.SetDefault(setUpLogging())
 
 	var err error
-	githubAppId, err = strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
+	githubAppID, err = strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
 	if err != nil {
 		slog.Error("APP_ID env var not set or not a valid int64", slog.Any("error", err))
 		os.Exit(1)
@@ -143,7 +146,7 @@ func WithAuthenticatedApp(next http.Handler) http.Handler {
 		claims := jwt.MapClaims{
 			"iat": time.Now().Unix(),
 			"exp": time.Now().Add(10 * time.Minute).Unix(),
-			"iss": githubAppId,
+			"iss": githubAppID,
 		}
 
 		token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
@@ -156,7 +159,7 @@ func WithAuthenticatedApp(next http.Handler) http.Handler {
 
 		appClient := http.Client{Transport: &BearerTransport{Token: tokenStr}}
 
-		ctx := context.WithValue(r.Context(), "gh_app_client", appClient)
+		ctx := context.WithValue(r.Context(), ghAppKey{}, appClient)
 		r = r.Clone(ctx)
 
 		next.ServeHTTP(w, r)
@@ -189,8 +192,8 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 
 		// extract installation ID from the request body
 
-		installationIdStr := payload["installation"].(map[string]interface{})["id"].(json.Number).String()
-		installationId, err := strconv.ParseInt(installationIdStr, 10, 64)
+		installationIDStr := payload["installation"].(map[string]interface{})["id"].(json.Number).String()
+		installationId, err := strconv.ParseInt(installationIDStr, 10, 64)
 		if err != nil {
 			slog.Error("error parsing installation id", slog.Any("error", err))
 			w.WriteHeader(http.StatusBadRequest)
@@ -239,7 +242,7 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		}
 		slog.Info("installation access token obtained", slog.Any("token", appInstallationToken))
 
-		ctx := context.WithValue(r.Context(), "gh_installation_client", appInstallationClient)
+		ctx := context.WithValue(r.Context(), ghInstallationKey{}, appInstallationClient)
 		r = r.Clone(ctx)
 
 		next.ServeHTTP(w, r)
@@ -304,8 +307,8 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	installationIdStr := payload["installation"].(map[string]interface{})["id"].(json.Number).String()
-	installationId, err := strconv.ParseInt(installationIdStr, 10, 64)
+	installationIDStr := payload["installation"].(map[string]interface{})["id"].(json.Number).String()
+	installationId, err := strconv.ParseInt(installationIDStr, 10, 64)
 	if err != nil {
 		l.Error("error parsing installation id", slog.Any("error", err))
 		w.WriteHeader(http.StatusBadRequest)
@@ -403,7 +406,7 @@ func createCheckRun(ctx context.Context, owner, repo, sha string) error {
 
 	req.Header.Set("Accept", "application/vnd.github+json")
 
-	githubInstallationClient := ctx.Value("gh_installation_client").(http.Client)
+	githubInstallationClient := ctx.Value(ghInstallationKey{}).(http.Client)
 
 	res, err := githubInstallationClient.Do(req)
 	if err != nil {
