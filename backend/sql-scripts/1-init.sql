@@ -1,7 +1,5 @@
 CREATE DATABASE bee;
 
-USE bee;
-
 CREATE TABLE users (
     id SERIAL PRIMARY KEY, -- GitHub user id
     username VARCHAR(255) UNIQUE NOT NULL, -- GitHub username
@@ -10,7 +8,7 @@ CREATE TABLE users (
 
 CREATE TABLE builds (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES,
+    user_id INTEGER NOT NULL,
     repo VARCHAR(255) NOT NULL,
     branch VARCHAR(255) NOT NULL,
     commit VARCHAR(40) NOT NULL,
