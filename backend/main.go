@@ -199,7 +199,7 @@ func WithWebhookSecret(next http.Handler) http.Handler {
 
 func WithAuthenticatedApp(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		l := r.Context().Value(ctxLogger{}).(slog.Logger)
+		l := r.Context().Value(ctxLogger{}).(*slog.Logger)
 
 		claims := jwt.MapClaims{
 			"iat": time.Now().Unix(),
@@ -226,7 +226,7 @@ func WithAuthenticatedApp(next http.Handler) http.Handler {
 
 func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		l := r.Context().Value(ctxLogger{}).(slog.Logger)
+		l := r.Context().Value(ctxLogger{}).(*slog.Logger)
 
 		// read request body
 		b, err := io.ReadAll(r.Body)
@@ -346,7 +346,7 @@ func setUpLogging() *slog.Logger {
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-	l := r.Context().Value(ctxLogger{}).(slog.Logger)
+	l := r.Context().Value(ctxLogger{}).(*slog.Logger)
 	l.Info("request received", slog.String("path", r.URL.Path))
 	_, _ = fmt.Fprintln(w, "hello world")
 }
@@ -460,8 +460,8 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 // TODO: accept context, and access logger and authenticated HTTP client from there?
 
 // Returns immediately and starts a goroutine in the background
-func createCheckRun(ctx context.Context, owner, repo, sha string, msg string, statusAfterSeconds string) error {
-	l := ctx.Value(ctxLogger{}).(slog.Logger)
+func createCheckRun(ctx context.Context, owner, repo, sha string, msg string, conclusion string) error {
+	l := ctx.Value(ctxLogger{}).(*slog.Logger)
 	githubInstallationClient := ctx.Value(ctxGHInstallationClient{}).(http.Client)
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/check-runs", owner, repo)
 
@@ -469,14 +469,15 @@ func createCheckRun(ctx context.Context, owner, repo, sha string, msg string, st
 		"head_sha":    sha,
 		"name":        msg + ", started at: " + fmt.Sprint(time.Now().Format(time.RFC822Z)),
 		"details_url": "https://garden.pacia.com",
-		"status":      "queued",
+		"status":      "in_progress",
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return fmt.Errorf("marshalling body to JSON: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
+	// Don't use context ctx here, because it'll get canceled by caller
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return fmt.Errorf("creating request: %w", err)
 	}
@@ -495,13 +496,22 @@ func createCheckRun(ctx context.Context, owner, repo, sha string, msg string, st
 	l.Info("initial request made", slog.Int("status", res.StatusCode), slog.String("body", string(respBody)))
 
 	time.Sleep(10 * time.Second)
-	body["status"] = statusAfterSeconds
+	if conclusion == "success" {
+		body["status"] = "completed"
+		body["conclusion"] = "success"
+	} else if conclusion == "failure" {
+		body["status"] = "completed"
+		body["conclusion"] = "failure"
+	} else {
+		// no conclusion, keep running this
+	}
+
 	bodyBytes, err = json.Marshal(body)
 	if err != nil {
 		return fmt.Errorf("marshalling body to JSON: %w", err)
 	}
 
-	req, err = http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
+	req, err = http.NewRequest(http.MethodPost, url, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return fmt.Errorf("creating request: %w", err)
 	}
