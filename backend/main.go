@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -33,8 +34,9 @@ var (
 )
 
 type (
-	ghInstallationKey struct{}
-	ghAppKey          struct{}
+	ctxGHInstallationClient struct{}
+	ctxGHAppClient          struct{}
+	ctxLogger               struct{}
 )
 
 func main() {
@@ -75,8 +77,8 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /{$}", index)
-	mux.HandleFunc("GET /github/callback", handleAuthCallback)
+	mux.Handle("GET /{$}", http.HandlerFunc(index))
+	mux.Handle("GET /github/callback", http.HandlerFunc(handleAuthCallback))
 	mux.Handle("POST /webhook", WithWebhookSecret(
 		WithAuthenticatedApp( // provides gh_app_client
 			WithAuthenticatedAppInstallation( // provides gh_installation_client
@@ -86,11 +88,30 @@ func main() {
 	),
 	)
 
-	err = http.ListenAndServe(fmt.Sprint("0.0.0.0:", port), mux)
+	loggingMux := WithLogger(mux)
+	err = http.ListenAndServe(fmt.Sprint("0.0.0.0:", port), loggingMux)
 	if err != nil {
 		slog.Error("failed to start listening", slog.Any("error", err))
 		os.Exit(1)
 	}
+}
+
+func WithLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		l := slog.With(
+			slog.String("path", r.URL.Path),
+			slog.String("request_id", makeRequestID()),
+		)
+		l.Info("new request")
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, ctxLogger{}, l)
+		r = r.Clone(ctx)
+
+		next.ServeHTTP(w, r)
+
+		l.Info("request completed")
+	})
 }
 
 func handleAuthCallback(w http.ResponseWriter, r *http.Request) {
@@ -100,7 +121,7 @@ func handleAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Successfully authorized! Got code %s.", code)
+	_, _ = fmt.Fprintf(w, "Successfully authorized! Got code %s.", code)
 }
 
 func WithWebhookSecret(next http.Handler) http.Handler {
@@ -143,6 +164,8 @@ func WithWebhookSecret(next http.Handler) http.Handler {
 
 func WithAuthenticatedApp(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		l := r.Context().Value(ctxLogger{}).(slog.Logger)
+
 		claims := jwt.MapClaims{
 			"iat": time.Now().Unix(),
 			"exp": time.Now().Add(10 * time.Minute).Unix(),
@@ -152,14 +175,14 @@ func WithAuthenticatedApp(next http.Handler) http.Handler {
 		token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 		tokenStr, err := token.SignedString(rsaPrivateKey)
 		if err != nil {
-			slog.Error("error signing JWT", slog.Any("error", err))
+			l.Error("error signing JWT", slog.Any("error", err))
 			http.Error(w, "error signing JWT", http.StatusInternalServerError)
 			return
 		}
 
 		appClient := http.Client{Transport: &BearerTransport{Token: tokenStr}}
 
-		ctx := context.WithValue(r.Context(), ghAppKey{}, appClient)
+		ctx := context.WithValue(r.Context(), ctxGHAppClient{}, appClient)
 		r = r.Clone(ctx)
 
 		next.ServeHTTP(w, r)
@@ -168,6 +191,8 @@ func WithAuthenticatedApp(next http.Handler) http.Handler {
 
 func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		l := r.Context().Value(ctxLogger{}).(slog.Logger)
+
 		// read request body
 		b, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -184,9 +209,9 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		var payload map[string]interface{}
 		err = decoder.Decode(&payload)
 		if err != nil {
-			slog.Error("error reading body", slog.Any("error", err))
+			l.Error("error reading body", slog.Any("error", err))
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "Error reading body: %v", err)
+			_, _ = fmt.Fprintf(w, "Error reading body: %v", err)
 			return
 		}
 
@@ -195,20 +220,20 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		installationIDStr := payload["installation"].(map[string]interface{})["id"].(json.Number).String()
 		installationID, err := strconv.ParseInt(installationIDStr, 10, 64)
 		if err != nil {
-			slog.Error("error parsing installation id", slog.Any("error", err))
+			l.Error("error parsing installation id", slog.Any("error", err))
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "Error parsing installation id: %v", err)
+			_, _ = fmt.Fprintf(w, "Error parsing installation id: %v", err)
 			return
 		}
 
 		// get app installation access token
 
 		url := fmt.Sprintf("https://api.github.com/app/installations/%d/access_tokens", installationID)
-		appClient := r.Context().Value("gh_app_client").(http.Client)
+		appClient := r.Context().Value(ctxGHAppClient{}).(http.Client)
 		res, err := appClient.Post(url, "application/json", nil)
 		if err != nil {
 			msg := "error calling endpoint " + url
-			slog.Error(msg, slog.Any("error", err))
+			l.Error(msg, slog.Any("error", err))
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
@@ -231,7 +256,7 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		err = decoder.Decode(&payload)
 		if err != nil {
 			msg := fmt.Sprint("error reading response body from " + res.Request.URL.String())
-			slog.Error(msg, slog.Any("error", err))
+			l.Error(msg, slog.Any("error", err))
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
@@ -240,9 +265,9 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		appInstallationClient := http.Client{
 			Transport: &BearerTransport{Token: appInstallationToken},
 		}
-		slog.Info("installation access token obtained", slog.Any("token", appInstallationToken))
+		l.Info("installation access token obtained", slog.Any("token", appInstallationToken))
 
-		ctx := context.WithValue(r.Context(), ghInstallationKey{}, appInstallationClient)
+		ctx := context.WithValue(r.Context(), ctxGHInstallationClient{}, appInstallationClient)
 		r = r.Clone(ctx)
 
 		next.ServeHTTP(w, r)
@@ -286,8 +311,9 @@ func setUpLogging() *slog.Logger {
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-	slog.Info("request received", slog.String("path", r.URL.Path))
-	fmt.Fprintln(w, "hello world")
+	l := r.Context().Value(ctxLogger{}).(slog.Logger)
+	l.Info("request received", slog.String("path", r.URL.Path))
+	_, _ = fmt.Fprintln(w, "hello world")
 }
 
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
@@ -312,25 +338,16 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		l.Error("error parsing installation id", slog.Any("error", err))
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "Error parsing installation id: %v", err)
+		_, _ = fmt.Fprintf(w, "Error parsing installation id: %v", err)
 		return
 	}
 
 	action, _ := payload["action"].(string)
-	l.Info("new request",
+	l.Info("handling webhook",
 		slog.String("event", eventType),
 		slog.Any("action", action),
-		slog.Int64("id", installationID),
+		slog.Int64("installation_id", installationID),
 	)
-
-	// transport, err := ghinstallation.New(roundTripper, githubAppId, installationId, privateKey)
-	// if err != nil {
-	// 	l.Error("error creating transport", slog.Any("error", err))
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	fmt.Fprintf(w, "Error creating transport: %v", err)
-	// 	return
-	// }
-	// _ = transport
 
 	// Check type of webhook event
 	switch eventType {
@@ -357,12 +374,33 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 			headSHA := checkSuite["head_sha"].(string)
 			l.Info("check suite requested", slog.String("owner", repoOwner), slog.String("repo", repoName), slog.String("head_sha", headSHA))
 
-			err := createCheckRun(r.Context(), repoOwner, repoName, headSHA)
-			if err != nil {
-				l.Error("error creating check run", slog.Any("error", err))
-				w.WriteHeader(http.StatusInternalServerError)
-				fmt.Fprintf(w, "Error creating check run: %v", err)
-			}
+			// Create 3 builds: both run for 10 seconds, then 1 fails, 1 succeeds, 1 never stops (always "queued")
+			go func() {
+				err := createCheckRun(r.Context(), repoOwner, repoName, headSHA, "i will pass", "success")
+				if err != nil {
+					l.Error("error creating check run", slog.Any("error", err))
+					w.WriteHeader(http.StatusInternalServerError)
+					_, _ = fmt.Fprintf(w, "Error creating check run: %v", err)
+				}
+			}()
+
+			go func() {
+				err = createCheckRun(r.Context(), repoOwner, repoName, headSHA, "i will fail", "failure")
+				if err != nil {
+					l.Error("error creating check run", slog.Any("error", err))
+					w.WriteHeader(http.StatusInternalServerError)
+					_, _ = fmt.Fprintf(w, "Error creating check run: %v", err)
+				}
+			}()
+
+			go func() {
+				err = createCheckRun(r.Context(), repoOwner, repoName, headSHA, "i will keep running", "queued")
+				if err != nil {
+					l.Error("error creating check run", slog.Any("error", err))
+					w.WriteHeader(http.StatusInternalServerError)
+					_, _ = fmt.Fprintf(w, "Error creating check run: %v", err)
+				}
+			}()
 		}
 	//case "check_run":
 	//	// https://docs.github.com/en/webhooks/webhook-events-and-payloads?actionType=created#check_run
@@ -386,40 +424,70 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 // TODO: accept context, and access logger and authenticated HTTP client from there?
 
-func createCheckRun(ctx context.Context, owner, repo, sha string) error {
+// Returns immediately and starts a goroutine in the background
+func createCheckRun(ctx context.Context, owner, repo, sha string, msg string, statusAfterSeconds string) error {
+	l := ctx.Value(ctxLogger{}).(slog.Logger)
+	githubInstallationClient := ctx.Value(ctxGHInstallationClient{}).(http.Client)
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/check-runs", owner, repo)
+
 	body := map[string]interface{}{
-		"name":        "hello from bartek at " + fmt.Sprint(time.Now().Format(time.RFC822Z)),
 		"head_sha":    sha,
+		"name":        msg + ", started at: " + fmt.Sprint(time.Now().Format(time.RFC822Z)),
 		"details_url": "https://garden.pacia.com",
+		"status":      "queued",
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return fmt.Errorf("error marshalling body: %w", err)
+		return fmt.Errorf("marshalling body to JSON: %w", err)
 	}
 
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/check-runs", owner, repo)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(bodyBytes))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
 	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+		return fmt.Errorf("creating request: %w", err)
 	}
-	slog.Info("request created", slog.String("url", url), slog.String("body", string(bodyBytes)))
-
 	req.Header.Set("Accept", "application/vnd.github+json")
-
-	githubInstallationClient := ctx.Value(ghInstallationKey{}).(http.Client)
-
 	res, err := githubInstallationClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("error sending request: %w", err)
+		return fmt.Errorf("sending POST request: %w", err)
 	}
 
 	respBody := make([]byte, 0)
 	_, err = res.Body.Read(respBody)
 	if err != nil {
-		return fmt.Errorf("error reading response body: %w", err)
+		return fmt.Errorf("reading response body: %w", err)
 	}
 
-	slog.Info("request made", slog.Int("status", res.StatusCode), slog.String("body", string(respBody)))
+	l.Info("initial request made", slog.Int("status", res.StatusCode), slog.String("body", string(respBody)))
+
+	time.Sleep(10 * time.Second)
+	body["status"] = statusAfterSeconds
+	bodyBytes, err = json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("marshalling body to JSON: %w", err)
+	}
+
+	req, err = http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	res, err = githubInstallationClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("sending POST request: %w", err)
+	}
+
+	l.Info("final request made", slog.Int("status", res.StatusCode), slog.String("body", string(respBody)))
 
 	return nil
+}
+
+// MakeRequestID generates a short, random hash for use as a request ID.
+func makeRequestID() string {
+	randomData := make([]byte, 10)
+	for i := range randomData {
+		randomData[i] = byte(rand.Intn(256))
+	}
+
+	strHash := fmt.Sprintf("%x", sha256.Sum256(randomData))
+	return strHash[:7]
 }
