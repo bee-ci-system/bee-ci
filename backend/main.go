@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	"io"
 	"log/slog"
 	"math/rand"
@@ -19,10 +20,10 @@ import (
 	"strings"
 	"time"
 
-	// "github.com/bradleyfalzon/ghinstallation"
-
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/lmittmann/tint"
+
+	_ "github.com/lib/pq"
 )
 
 const defaultPort = "8080"
@@ -38,6 +39,8 @@ type (
 	ctxGHAppClient          struct{}
 	ctxLogger               struct{}
 )
+
+var db *sqlx.DB
 
 func main() {
 	slog.SetDefault(setUpLogging())
@@ -68,6 +71,38 @@ func main() {
 	if err != nil {
 		slog.Error("error parsing GitHub App RSA private key from PEM", slog.Any("error", err))
 	}
+
+	host := os.Getenv("DB_HOST")
+	if host == "" {
+		slog.Error("DB_HOST env var not set")
+		os.Exit(1)
+	}
+
+	user := os.Getenv("DB_USER")
+	if user == "" {
+		slog.Error("DB_USER env var not set")
+		os.Exit(1)
+	}
+
+	password := os.Getenv("DB_PASSWORD")
+	if password == "" {
+		slog.Error("DB_PASSWORD env var not set")
+		os.Exit(1)
+	}
+
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		slog.Error("DB_NAME env var not set")
+		os.Exit(1)
+	}
+
+	psqlInfo := fmt.Sprintf("host=%s port=5432 user=%s password=%s dbname=%s sslmode=disable", host, user, password, dbName)
+	db, err = sqlx.Connect("postgres", psqlInfo)
+	if err != nil {
+		slog.Error("error connecting to database", slog.Any("error", err))
+		os.Exit(1)
+	}
+	slog.Info("connected to database")
 
 	slog.Info("server is starting")
 	port := os.Getenv("PORT")
