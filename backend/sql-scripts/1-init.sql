@@ -1,12 +1,14 @@
 CREATE DATABASE bee;
 
-CREATE TABLE users (
+CREATE SCHEMA bee_schema;
+
+CREATE TABLE bee_schema.users (
     id SERIAL PRIMARY KEY, -- GitHub user id
     username VARCHAR(255) UNIQUE NOT NULL, -- GitHub username
     installation_token VARCHAR(40) NOT NULL
 );
 
-CREATE TABLE builds (
+CREATE TABLE bee_schema.builds (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
     repo VARCHAR(255) NOT NULL,
@@ -15,5 +17,8 @@ CREATE TABLE builds (
     status VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES bee_schema.users(id)
 );
+
+INSERT INTO bee_schema.users (username, installation_token) VALUES ('octocat', 'gho_1234567890');
+INSERT INTO bee_schema.users (username, installation_token) VALUES ('octocat2', 'gho_1234567890sd');

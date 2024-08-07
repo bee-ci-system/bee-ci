@@ -11,17 +11,17 @@ services:
       - .env
     environment:
       DB_HOST: database
+      DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: secret
       DB_NAME: bee
 
   database:
     image: postgres:16.3-alpine3.20
-    init: true
     ports:
       - 5432:5432
     volumes:
-      - bee-postgres-data:/var/lib/postgres
+      - bee-postgres-data:/var/lib/postgresql/data
       - ./sql-scripts:/docker-entrypoint-initdb.d
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
