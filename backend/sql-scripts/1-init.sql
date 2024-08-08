@@ -27,7 +27,7 @@ CREATE TABLE bee_schema.builds (
     commit_sha VARCHAR(40) NOT NULL,
     status VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP -- last updated_at is essentially completed_at
     -- FOREIGN KEY (repo_id) REFERENCES bee_schema.repos(id)
 );
 
