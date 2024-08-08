@@ -3,7 +3,7 @@ services:
     build: .
     init: true
     ports:
-      - 8080:8080
+      - "8080:8080"
     depends_on:
       database:
         condition: service_healthy
@@ -19,7 +19,7 @@ services:
   database:
     image: postgres:16.3-alpine3.20
     ports:
-      - 5432:5432
+      - "5432:5432"
     volumes:
       - bee-postgres-data:/var/lib/postgresql/data
       - ./sql-scripts:/docker-entrypoint-initdb.d
@@ -29,8 +29,8 @@ services:
       timeout: 2s
       retries: 3
     environment:
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
-      POSTGRES_DATABASE: bee
 
 volumes:
   bee-postgres-data:

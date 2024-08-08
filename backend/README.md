@@ -9,6 +9,31 @@
   installation access token
 - [ ] [Authenticating on behalf of a user][auth_gh_user]
 
+### Database
+
+[pgcli](https://www.pgcli.com) is a good client for PostgreSQL.
+
+```console
+pgcli -h localhost -p 5432 -u postgres -W -d bee
+```
+
+List schemas:
+
+```postgresql
+\dn
+```
+
+List tables:
+
+```postgresql
+\dt bee_schema.*
+```
+
+Example query:
+
+```postgresql
+SELECT * FROM bee_schema.users
+```
 
 ### Testing
 
