@@ -1,5 +1,7 @@
 # backend
 
+We try to keep them to a **reasonable** minimum.
+
 ### Auth
 
 [GitHub Apps have three methods of authentication][link_1]. We support:
@@ -10,6 +12,8 @@
 - [ ] [Authenticating on behalf of a user][auth_gh_user]
 
 ### Database
+
+We don't use an ORM, instead we use [sqlx](https://jmoiron.github.io/sqlx).
 
 [pgcli](https://www.pgcli.com) is a good client for PostgreSQL.
 
