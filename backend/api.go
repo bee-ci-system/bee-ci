@@ -1,32 +1,28 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"github.com/bartekpacia/ghapp/data"
-	"github.com/jmoiron/sqlx"
 	"net/http"
+
+	"github.com/bartekpacia/ghapp/data"
 )
 
 type App struct {
 	BuildRepo data.BuildRepo
 }
 
-func NewApp(db *sqlx.DB) *App {
+func NewApp(buildRepo data.BuildRepo) *App {
 	return &App{
-		BuildRepo: data.NewPostgresBuildRepo(db),
+		BuildRepo: buildRepo,
 	}
 }
 
 func (a *App) Mux() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /builds", func(w http.ResponseWriter, r *http.Request) {
-
 	})
 
 	mux.HandleFunc("POST /auth", func(w http.ResponseWriter, r *http.Request) {
-
 	})
 
 	return mux
-})
+}

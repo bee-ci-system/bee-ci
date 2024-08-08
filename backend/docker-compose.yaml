@@ -10,6 +10,7 @@ services:
     env_file:
       - .env
     environment:
+      PORT: 8080
       DB_HOST: database
       DB_PORT: 5432
       DB_USER: postgres

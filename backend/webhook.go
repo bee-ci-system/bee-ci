@@ -9,9 +9,46 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/bartekpacia/ghapp/worker"
 )
 
-func handleWebhook(w http.ResponseWriter, r *http.Request) {
+type WebhookHandler struct {
+	worker worker.Worker
+}
+
+func NewWebhookHandler(w worker.Worker) *WebhookHandler {
+	return &WebhookHandler{worker: w}
+}
+
+func (h WebhookHandler) Mux() http.Handler {
+	mux := http.NewServeMux()
+
+	mux.Handle("GET /webhook/github/callback", http.HandlerFunc(h.handleAuthCallback))
+	mux.Handle("POST /webhook",
+		WithWebhookSecret(
+			WithAuthenticatedApp( // provides gh_app_client
+				WithAuthenticatedAppInstallation( // provides gh_installation_client
+					http.HandlerFunc(h.handleWebhook),
+				),
+			),
+		),
+	)
+
+	return mux
+}
+
+func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		http.Error(w, "missing code query parameter", http.StatusBadRequest)
+		return
+	}
+
+	_, _ = fmt.Fprintf(w, "Successfully authorized! Got code %s.", code)
+}
+
+func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	l := r.Context().Value(ctxLogger{}).(*slog.Logger)
 
 	event := r.Header.Get("X-GitHub-Event")
@@ -71,7 +108,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 			// Create 3 builds: both run for 10 seconds, then 1 fails, 1 succeeds, 1 never stops (always "queued")
 			go func() {
-				err := createCheckRun(r.Context(), repoOwner, repoName, headSHA, "i will pass", "success")
+				err := h.createCheckRun(r.Context(), repoOwner, repoName, headSHA, "i will pass", "success")
 				if err != nil {
 					l.Error("error creating check run", slog.Any("error", err))
 					w.WriteHeader(http.StatusInternalServerError)
@@ -80,7 +117,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 			}()
 
 			go func() {
-				err = createCheckRun(r.Context(), repoOwner, repoName, headSHA, "i will fail", "failure")
+				err = h.createCheckRun(r.Context(), repoOwner, repoName, headSHA, "i will fail", "failure")
 				if err != nil {
 					l.Error("error creating check run", slog.Any("error", err))
 					w.WriteHeader(http.StatusInternalServerError)
@@ -89,7 +126,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 			}()
 
 			go func() {
-				err = createCheckRun(r.Context(), repoOwner, repoName, headSHA, "i will keep running", "queued")
+				err = h.createCheckRun(r.Context(), repoOwner, repoName, headSHA, "i will keep running", "queued")
 				if err != nil {
 					l.Error("error creating check run", slog.Any("error", err))
 					w.WriteHeader(http.StatusInternalServerError)
@@ -120,7 +157,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 // TODO: accept context, and access logger and authenticated HTTP client from there?
 
 // Returns immediately and starts a goroutine in the background
-func createCheckRun(ctx context.Context, owner, repo, sha string, msg string, conclusion string) error {
+func (h WebhookHandler) createCheckRun(ctx context.Context, owner, repo, sha string, msg string, conclusion string) error {
 	l := ctx.Value(ctxLogger{}).(*slog.Logger)
 	githubInstallationClient := ctx.Value(ctxGHInstallationClient{}).(http.Client)
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/check-runs", owner, repo)

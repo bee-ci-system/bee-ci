@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/base64"
@@ -12,6 +13,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/bartekpacia/ghapp/data"
+	"github.com/bartekpacia/ghapp/worker"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -59,6 +62,7 @@ func main() {
 		slog.Error("error parsing GitHub App RSA private key from PEM", slog.Any("error", err))
 	}
 
+	port := MustGetenv("PORT")
 	dbHost := MustGetenv("DB_HOST")
 	dbPort := MustGetenv("DB_PORT")
 	dbUser := MustGetenv("DB_USER")
@@ -74,28 +78,16 @@ func main() {
 	}
 	slog.Info("connected to database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		slog.Info(fmt.Sprintf("PORT env var not set, using default port %s", defaultPort))
-		port = "8080"
-	}
+	buildRepo := data.NewPostgresBuildRepo(db)
+
+	worker := worker.New(context.Background(), buildRepo)
+	webhooks := NewWebhookHandler(worker)
+	app := NewApp(buildRepo)
 
 	mux := http.NewServeMux()
-
 	mux.Handle("GET /{$}", http.HandlerFunc(handleIndex))
-	mux.Handle("GET /github/callback", http.HandlerFunc(handleAuthCallback))
-	mux.Handle("POST /webhook",
-		WithWebhookSecret(
-			WithAuthenticatedApp( // provides gh_app_client
-				WithAuthenticatedAppInstallation( // provides gh_installation_client
-					http.HandlerFunc(handleWebhook),
-				),
-			),
-		),
-	)
-
-	api := NewApp(db)
-	mux.Handle("GET /api", api.Mux())
+	mux.Handle("/webhook", webhooks.Mux())
+	mux.Handle("/api", app.Mux())
 
 	loggingMux := WithLogger(mux)
 	err = http.ListenAndServe(fmt.Sprint("0.0.0.0:", port), loggingMux)
@@ -109,16 +101,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	l := r.Context().Value(ctxLogger{}).(*slog.Logger)
 	l.Info("request received", slog.String("path", r.URL.Path))
 	_, _ = fmt.Fprintln(w, "hello world")
-}
-
-func handleAuthCallback(w http.ResponseWriter, r *http.Request) {
-	code := r.URL.Query().Get("code")
-	if code == "" {
-		http.Error(w, "missing code query parameter", http.StatusBadRequest)
-		return
-	}
-
-	_, _ = fmt.Fprintf(w, "Successfully authorized! Got code %s.", code)
 }
 
 func MustGetenv(varname string) string {
