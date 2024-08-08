@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/bartekpacia/ghapp/data"
 	"github.com/bartekpacia/ghapp/worker"
 )
 
@@ -158,6 +159,15 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 // Returns immediately and starts a goroutine in the background
 func (h WebhookHandler) createCheckRun(ctx context.Context, owner, repo, sha string, msg string, conclusion string) error {
+	// START: NEW PORT THAT WRITES TO WORKER
+
+	h.worker.Add(data.NewBuildRequest{
+		RepoID:    1,
+		CommitSHA: sha,
+	})
+
+	// END: NEW PORT THAT WRITES TO WORKER
+
 	l := ctx.Value(ctxLogger{}).(*slog.Logger)
 	githubInstallationClient := ctx.Value(ctxGHInstallationClient{}).(http.Client)
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/check-runs", owner, repo)
@@ -193,13 +203,14 @@ func (h WebhookHandler) createCheckRun(ctx context.Context, owner, repo, sha str
 	l.Info("initial request made", slog.Int("status", res.StatusCode), slog.String("body", string(respBody)))
 
 	time.Sleep(10 * time.Second)
-	if conclusion == "success" {
+	switch conclusion {
+	case "success":
 		body["status"] = "completed"
 		body["conclusion"] = "success"
-	} else if conclusion == "failure" {
+	case "failure":
 		body["status"] = "completed"
 		body["conclusion"] = "failure"
-	} else {
+	default:
 		// no conclusion, keep running this
 	}
 
