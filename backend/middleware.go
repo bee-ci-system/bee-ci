@@ -1,0 +1,186 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"github.com/golang-jwt/jwt/v5"
+	"io"
+	"log/slog"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+)
+
+func WithLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		l := slog.With(
+			slog.String("path", r.URL.Path),
+			slog.String("request_id", makeRequestID()),
+		)
+		l.Info("new request")
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, ctxLogger{}, l)
+		r = r.Clone(ctx)
+
+		next.ServeHTTP(w, r)
+
+		l.Info("request completed")
+	})
+}
+
+func WithWebhookSecret(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Obtain the signature from the request
+		theirSignature := r.Header.Get("X-Hub-Signature-256")
+		parts := strings.Split(theirSignature, "=")
+		if len(parts) != 2 {
+			http.Error(w, "invalid webhook signature", http.StatusForbidden)
+			return
+		}
+		theirHexMac := parts[1]
+		theirMac, err := hex.DecodeString(theirHexMac)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("error decoding webhook signature: %v", err), http.StatusBadRequest)
+			return
+		}
+
+		// Calculate our own signature
+		payload, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("error reading request body: %v", err), http.StatusBadRequest)
+			return
+		}
+		r.Body = io.NopCloser(bytes.NewBuffer(payload)) // make body available for reading again
+
+		hash := hmac.New(sha256.New, []byte(webhookSecret))
+		hash.Write(payload)
+		ourMac := hash.Sum(nil)
+
+		// Compare signatures
+		if !hmac.Equal(theirMac, ourMac) {
+			http.Error(w, "webhook signature is invalid", http.StatusForbidden)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func WithAuthenticatedApp(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		l := r.Context().Value(ctxLogger{}).(*slog.Logger)
+
+		claims := jwt.MapClaims{
+			"iat": time.Now().Unix(),
+			"exp": time.Now().Add(10 * time.Minute).Unix(),
+			"iss": githubAppID,
+		}
+
+		token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+		tokenStr, err := token.SignedString(rsaPrivateKey)
+		if err != nil {
+			l.Error("error signing JWT", slog.Any("error", err))
+			http.Error(w, "error signing JWT", http.StatusInternalServerError)
+			return
+		}
+
+		appClient := http.Client{Transport: &BearerTransport{Token: tokenStr}}
+
+		ctx := context.WithValue(r.Context(), ctxGHAppClient{}, appClient)
+		r = r.Clone(ctx)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		l := r.Context().Value(ctxLogger{}).(*slog.Logger)
+
+		// read request body
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("error reading request body: %v", err), http.StatusBadRequest)
+			return
+		}
+		body := bytes.NewBuffer(b)
+		r.Body = io.NopCloser(bytes.NewBuffer(bytes.Clone(b))) // make body available for reading again
+
+		// decode body from JSON into a map
+		decoder := json.NewDecoder(body)
+		decoder.UseNumber()
+
+		var payload map[string]interface{}
+		err = decoder.Decode(&payload)
+		if err != nil {
+			l.Error("error reading body", slog.Any("error", err))
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = fmt.Fprintf(w, "Error reading body: %v", err)
+			return
+		}
+
+		// extract installation ID from the request body
+
+		installationIDStr := payload["installation"].(map[string]interface{})["id"].(json.Number).String()
+		installationID, err := strconv.ParseInt(installationIDStr, 10, 64)
+		if err != nil {
+			l.Error("error parsing installation id", slog.Any("error", err))
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = fmt.Fprintf(w, "Error parsing installation id: %v", err)
+			return
+		}
+
+		// get app installation access token
+
+		url := fmt.Sprintf("https://api.github.com/app/installations/%d/access_tokens", installationID)
+		appClient := r.Context().Value(ctxGHAppClient{}).(http.Client)
+		res, err := appClient.Post(url, "application/json", nil)
+		if err != nil {
+			msg := "error calling endpoint " + url
+			l.Error(msg, slog.Any("error", err))
+			http.Error(w, msg, http.StatusInternalServerError)
+			return
+		}
+
+		// read response body and extract the access token
+
+		// read body
+		b, err = io.ReadAll(res.Body)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("error reading request body: %v", err), http.StatusBadRequest)
+			return
+		}
+		body = bytes.NewBuffer(b)
+
+		// decode body from JSON into a map
+		decoder = json.NewDecoder(body)
+		decoder.UseNumber()
+
+		clear(payload)
+		err = decoder.Decode(&payload)
+		if err != nil {
+			msg := fmt.Sprint("error reading response body from " + res.Request.URL.String())
+			l.Error(msg, slog.Any("error", err))
+			http.Error(w, msg, http.StatusInternalServerError)
+			return
+		}
+
+		appInstallationToken := payload["token"].(string)
+		appInstallationClient := http.Client{
+			Transport: &BearerTransport{Token: appInstallationToken},
+		}
+		l.Info("installation access token obtained", slog.Any("token", appInstallationToken))
+
+		ctx := context.WithValue(r.Context(), ctxGHInstallationClient{}, appInstallationClient)
+		r = r.Clone(ctx)
+
+		next.ServeHTTP(w, r)
+	})
+}
