@@ -25,8 +25,9 @@ func NewWebhookHandler(w worker.Worker) *WebhookHandler {
 func (h WebhookHandler) Mux() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.Handle("GET /webhook/github/callback", http.HandlerFunc(h.handleAuthCallback))
-	mux.Handle("POST /webhook",
+	mux.Handle("GET /{$}", http.HandlerFunc(handleIndex))
+	mux.Handle("GET /github/callback", http.HandlerFunc(h.handleAuthCallback))
+	mux.Handle("POST /",
 		WithWebhookSecret(
 			WithAuthenticatedApp( // provides gh_app_client
 				WithAuthenticatedAppInstallation( // provides gh_installation_client

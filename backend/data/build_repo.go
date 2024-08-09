@@ -16,6 +16,8 @@ type BuildRepo interface {
 	Create(ctx context.Context, build NewBuildRequest) (id uint64, err error)
 	Update(ctx context.Context, id uint64, status BuildStatus) (err error)
 	GetAll(ctx context.Context, repoID uint64) (builds []NewBuildRequest, err error)
+
+	ListenUpdates(ctx context.Context, buildID uint64) (<-chan BuildStatus, error)
 }
 
 type postgresBuildRepo struct {
@@ -78,6 +80,26 @@ func (p postgresBuildRepo) GetAll(ctx context.Context, repoID uint64) (builds []
 	}
 
 	return builds, nil
+}
+
+func (p postgresBuildRepo) ListenUpdates(ctx context.Context, buildID uint64) (<-chan BuildStatus, error) {
+	updates := make(chan BuildStatus)
+	go func() {
+		defer close(updates)
+		for {
+			var status BuildStatus
+			err := p.db.GetContext(ctx, &status, "SELECT status FROM builds WHERE id = $1", buildID)
+			if err != nil {
+				updates <- StatusFailed
+				return
+			}
+
+			updates <- status
+		}
+	}()
+
+	// TODO fix
+	return nil, nil
 }
 
 var _ BuildRepo = &postgresBuildRepo{}

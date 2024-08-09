@@ -18,10 +18,10 @@ func NewApp(buildRepo data.BuildRepo) *App {
 
 func (a *App) Mux() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /builds", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /builds/", func(w http.ResponseWriter, r *http.Request) {
 	})
 
-	mux.HandleFunc("POST /auth", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /auth/", func(w http.ResponseWriter, r *http.Request) {
 	})
 
 	return mux

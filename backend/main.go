@@ -80,14 +80,14 @@ func main() {
 
 	buildRepo := data.NewPostgresBuildRepo(db)
 
-	worker := worker.New(context.Background(), buildRepo)
-	webhooks := NewWebhookHandler(worker)
+	w := worker.New(context.Background(), buildRepo)
+	webhooks := NewWebhookHandler(w)
 	app := NewApp(buildRepo)
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /{$}", http.HandlerFunc(handleIndex))
-	mux.Handle("/webhook", webhooks.Mux())
-	mux.Handle("/api", app.Mux())
+	mux.Handle("/webhook/", http.StripPrefix("/webhook", webhooks.Mux()))
+	mux.Handle("/api/", http.StripPrefix("/api", app.Mux()))
 
 	loggingMux := WithLogger(mux)
 	err = http.ListenAndServe(fmt.Sprint("0.0.0.0:", port), loggingMux)

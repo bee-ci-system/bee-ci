@@ -24,7 +24,7 @@ CREATE TABLE bee_schema.users (
 CREATE TABLE bee_schema.builds (
     id SERIAL PRIMARY KEY, -- aka external_id for GitHub check run
     repo_id VARCHAR(255) NOT NULL,
-    commit_sha VARCHAR(40) NOT NULL,
+    commit_sha VARCHAR(40) NOT NULL, -- TODO: Use enum
     status VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP -- last updated_at is essentially completed_at
