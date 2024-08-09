@@ -29,6 +29,9 @@ var (
 	githubAppID   int64
 	webhookSecret string
 	rsaPrivateKey *rsa.PrivateKey
+
+	clientID     = os.Getenv("GITHUB_APP_CLIENT_ID")
+	clientSecret = os.Getenv("GITHUB_APP_CLIENT_SECRET")
 )
 
 type (

@@ -15,11 +15,17 @@ import (
 )
 
 type WebhookHandler struct {
-	worker worker.Worker
+	worker     worker.Worker
+	httpClient *http.Client
 }
 
 func NewWebhookHandler(w worker.Worker) *WebhookHandler {
-	return &WebhookHandler{worker: w}
+	return &WebhookHandler{
+		worker: w,
+		httpClient: &http.Client{
+			Timeout: 10 * time.Second,
+		},
+	}
 }
 
 func (h WebhookHandler) Mux() http.Handler {
@@ -40,14 +46,124 @@ func (h WebhookHandler) Mux() http.Handler {
 	return mux
 }
 
+func (h WebhookHandler) githubUserInfo(ctx context.Context, accessToken string) (map[string]interface{}, error) {
+	l := ctx.Value(ctxLogger{}).(*slog.Logger)
+	const url = "https://api.github.com/user"
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating new request: %w", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	// Do the request
+	resp, err := h.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("making request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	userData := map[string]interface{}{}
+	decoder := json.NewDecoder(resp.Body)
+	decoder.UseNumber()
+	err = decoder.Decode(&userData)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshalling response body: %w", err)
+	}
+
+	// TODO: store user data in a database
+	l.Info("authenticated user",
+		slog.Any("login", userData["login"]),
+		slog.Any("id", userData["id"]),
+		slog.Any("name", userData["name"]),
+	)
+
+	return userData, nil
+}
+
+func (h WebhookHandler) exchangeCode(ctx context.Context, code string) (userAccessToken string, err error) {
+	const url = "https://github.com/login/oauth/access_token"
+
+	reqBody := map[string]interface{}{
+		"client_id":     clientID,
+		"client_secret": clientSecret,
+		"code":          code,
+	}
+	reqBodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", fmt.Errorf("marshalling request body: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(reqBodyBytes))
+	if err != nil {
+		return "", fmt.Errorf("creating new request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := h.httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("making request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	respBody := map[string]interface{}{}
+	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	if err != nil {
+		return "", fmt.Errorf("unmarshalling response body: %w", err)
+	}
+
+	accessToken, ok := respBody["access_token"].(string)
+	if !ok {
+		errorID, _ := respBody["error"].(string)
+		errorDesc, _ := respBody["error_description"].(string)
+
+		if errorID != "" && errorDesc != "" {
+			return "", fmt.Errorf("exchanging code for access token: %s: %s", errorID, errorDesc)
+		}
+
+		return "", fmt.Errorf("access token is missing or invalid")
+	}
+
+	return accessToken, nil
+}
+
+// HandleAuthCallback exercises the [web application flow] for authorizing GitHub Apps.
+//
+// [web application flow]: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#web-application-flow
 func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Request) {
+	l := r.Context().Value(ctxLogger{}).(*slog.Logger)
+
 	code := r.URL.Query().Get("code")
 	if code == "" {
 		http.Error(w, "missing code query parameter", http.StatusBadRequest)
 		return
 	}
 
-	_, _ = fmt.Fprintf(w, "Successfully authorized! Got code %s.", code)
+	accessToken, err := h.exchangeCode(r.Context(), code)
+	if err != nil {
+		l.Error("error exchanging code for access token", slog.Any("error", err))
+		http.Error(w, "error exchanging code for access token", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = h.githubUserInfo(r.Context(), accessToken)
+	if err != nil {
+		l.Error("error getting user info", slog.Any("error", err))
+		http.Error(w, "error getting user info", http.StatusInternalServerError)
+		return
+	}
+
+	msg := fmt.Sprintf("Successfully authorized! Got code %s and exchanged it for a user access token ending in %s", code, accessToken[len(accessToken)-9:])
+	l.Info(msg)
+
+	_, _ = fmt.Fprint(w, msg)
 }
 
 func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
