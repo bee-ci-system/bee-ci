@@ -18,6 +18,16 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+func WithTrailingSlashes(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, "/") {
+			r.URL.Path = r.URL.Path + "/"
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func WithLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		l := slog.With(

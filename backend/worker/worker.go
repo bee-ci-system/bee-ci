@@ -6,6 +6,7 @@ package worker
 import (
 	"context"
 	"log/slog"
+	"math/rand"
 	"time"
 
 	"github.com/bartekpacia/ghapp/data"
@@ -48,7 +49,7 @@ func (w worker) job(build data.NewBuild) {
 	time.Sleep(5 * time.Second)
 
 	// random failure or success, 50% chance of failure
-	if time.Now().UnixNano()%2 == 0 {
+	if rand.Intn(2) == 0 {
 		w.buildRepo.Update(w.ctx, buildId, data.StatusFailed)
 		slog.Info("job failed", slog.Uint64("build_id", buildId))
 	} else {

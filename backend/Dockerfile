@@ -10,10 +10,7 @@ COPY go.sum ./
 RUN go mod download 
 
 # Copy source files required for build
-COPY *.go ./
-COPY data/ ./data
-COPY worker/ ./worker
-COPY queue/ ./queue
+COPY *.go data/ worker/ listener/ ./
 RUN go build -o server .
 
 FROM alpine:3.20 AS runtime

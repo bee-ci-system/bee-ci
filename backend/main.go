@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bartekpacia/ghapp/queue"
+	"github.com/bartekpacia/ghapp/listener"
 
 	"github.com/bartekpacia/ghapp/data"
 	"github.com/bartekpacia/ghapp/worker"
@@ -98,7 +98,7 @@ func main() {
 	mux.Handle("/webhook/", http.StripPrefix("/webhook", webhooks.Mux()))
 	mux.Handle("/api/", http.StripPrefix("/api", app.Mux()))
 
-	loggingMux := WithLogger(mux)
+	loggingMux := WithTrailingSlashes(WithLogger(mux))
 	addr := fmt.Sprint("0.0.0.0:", port)
 	slog.Info("server will start listening listening", "addr", addr)
 	err = http.ListenAndServe(addr, loggingMux)

@@ -25,22 +25,23 @@ CREATE TABLE bee_schema.users (
 
 CREATE TABLE bee_schema.builds (
     id SERIAL PRIMARY KEY, -- aka external_id for GitHub check run
-    repo_id VARCHAR(255) NOT NULL,
+    repo_id INTEGER NOT NULL,
     commit_sha VARCHAR(40) NOT NULL, -- TODO: Use enum
     status VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP -- last updated_at is essentially completed_at
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP -- last updated_at is essentially completed_at
     -- FOREIGN KEY (repo_id) REFERENCES bee_schema.repos(id)
 );
 
 INSERT INTO bee_schema.users (id, access_token, refresh_token) VALUES (2137, 'access_token', 'refresh_token');
 
-INSERT INTO bee_schema.builds (repo_id, commit_sha, status) VALUES ('octocat/hello-world', '1234567890abcdef', 'queued');
+INSERT INTO bee_schema.builds (repo_id, commit_sha, status) VALUES (1, '1234567890abcdef', 'queued');
 
 CREATE OR REPLACE FUNCTION builds_trigger() RETURNS TRIGGER AS
 $$
     BEGIN
         PERFORM pg_notify('builds_channel', row_to_json(NEW)::TEXT);
+        RETURN NEW;
     END;
 $$ LANGUAGE plpgsql;
 
