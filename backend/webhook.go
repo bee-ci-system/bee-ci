@@ -15,16 +15,18 @@ import (
 )
 
 type WebhookHandler struct {
-	worker     worker.Worker
+	userRepo   data.UserRepo
 	httpClient *http.Client
+	worker     worker.Worker
 }
 
-func NewWebhookHandler(w worker.Worker) *WebhookHandler {
+func NewWebhookHandler(userRepo data.UserRepo, w worker.Worker) *WebhookHandler {
 	return &WebhookHandler{
-		worker: w,
+		userRepo: userRepo,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
+		worker: w,
 	}
 }
 
@@ -278,7 +280,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 func (h WebhookHandler) createCheckRun(ctx context.Context, owner, repo, sha string, msg string, conclusion string) error {
 	// START: NEW PORT THAT WRITES TO WORKER
 
-	h.worker.Add(data.NewBuildRequest{
+	h.worker.Add(data.NewBuild{
 		RepoID:    1,
 		CommitSHA: sha,
 	})

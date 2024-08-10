@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/bartekpacia/ghapp/queue"
+
 	"github.com/bartekpacia/ghapp/data"
 	"github.com/bartekpacia/ghapp/worker"
 	"github.com/jmoiron/sqlx"
@@ -81,10 +83,13 @@ func main() {
 	}
 	slog.Info("connected to database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
 
+	listener := queue.NewListener(psqlInfo, channelName)
+
 	buildRepo := data.NewPostgresBuildRepo(db)
+	userRepo := data.NewPostgresUserRepo(db)
 
 	w := worker.New(context.Background(), buildRepo)
-	webhooks := NewWebhookHandler(w)
+	webhooks := NewWebhookHandler(userRepo, w)
 	app := NewApp(buildRepo)
 
 	mux := http.NewServeMux()

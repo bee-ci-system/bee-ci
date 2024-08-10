@@ -21,6 +21,9 @@ func (a *App) Mux() http.Handler {
 	mux.HandleFunc("GET /builds/", func(w http.ResponseWriter, r *http.Request) {
 	})
 
+	mux.HandleFunc("GET /builds/{buildID}", func(w http.ResponseWriter, r *http.Request) {
+	})
+
 	mux.HandleFunc("POST /auth/", func(w http.ResponseWriter, r *http.Request) {
 	})
 

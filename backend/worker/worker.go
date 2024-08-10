@@ -12,7 +12,7 @@ import (
 )
 
 type Worker interface {
-	Add(build data.NewBuildRequest)
+	Add(build data.NewBuild)
 }
 
 type worker struct {
@@ -20,11 +20,11 @@ type worker struct {
 	buildRepo data.BuildRepo
 }
 
-func (w worker) Add(build data.NewBuildRequest) {
+func (w worker) Add(build data.NewBuild) {
 	go w.job(build)
 }
 
-func (w worker) job(build data.NewBuildRequest) {
+func (w worker) job(build data.NewBuild) {
 	slog.Info("Starting job for build")
 	// Do some work
 	buildId, err := w.buildRepo.Create(w.ctx, build)

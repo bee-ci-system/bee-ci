@@ -7,9 +7,11 @@ CREATE SCHEMA bee_schema;
 SET search_path TO bee_schema, public;
 
 CREATE TABLE bee_schema.users (
-    id SERIAL PRIMARY KEY, -- GitHub user id
-    username VARCHAR(255) UNIQUE NOT NULL, -- GitHub username
-    installation_token VARCHAR(40) NOT NULL
+    id INTEGER PRIMARY KEY, -- GitHub user id
+    -- username VARCHAR(255) UNIQUE NOT NULL, -- GitHub username
+    --installation_token VARCHAR(40) NOT NULL,
+    access_token VARCHAR(40) NOT NULL,
+    refresh_token VARCHAR(40) NOT NULL
 );
 
 -- CREATE TABLE bee_schema.repos (
@@ -32,4 +34,15 @@ CREATE TABLE bee_schema.builds (
 );
 
 INSERT INTO bee_schema.users (username, installation_token) VALUES ('octocat', 'gho_1234567890');
-INSERT INTO bee_schema.users (username, installation_token) VALUES ('octocat2', 'gho_1234567890sd');
+
+INSERT INTO bee_schema.builds (repo_id, commit_sha, status) VALUES ('octocat/hello-world', '1234567890abcdef', 'queued');
+
+CREATE OR REPLACE FUNCTION builds_trigger() RETURNS TRIGGER AS
+$$
+    BEGIN
+        PERFORM pg_notify('builds_channel', row_to_json(NEW)::TEXT);
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER builds_notify_trigger AFTER INSERT OR UPDATE ON bee_schema.builds
+FOR EACH ROW EXECUTE FUNCTION builds_trigger();

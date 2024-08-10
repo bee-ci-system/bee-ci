@@ -3,7 +3,7 @@ package data
 import (
 	"context"
 	"fmt"
-	
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -13,15 +13,22 @@ type NewUser struct {
 	RefreshToken string
 }
 
-type UserRepo interface {
-	Create(ctx context.Context, user NewUser) (err error)
+type User struct {
+	ID           uint64 `db:"user_id"`
+	AccessToken  string `db:"access_token"`
+	RefreshToken string `db:"refresh_token"`
 }
 
-type postgresUserRepo struct {
+type UserRepo interface {
+	Create(ctx context.Context, user NewUser) (err error)
+	GetByID(ctx context.Context, id uint64) (user User, err error)
+}
+
+type PostgresUserRepo struct {
 	db *sqlx.DB
 }
 
-func (p postgresUserRepo) Create(ctx context.Context, user NewUser) (err error) {
+func (p PostgresUserRepo) Create(ctx context.Context, user NewUser) (err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
 		INSERT INTO bee_schema.users (id, access_token, refresh_token)
 		VALUES ($1, $2, $3)
@@ -38,8 +45,26 @@ func (p postgresUserRepo) Create(ctx context.Context, user NewUser) (err error) 
 	return nil
 }
 
-var _ UserRepo = &postgresUserRepo{}
+func (p PostgresUserRepo) GetByID(ctx context.Context, id uint64) (user User, err error) {
+	stmt, err := p.db.PreparexContext(ctx, `
+		SELECT id, access_token, refresh_token
+		FROM bee_schema.users
+		WHERE id = $1
+	`)
+	if err != nil {
+		return User{}, fmt.Errorf("preparing query: %v", err)
+	}
 
-func NewPostgresUserRepo(db *sqlx.DB) UserRepo {
-	return &postgresUserRepo{db: db}
+	err = stmt.GetContext(ctx, &user, id)
+	if err != nil {
+		return User{}, fmt.Errorf("executing SELECT query: %v", err)
+	}
+
+	return user, nil
+}
+
+var _ UserRepo = &PostgresUserRepo{}
+
+func NewPostgresUserRepo(db *sqlx.DB) *PostgresUserRepo {
+	return &PostgresUserRepo{db: db}
 }
