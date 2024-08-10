@@ -1,5 +1,5 @@
 CREATE DATABASE bee;
-GRANT ALL PRIVILEGES ON DATABASE bee to "postgres";
+GRANT ALL PRIVILEGES ON DATABASE bee TO "postgres";
 
 \c bee;
 
@@ -23,21 +23,32 @@ CREATE TABLE bee_schema.users (
 --     FOREIGN KEY (user_id) REFERENCES bee_schema.users(id)
 -- );
 
+-- Taken from https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
+CREATE TYPE build_status AS ENUM ('queued', 'in_progress', 'completed');
+CREATE TYPE build_conclusion AS ENUM ('canceled', 'failure', 'success', 'timed_out');
+
 CREATE TABLE bee_schema.builds (
     id SERIAL PRIMARY KEY, -- aka external_id for GitHub check run
     repo_id INTEGER NOT NULL,
-    commit_sha VARCHAR(40) NOT NULL, -- TODO: Use enum
-    status VARCHAR(255) NOT NULL,
+    commit_sha VARCHAR(40) NOT NULL,
+    status build_status NOT NULL,
+    conclusion build_conclusion,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP -- last updated_at is essentially completed_at
-    -- FOREIGN KEY (repo_id) REFERENCES bee_schema.repos(id)
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT status_completed_requires_conclusion CHECK (
+        conclusion IS NULL OR status = 'completed'
+    )
 );
 
-INSERT INTO bee_schema.users (id, access_token, refresh_token) VALUES (2137, 'access_token', 'refresh_token');
+INSERT INTO bee_schema.users (id, access_token, refresh_token) VALUES (
+    2137, 'access_token', 'refresh_token'
+);
 
-INSERT INTO bee_schema.builds (repo_id, commit_sha, status) VALUES (1, '1234567890abcdef', 'queued');
+INSERT INTO bee_schema.builds (repo_id, commit_sha, status) VALUES (
+    1, '1234567890abcdef', 'queued'
+);
 
-CREATE OR REPLACE FUNCTION builds_trigger() RETURNS TRIGGER AS
+CREATE OR REPLACE FUNCTION BUILDS_TRIGGER() RETURNS TRIGGER AS
 $$
     BEGIN
         PERFORM pg_notify('builds_channel', row_to_json(NEW)::TEXT);
@@ -46,4 +57,4 @@ $$
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER builds_notify_trigger AFTER INSERT OR UPDATE ON bee_schema.builds
-FOR EACH ROW EXECUTE FUNCTION builds_trigger();
+FOR EACH ROW EXECUTE FUNCTION BUILDS_TRIGGER();

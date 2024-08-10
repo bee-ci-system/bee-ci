@@ -38,7 +38,7 @@ func (w worker) job(build data.NewBuild) {
 	slog.Info("job queued", slog.Uint64("build_id", buildId))
 
 	time.Sleep(5 * time.Second)
-	err = w.buildRepo.Update(w.ctx, buildId, data.StatusRunning)
+	err = w.buildRepo.UpdateStatus(w.ctx, buildId, "in_progress")
 	if err != nil {
 		slog.Error("failed to update build status", slog.Any("error", err))
 		return
@@ -50,10 +50,19 @@ func (w worker) job(build data.NewBuild) {
 
 	// random failure or success, 50% chance of failure
 	if rand.Intn(2) == 0 {
-		w.buildRepo.Update(w.ctx, buildId, data.StatusFailed)
+		err := w.buildRepo.SetConclusion(w.ctx, buildId, "failure")
+		if err != nil {
+			slog.Error("failed to set failure conclusion", slog.Any("error", err))
+			return
+		}
+
 		slog.Info("job failed", slog.Uint64("build_id", buildId))
 	} else {
-		w.buildRepo.Update(w.ctx, buildId, data.StatusSuccess)
+		err := w.buildRepo.SetConclusion(w.ctx, buildId, "success")
+		if err != nil {
+			slog.Error("failed to update success conclusion", slog.Any("error", err))
+			return
+		}
 		slog.Info("job succeeded", slog.Uint64("build_id", buildId))
 	}
 }
