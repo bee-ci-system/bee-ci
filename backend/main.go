@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"time"
 
@@ -45,6 +46,8 @@ type (
 var db *sqlx.DB
 
 func main() {
+	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
+
 	slog.SetDefault(setUpLogging())
 	slog.Info("server is starting...")
 
@@ -84,12 +87,19 @@ func main() {
 	slog.Info("connected to database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
 
 	listener := queue.NewListener(db.DB, psqlInfo)
-	go listener.Start()
+	go func() {
+		err := listener.Start(ctx)
+		if err != nil {
+			slog.Error("error starting listener", slog.Any("error", err))
+			panic(err)
+		}
+	}()
+	slog.Info("started listener")
 
 	buildRepo := data.NewPostgresBuildRepo(db)
 	userRepo := data.NewPostgresUserRepo(db)
 
-	w := worker.New(context.Background(), buildRepo)
+	w := worker.New(ctx, buildRepo)
 	webhooks := NewWebhookHandler(userRepo, w)
 	app := NewApp(buildRepo)
 

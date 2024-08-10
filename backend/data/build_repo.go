@@ -82,7 +82,7 @@ func (p PostgresBuildRepo) UpdateStatus(ctx context.Context, id uint64, status s
 func (p PostgresBuildRepo) SetConclusion(ctx context.Context, id uint64, conclusion string) (err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
 		UPDATE bee_schema.builds
-		SET status = 'completed', conclusion = $2
+		SET status = 'completed', conclusion = $2Ó
 		WHERE id = $1
 	`)
 	if err != nil {
