@@ -13,16 +13,11 @@ import (
 
 const channelName = "builds_channel"
 
-var l = slog.Default() // TODO: add some "subsystem name" to this logger
-
-type Queue struct {
-	db *sql.DB
-}
-
 type Listener struct {
 	db            *sql.DB
 	channelName   string
 	notifications <-chan *pq.Notification
+	l             *slog.Logger
 }
 
 func NewListener(db *sql.DB, connInfo string) *Listener {
@@ -45,35 +40,24 @@ func NewListener(db *sql.DB, connInfo string) *Listener {
 		db:            db,
 		channelName:   channelName,
 		notifications: listener.NotificationChannel(),
+		l:             slog.Default(), // TODO: add some "subsystem name" to this logger
 	}
 }
 
-func (listener Listener) Start() {
+func (l Listener) Start() {
 	for {
 		select {
-		case msg := <-listener.notifications:
+		case msg := <-l.notifications:
 			updatedBuild := data.Build{}
+			// decoder := json.NewDecoder(bytes.NewBufferString(msg.Extra))
+
 			err := json.Unmarshal([]byte(msg.Extra), &updatedBuild)
 			if err != nil {
 				// handle error
-				l.Error("failed to unmarshal build", slog.Any("error", err))
+				l.l.Error("failed to unmarshal build", slog.Any("error", err))
 			}
-			l.Info("received notification", slog.Any("build", updatedBuild))
+			l.l.Info("received notification", slog.Any("build", updatedBuild))
 			fmt.Printf("same but with more info: %+v\n", updatedBuild)
 		}
 	}
 }
-
-//func New(db *sql.DB) *Queue {
-//	return &Queue{
-//		db: db,
-//		// Listener: newListener(db, channelName),
-//	}
-//}
-//
-//// Start starts the queue:
-////  1. Listens for changes in the builds table in the database
-////  2. Sends the build status to GitHub
-//func (q Queue) Start() {
-//	pq.NewListener()
-//}
