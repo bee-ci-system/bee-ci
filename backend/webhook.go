@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -35,6 +36,11 @@ func (h WebhookHandler) Mux() http.Handler {
 
 	mux.Handle("GET /{$}", http.HandlerFunc(handleIndex))
 	mux.Handle("GET /github/callback", http.HandlerFunc(h.handleAuthCallback))
+
+	mux.HandleFunc("POST /{$}", func (w http.ResponseWriter, r *http.Request) {
+		log.Println("HEHEHE HERE!")
+	})
+
 	mux.Handle("POST /",
 		WithWebhookSecret(
 			WithAuthenticatedApp( // provides gh_app_client

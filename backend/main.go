@@ -83,7 +83,8 @@ func main() {
 	}
 	slog.Info("connected to database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
 
-	listener := queue.NewListener(psqlInfo, channelName)
+	listener := queue.NewListener(db.DB, psqlInfo)
+	go listener.Start()
 
 	buildRepo := data.NewPostgresBuildRepo(db)
 	userRepo := data.NewPostgresUserRepo(db)
@@ -98,7 +99,9 @@ func main() {
 	mux.Handle("/api/", http.StripPrefix("/api", app.Mux()))
 
 	loggingMux := WithLogger(mux)
-	err = http.ListenAndServe(fmt.Sprint("0.0.0.0:", port), loggingMux)
+	addr := fmt.Sprint("0.0.0.0:", port)
+	slog.Info("server will start listening listening", "addr", addr)
+	err = http.ListenAndServe(addr, loggingMux)
 	if err != nil {
 		slog.Error("failed to start listening", slog.Any("error", err))
 		os.Exit(1)

@@ -22,10 +22,10 @@ type Queue struct {
 type Listener struct {
 	db            *sql.DB
 	channelName   string
-	notifications <-chan pq.Notification
+	notifications <-chan *pq.Notification
 }
 
-func NewListener(connInfo string) *Listener {
+func NewListener(db *sql.DB, connInfo string) *Listener {
 	minReconn := 10 * time.Second
 	maxReconn := time.Minute
 
@@ -41,6 +41,11 @@ func NewListener(connInfo string) *Listener {
 		panic(err)
 	}
 
+	return &Listener{
+		db:            db,
+		channelName:   channelName,
+		notifications: listener.NotificationChannel(),
+	}
 }
 
 func (listener Listener) Start() {
@@ -59,16 +64,16 @@ func (listener Listener) Start() {
 	}
 }
 
-func New(db *sql.DB) *Queue {
-	return &Queue{
-		db: db,
-		// Listener: newListener(db, channelName),
-	}
-}
-
-// Start starts the queue:
-//  1. Listens for changes in the builds table in the database
-//  2. Sends the build status to GitHub
-func (q Queue) Start() {
-	pq.NewListener()
-}
+//func New(db *sql.DB) *Queue {
+//	return &Queue{
+//		db: db,
+//		// Listener: newListener(db, channelName),
+//	}
+//}
+//
+//// Start starts the queue:
+////  1. Listens for changes in the builds table in the database
+////  2. Sends the build status to GitHub
+//func (q Queue) Start() {
+//	pq.NewListener()
+//}

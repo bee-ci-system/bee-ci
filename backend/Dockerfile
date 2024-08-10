@@ -13,6 +13,7 @@ RUN go mod download
 COPY *.go ./
 COPY data/ ./data
 COPY worker/ ./worker
+COPY queue/ ./queue
 RUN go build -o server .
 
 FROM alpine:3.20 AS runtime

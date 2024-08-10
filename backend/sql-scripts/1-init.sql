@@ -33,7 +33,7 @@ CREATE TABLE bee_schema.builds (
     -- FOREIGN KEY (repo_id) REFERENCES bee_schema.repos(id)
 );
 
-INSERT INTO bee_schema.users (username, installation_token) VALUES ('octocat', 'gho_1234567890');
+INSERT INTO bee_schema.users (id, access_token, refresh_token) VALUES (2137, 'access_token', 'refresh_token');
 
 INSERT INTO bee_schema.builds (repo_id, commit_sha, status) VALUES ('octocat/hello-world', '1234567890abcdef', 'queued');
 
