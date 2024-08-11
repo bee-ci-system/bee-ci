@@ -14,12 +14,12 @@ type NewBuild struct {
 	CommitMsg string
 }
 
-// Build represents a build in the database.
+// Build represents a row in the "builds" table.
 //
 // The JSON struct tags are only to be used when receiving a row from LISTEN/NOTIFY.
 type Build struct {
-	ID         int64    `db:"id" json:"id"`
-	RepoID     int64    `db:"repo_id" json:"repo_id"`
+	ID         int64     `db:"id" json:"id"`
+	RepoID     int64     `db:"repo_id" json:"repo_id"`
 	CommitSHA  string    `db:"commit_sha" json:"commit_sha"`
 	Status     string    `db:"status" json:"status"`
 	Conclusion *string   `db:"conclusion" json:"conclusion"`
@@ -27,11 +27,26 @@ type Build struct {
 	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
 }
 
+// FatBuild represents a row in the "builds" table, merged with information from other tables:
+// - "repos" table, for repository information (repository name)
+// - "users" table, for owner information (userID and user name)
+type FatBuild struct {
+	Build
+	RepoName string `db:"repo_name" json:"repo_name"`
+	UserID  int64  `db:"user_id" json:"user_id"`
+	UserName string `db:"user_name" json:"user_name"`
+}
+
 type BuildRepo interface {
 	Create(ctx context.Context, build NewBuild) (id int64, err error)
 	UpdateStatus(ctx context.Context, id int64, status string) (err error)
 	SetConclusion(ctx context.Context, id int64, conclusion string) (err error)
-	GetAll(ctx context.Context, repoID int64) (builds []NewBuild, err error)
+
+	// GetAll returns all builds for all repositories of userID.
+	GetAll(ctx context.Context, userID int64) (builds []FatBuild, err error)
+
+	// GetAllByRepoID returns all builds for the repository of repoID.
+	GetAllByRepoID(ctx context.Context, repoID int64) (builds []FatBuild, err error)
 }
 
 type PostgresBuildRepo struct {
