@@ -21,6 +21,7 @@ type Build struct {
 	ID         int64     `db:"id" json:"id"`
 	RepoID     int64     `db:"repo_id" json:"repo_id"`
 	CommitSHA  string    `db:"commit_sha" json:"commit_sha"`
+	CommitMsg  string    `db:"commit_message" json:"commit_message"`
 	Status     string    `db:"status" json:"status"`
 	Conclusion *string   `db:"conclusion" json:"conclusion"`
 	CreatedAt  time.Time `db:"created_at" json:"created_at"`
@@ -33,7 +34,7 @@ type Build struct {
 type FatBuild struct {
 	Build
 	RepoName string `db:"repo_name" json:"repo_name"`
-	UserID  int64  `db:"user_id" json:"user_id"`
+	UserID   int64  `db:"user_id" json:"user_id"`
 	UserName string `db:"user_name" json:"user_name"`
 }
 
@@ -115,8 +116,24 @@ func (p PostgresBuildRepo) SetConclusion(ctx context.Context, id int64, conclusi
 
 // TODO: refactor to only get builds for a specific user
 
-func (p PostgresBuildRepo) GetAll(ctx context.Context, repoID int64) (builds []NewBuild, err error) {
-	builds = make([]NewBuild, 0)
+func (p PostgresBuildRepo) GetAll(ctx context.Context, userID int64) (builds []FatBuild, err error) {
+	builds = make([]FatBuild, 0)
+	err = p.db.SelectContext(ctx, builds, `
+         		SELECT builds.*, repos.name AS repo_name, users.id AS user_id, users.name AS user_name
+         		FROM bee_schema.builds builds
+         		JOIN bee_schema.repos repos ON builds.repo_id = repos.id
+         		JOIN bee_schema.users users ON repos.user_id = users.id
+         		WHERE users.id = $1
+		 	`, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return builds, nil
+}
+
+func (p PostgresBuildRepo) GetAllByRepoID(ctx context.Context, repoID int64) (builds []FatBuild, err error) {
+	builds = make([]FatBuild, 0)
 	err = p.db.SelectContext(ctx, builds, "SELECT * FROM bee_schema.builds WHERE repo_id = $1", repoID)
 	if err != nil {
 		return nil, err

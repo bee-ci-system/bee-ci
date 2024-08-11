@@ -37,13 +37,17 @@ CREATE TABLE bee_schema.builds
     conclusion     build_conclusion,
     created_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (repo_id) REFERENCES bee_schema.repos (id),
     CONSTRAINT status_completed_requires_conclusion CHECK (
         conclusion IS NULL OR status = 'completed'
         )
 );
 
 INSERT INTO bee_schema.users (id, username, access_token, refresh_token)
-VALUES (2137, 'example_user', 'access_token', 'refresh_token');
+VALUES (-3, 'example_user', 'access_token', 'refresh_token');
+
+INSERT INTO bee_schema.repos (id, name, user_id)
+VALUES (-2, 'example_repo', -3);
 
 INSERT INTO bee_schema.builds (repo_id, commit_sha, commit_message, status)
-VALUES (1, '1234567890abcdef', 'example commit message', 'queued');
+VALUES (-2, '1234567890abcdef', 'example commit message', 'queued');

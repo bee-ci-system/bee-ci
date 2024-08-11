@@ -211,41 +211,63 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		// https://docs.github.com/en/webhooks/webhook-events-and-payloads?actionType=created#installation
 		if payload["action"] == "created" {
 			repositories := payload["repositories"].([]interface{})
+
+			account := installation["account"].(map[string]interface{})
+			userID, _ := account["id"].(json.Number).Int64()
+
 			l.Info("app installation created", slog.Any("id", installation["id"]), slog.String("login", login), slog.Int("repositories", len(repositories)))
+
+			err = h.userRepo.Create(r.Context(), data.NewUser{
+				ID:           userID,
+				Username:     account["login"].(string),
+				AccessToken:  "TODO",
+				RefreshToken: "TODO",
+			})
+			if err != nil {
+				l.Error("error creating user", slog.Any("error", err))
+				w.WriteHeader(http.StatusInternalServerError)
+				break
+			}
+
+			repos := mapRepos(userID, repositories)
+			err = h.repoRepo.Create(r.Context(), repos)
+			if err != nil {
+				l.Error("error creating repositories", slog.Any("error", err))
+				w.WriteHeader(http.StatusInternalServerError)
+				break
+			}
 
 			// CREATE user, add their repos
 		}
 		if payload["action"] == "deleted" {
 			l.Info("app installation deleted", slog.Any("id", installation["id"]), slog.String("login", login))
 
-			// DELETE user, their repos and builds
+			// TODO: DELETE user, their repos and builds
 		}
 	case "installation_repositories":
+		userID, _ := payload["sender"].(map[string]interface{})["id"].(json.Number).Int64()
+
 		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories
 		if payload["action"] == "added" {
 			addedRepositories := payload["repositories_added"].([]interface{})
-			for _, repository := range addedRepositories {
-				repositoryID, _ := repository.(map[string]interface{})["id"].(json.Number).Int64()
-				userID, _ := payload["sender"].(map[string]interface{})["id"].(json.Number).Int64()
-				err := h.repoRepo.Create(r.Context(), data.Repo{
-					ID:     repositoryID,
-					Name:   repository.(map[string]interface{})["name"].(string),
-					UserID: userID,
-				})
-				if err != nil {
-					l.Error("error creating repository", slog.Any("error", err))
-				}
+			repos := mapRepos(userID, addedRepositories)
+			err = h.repoRepo.Create(r.Context(), repos)
+			if err != nil {
+				l.Error("error creating repositories", slog.Any("error", err))
 			}
 		}
 
 		if payload["action"] == "removed" {
-			addedRepositories := payload["repositories_removed"].([]interface{})
-			for _, repository := range addedRepositories {
-				repositoryID, _ := repository.(map[string]interface{})["id"].(json.Number).Int64()
-				err := h.repoRepo.Delete(r.Context(), repositoryID)
-				if err != nil {
-					l.Error("error deleting repository", slog.Any("error", err))
-				}
+			removedRepositories := payload["repositories_removed"].([]interface{})
+			repos := mapRepos(userID, removedRepositories)
+			repoIDs := make([]int64, 0, len(repos))
+			for _, repo := range repos {
+				repoIDs = append(repoIDs, repo.ID)
+			}
+
+			err = h.repoRepo.Delete(r.Context(), repoIDs)
+			if err != nil {
+				l.Error("error deleting repositories", slog.Any("error", err))
 			}
 		}
 	case "check_suite":
@@ -289,4 +311,17 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	default:
 		l.Error("unknown event", slog.String("event", event))
 	}
+}
+
+func mapRepos(userID int64, repositories []interface{}) []data.Repo {
+	repos := make([]data.Repo, 0, len(repositories))
+	for _, repo := range repositories {
+		repoID, _ := repo.(map[string]interface{})["id"].(json.Number).Int64()
+		repos = append(repos, data.Repo{
+			ID:     repoID,
+			Name:   repo.(map[string]interface{})["name"].(string),
+			UserID: userID,
+		})
+	}
+	return repos
 }

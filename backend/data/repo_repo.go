@@ -13,24 +13,21 @@ type Repo struct {
 }
 
 type RepoRepo interface {
-	Create(ctx context.Context, repo Repo) (err error)
-	Delete(ctx context.Context, id int64) (err error)
+	Create(ctx context.Context, repo []Repo) (err error)
+	Delete(ctx context.Context, id []int64) (err error)
 }
 
 type PostgresRepoRepo struct {
 	db *sqlx.DB
 }
 
-func (p PostgresRepoRepo) Create(ctx context.Context, repo Repo) (err error) {
-	stmt, err := p.db.PreparexContext(ctx, `
-		INSERT INTO bee_schema.repos (id, name, user_id)
-		VALUES ($1, $2, $3)
-	`)
-	if err != nil {
-		return fmt.Errorf("preparing query: %v", err)
-	}
-
-	_, err = stmt.ExecContext(ctx, repo.ID, repo.Name, repo.UserID)
+func (p PostgresRepoRepo) Create(ctx context.Context, repos []Repo) (err error) {
+	_, err = p.db.NamedExecContext(
+		ctx,
+		`INSERT INTO bee_schema.repos (id, name, user_id)
+		VALUES (:id, :name, :user_id)`,
+		repos,
+	)
 	if err != nil {
 		return fmt.Errorf("executing INSERT query: %v", err)
 	}
@@ -38,16 +35,25 @@ func (p PostgresRepoRepo) Create(ctx context.Context, repo Repo) (err error) {
 	return nil
 }
 
-func (p PostgresRepoRepo) Delete(ctx context.Context, id int64) (err error) {
-	stmt, err := p.db.PreparexContext(ctx, `
+func (p PostgresRepoRepo) Delete(ctx context.Context, ids []int64) (err error) {
+	idsInStruct := make([]interface{}, 0, len(ids))
+	for _, i := range ids {
+		idsInStruct = append(idsInStruct, struct {
+			ID int64 `db:"id"`
+		}{
+			ID: i,
+		})
+	}
+
+	stmt, err := p.db.PrepareNamedContext(ctx, `
 		DELETE FROM bee_schema.repos
-		WHERE id = $1
+		WHERE id = :id
 	`)
 	if err != nil {
 		return fmt.Errorf("preparing query: %v", err)
 	}
 
-	_, err = stmt.ExecContext(ctx, id)
+	_, err = stmt.ExecContext(ctx, idsInStruct)
 	if err != nil {
 		return fmt.Errorf("executing DELETE query: %v", err)
 	}
