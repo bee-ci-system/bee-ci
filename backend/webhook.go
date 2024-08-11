@@ -16,13 +16,15 @@ import (
 
 type WebhookHandler struct {
 	userRepo   data.UserRepo
+	repoRepo   data.RepoRepo
 	httpClient *http.Client
-	worker     worker.Worker
+	worker     *worker.Worker
 }
 
-func NewWebhookHandler(userRepo data.UserRepo, w worker.Worker) *WebhookHandler {
+func NewWebhookHandler(userRepo data.UserRepo, repoRepo data.RepoRepo, w *worker.Worker) *WebhookHandler {
 	return &WebhookHandler{
 		userRepo: userRepo,
+		repoRepo: repoRepo,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
@@ -38,8 +40,8 @@ func (h WebhookHandler) Mux() http.Handler {
 
 	mux.Handle("POST /{$}",
 		WithWebhookSecret(
-			WithAuthenticatedApp( // provides gh_app_client
-				WithAuthenticatedAppInstallation( // provides gh_installation_client
+			WithAuthenticatedApp( // MAYBE provides gh_app_client
+				WithAuthenticatedAppInstallation( // MAYBE provides gh_installation_client
 					http.HandlerFunc(h.handleWebhook),
 				),
 			),
@@ -172,8 +174,6 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	l := r.Context().Value(ctxLogger{}).(*slog.Logger)
 
-	event := r.Header.Get("X-GitHub-Event")
-
 	decoder := json.NewDecoder(r.Body)
 	decoder.UseNumber()
 
@@ -197,12 +197,12 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	action, _ := payload["action"].(string)
 	l.Info("handling webhook",
-		slog.String("event", event),
 		slog.Any("action", action),
 		slog.Int64("installation_id", installationID),
 	)
 
 	// Check type of webhook event
+	event := r.Header.Get("X-GitHub-Event")
 	switch event {
 	case "installation":
 		installation := payload["installation"].(map[string]interface{})
@@ -217,139 +217,72 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			l.Info("app installation deleted", slog.Any("id", installation["id"]), slog.String("login", login))
 		}
 	case "check_suite":
-		// https://docs.github.com/en/webhooks/webhook-events-and-payloads?actionType=requested#check_suite
+		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#check_suite
 		if payload["action"] == "requested" || payload["action"] == "rerequested" {
 			repository := payload["repository"].(map[string]interface{})
 			repoName := repository["name"].(string)
 			repoOwner := repository["owner"].(map[string]interface{})["login"].(string)
+			repoID, _ := repository["id"].(json.Number).Int64()
 
 			checkSuite := payload["check_suite"].(map[string]interface{})
+
+			headCommit := checkSuite["head_commit"].(map[string]interface{})
 			headSHA := checkSuite["head_sha"].(string)
+			message := headCommit["message"].(string)
+
 			l.Info("check suite requested", slog.String("owner", repoOwner), slog.String("repo", repoName), slog.String("head_sha", headSHA))
 
-			// Create 3 builds: both run for 10 seconds, then 1 fails, 1 succeeds, 1 never stops (always "queued")
-			go func() {
-				err := h.createCheckRun(r.Context(), repoOwner, repoName, headSHA, "i will pass", "success")
-				if err != nil {
-					l.Error("error creating check run", slog.Any("error", err))
-					w.WriteHeader(http.StatusInternalServerError)
-					_, _ = fmt.Fprintf(w, "Error creating check run: %v", err)
-				}
-			}()
+			// Create 3 random builds
+			h.worker.Add(data.NewBuild{
+				RepoID:    repoID,
+				CommitSHA: headSHA,
+				CommitMsg: message,
+			})
 
-			go func() {
-				err = h.createCheckRun(r.Context(), repoOwner, repoName, headSHA, "i will fail", "failure")
-				if err != nil {
-					l.Error("error creating check run", slog.Any("error", err))
-					w.WriteHeader(http.StatusInternalServerError)
-					_, _ = fmt.Fprintf(w, "Error creating check run: %v", err)
-				}
-			}()
+			// Create 3 random builds
+			h.worker.Add(data.NewBuild{
+				RepoID:    repoID,
+				CommitSHA: headSHA,
+				CommitMsg: message,
+			})
 
-			go func() {
-				err = h.createCheckRun(r.Context(), repoOwner, repoName, headSHA, "i will keep running", "queued")
-				if err != nil {
-					l.Error("error creating check run", slog.Any("error", err))
-					w.WriteHeader(http.StatusInternalServerError)
-					_, _ = fmt.Fprintf(w, "Error creating check run: %v", err)
-				}
-			}()
+			// Create 3 random builds
+			h.worker.Add(data.NewBuild{
+				RepoID:    repoID,
+				CommitSHA: headSHA,
+				CommitMsg: message,
+			})
 		}
-	//case "check_run":
-	//	// https://docs.github.com/en/webhooks/webhook-events-and-payloads?actionType=created#check_run
-	//	repository := payload["repository"].(map[string]interface{})
-	//	repoName := repository["name"].(string)
-	//	repoOwner := repository["owner"].(map[string]interface{})["login"].(string)
-	//
-	//	checkRun := payload["check_run"].(map[string]interface{})
-	//	headSHA := checkRun["head_sha"].(string)
-	//	err := createCheckRun(r.Context(), repoOwner, repoName, headSHA)
-	//	if err != nil {
-	//		msg := "error creating check run"
-	//		l.Error(msg, slog.Any("error", err))
-	//		http.Error(w, msg, http.StatusInternalServerError)
-	//		return
-	//	}
+	case "installation_repositories":
+		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories
+		if payload["action"] == "added" {
+			addedRepositories := payload["repositories_added"].([]interface{})
+			for _, repository := range addedRepositories {
+				repositoryID, _ := repository.(map[string]interface{})["id"].(json.Number).Int64()
+				userID, _ := payload["sender"].(map[string]interface{})["id"].(json.Number).Int64()
+				err := h.repoRepo.Create(r.Context(), data.Repo{
+					ID:     repositoryID,
+					Name:   repository.(map[string]interface{})["name"].(string),
+					UserID: userID,
+				})
+				if err != nil {
+					l.Error("error creating repository", slog.Any("error", err))
+				}
+			}
+		}
+
+		if payload["action"] == "removed" {
+			addedRepositories := payload["repositories_removed"].([]interface{})
+			for _, repository := range addedRepositories {
+				repositoryID, _ := repository.(map[string]interface{})["id"].(json.Number).Int64()
+				err := h.repoRepo.Delete(r.Context(), repositoryID)
+				if err != nil {
+					l.Error("error deleting repository", slog.Any("error", err))
+				}
+			}
+		}
+
 	default:
 		l.Error("unknown event", slog.String("event", event))
 	}
-}
-
-// TODO: accept context, and access logger and authenticated HTTP client from there?
-
-// Returns immediately and starts a goroutine in the background
-func (h WebhookHandler) createCheckRun(ctx context.Context, owner, repo, sha string, msg string, conclusion string) error {
-	// START: NEW PORT THAT WRITES TO WORKER
-
-	h.worker.Add(data.NewBuild{
-		RepoID:    1,
-		CommitSHA: sha,
-	})
-
-	// END: NEW PORT THAT WRITES TO WORKER
-
-	l := ctx.Value(ctxLogger{}).(*slog.Logger)
-	githubInstallationClient := ctx.Value(ctxGHInstallationClient{}).(http.Client)
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/check-runs", owner, repo)
-
-	body := map[string]interface{}{
-		"head_sha":    sha,
-		"name":        msg + ", started at: " + fmt.Sprint(time.Now().Format(time.RFC822Z)),
-		"details_url": "https://garden.pacia.com",
-		"status":      "in_progress",
-	}
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("marshalling body to JSON: %w", err)
-	}
-
-	// Don't use context ctx here, because it'll get canceled by caller
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return fmt.Errorf("creating request: %w", err)
-	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	res, err := githubInstallationClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("sending POST request: %w", err)
-	}
-
-	respBody := make([]byte, 0)
-	_, err = res.Body.Read(respBody)
-	if err != nil {
-		return fmt.Errorf("reading response body: %w", err)
-	}
-
-	l.Info("initial request made", slog.Int("status", res.StatusCode), slog.String("body", string(respBody)))
-
-	time.Sleep(10 * time.Second)
-	switch conclusion {
-	case "success":
-		body["status"] = "completed"
-		body["conclusion"] = "success"
-	case "failure":
-		body["status"] = "completed"
-		body["conclusion"] = "failure"
-	default:
-		// no conclusion, keep running this
-	}
-
-	bodyBytes, err = json.Marshal(body)
-	if err != nil {
-		return fmt.Errorf("marshalling body to JSON: %w", err)
-	}
-
-	req, err = http.NewRequest(http.MethodPost, url, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return fmt.Errorf("creating request: %w", err)
-	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	res, err = githubInstallationClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("sending POST request: %w", err)
-	}
-
-	l.Info("final request made", slog.Int("status", res.StatusCode), slog.String("body", string(respBody)))
-
-	return nil
 }

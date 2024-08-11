@@ -35,6 +35,9 @@ func WithLogger(next http.Handler) http.Handler {
 			slog.String("path", r.URL.Path),
 			slog.String("request_id", makeRequestID()),
 		)
+		if r.Header.Get("X-GitHub-Event") != "" {
+			l = l.With(slog.String("event", r.Header.Get("X-GitHub-Event")))
+		}
 		l.Info("new request")
 
 		ctx := r.Context()
@@ -140,7 +143,14 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 
 		// extract installation ID from the request body
 
-		installationIDStr := payload["installation"].(map[string]interface{})["id"].(json.Number).String()
+		installation, ok := payload["installation"].(map[string]interface{})
+		if !ok {
+			l.Error("installation key not found in payload")
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		installationIDStr := installation["id"].(json.Number).String()
 		installationID, err := strconv.ParseInt(installationIDStr, 10, 64)
 		if err != nil {
 			l.Error("error parsing installation id", slog.Any("error", err))
@@ -184,7 +194,13 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 			return
 		}
 
-		appInstallationToken := payload["token"].(string)
+		appInstallationToken, ok := payload["token"].(string)
+		if !ok {
+			l.Error("token key not found in payload")
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		appInstallationClient := http.Client{
 			Transport: &BearerTransport{Token: appInstallationToken},
 		}

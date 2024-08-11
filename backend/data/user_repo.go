@@ -8,20 +8,20 @@ import (
 )
 
 type NewUser struct {
-	ID           uint64
+	ID           int64
 	AccessToken  string
 	RefreshToken string
 }
 
 type User struct {
-	ID           uint64 `db:"user_id"`
+	ID           int64  `db:"user_id"`
 	AccessToken  string `db:"access_token"`
 	RefreshToken string `db:"refresh_token"`
 }
 
 type UserRepo interface {
 	Create(ctx context.Context, user NewUser) (err error)
-	GetByID(ctx context.Context, id uint64) (user User, err error)
+	GetByID(ctx context.Context, id int64) (user User, err error)
 }
 
 type PostgresUserRepo struct {
@@ -45,7 +45,7 @@ func (p PostgresUserRepo) Create(ctx context.Context, user NewUser) (err error) 
 	return nil
 }
 
-func (p PostgresUserRepo) GetByID(ctx context.Context, id uint64) (user User, err error) {
+func (p PostgresUserRepo) GetByID(ctx context.Context, id int64) (user User, err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
 		SELECT id, access_token, refresh_token
 		FROM bee_schema.users

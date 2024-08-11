@@ -1,11 +1,13 @@
 package queue
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/bartekpacia/ghapp/data"
@@ -58,4 +60,60 @@ func (l Listener) Start(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+// Returns immediately and starts a goroutine in the background
+func (l Listener) createCheckRun(ctx context.Context, build data.Build) error {
+	logger := l.logger
+
+	// FIXME: FIMXE!!
+	owner := "bartekpacia"
+	repo := "dumbpkg"
+
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/check-runs", owner, repo)
+
+	// githubInstallationClient := ctx.Value(ctxGHInstallationClient{}).(http.Client)
+	githubInstallationClient := http.DefaultClient
+
+	body := map[string]interface{}{
+		"external_id": build.ID,
+		"head_sha":    build.CommitSHA,
+		"name":        "build.CommitMSG" + ", started at: " + fmt.Sprint(time.Now().Format(time.RFC822Z)),
+		"details_url": "https://garden.pacia.com",
+		"status":      build.Status,
+	}
+	if build.Conclusion != nil {
+		body["conclusion"] = build.Conclusion
+		body["completed_at"] = build.UpdatedAt
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("marshalling body to JSON: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	resp, err := githubInstallationClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("sending POST request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	respBodyBytes := make([]byte, 0)
+	_, err = resp.Body.Read(respBodyBytes)
+	if err != nil {
+		return fmt.Errorf("reading response body: %w", err)
+	}
+
+	logger.Info("request made", slog.Int("status", resp.StatusCode), slog.String("body", string(respBodyBytes)))
+
+	return nil
 }

@@ -9,16 +9,17 @@ import (
 )
 
 type NewBuild struct {
-	RepoID    uint64
+	RepoID    int64
 	CommitSHA string
+	CommitMsg string
 }
 
 // Build represents a build in the database.
 //
 // The JSON struct tags are only to be used when receiving a row from LISTEN/NOTIFY.
 type Build struct {
-	ID         uint64    `db:"id" json:"id"`
-	RepoID     uint64    `db:"repo_id" json:"repo_id"`
+	ID         int64    `db:"id" json:"id"`
+	RepoID     int64    `db:"repo_id" json:"repo_id"`
 	CommitSHA  string    `db:"commit_sha" json:"commit_sha"`
 	Status     string    `db:"status" json:"status"`
 	Conclusion *string   `db:"conclusion" json:"conclusion"`
@@ -27,27 +28,27 @@ type Build struct {
 }
 
 type BuildRepo interface {
-	Create(ctx context.Context, build NewBuild) (id uint64, err error)
-	UpdateStatus(ctx context.Context, id uint64, status string) (err error)
-	SetConclusion(ctx context.Context, id uint64, conclusion string) (err error)
-	GetAll(ctx context.Context, repoID uint64) (builds []NewBuild, err error)
+	Create(ctx context.Context, build NewBuild) (id int64, err error)
+	UpdateStatus(ctx context.Context, id int64, status string) (err error)
+	SetConclusion(ctx context.Context, id int64, conclusion string) (err error)
+	GetAll(ctx context.Context, repoID int64) (builds []NewBuild, err error)
 }
 
 type PostgresBuildRepo struct {
 	db *sqlx.DB
 }
 
-func (p PostgresBuildRepo) Create(ctx context.Context, build NewBuild) (id uint64, err error) {
+func (p PostgresBuildRepo) Create(ctx context.Context, build NewBuild) (id int64, err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
-		INSERT INTO bee_schema.builds (repo_id, commit_sha, status)
-		VALUES ($1, $2, 'queued')
+		INSERT INTO bee_schema.builds (repo_id, commit_sha, commit_message, status)
+		VALUES ($1, $2, $3, 'queued')
 		RETURNING id
 	`)
 	if err != nil {
 		return 0, fmt.Errorf("preparing query: %v", err)
 	}
 
-	err = stmt.GetContext(ctx, &id, build.RepoID, build.CommitSHA)
+	err = stmt.GetContext(ctx, &id, build.RepoID, build.CommitSHA, build.CommitMsg)
 	if err != nil {
 		return 0, fmt.Errorf("executing INSERT query: %v", err)
 	}
@@ -58,7 +59,7 @@ func (p PostgresBuildRepo) Create(ctx context.Context, build NewBuild) (id uint6
 // UpdateStatus sets the status of a build. Available values are: "queued", "in_progress", "completed".
 //
 // See https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
-func (p PostgresBuildRepo) UpdateStatus(ctx context.Context, id uint64, status string) (err error) {
+func (p PostgresBuildRepo) UpdateStatus(ctx context.Context, id int64, status string) (err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
 		UPDATE bee_schema.builds
 		SET status = $2
@@ -79,10 +80,10 @@ func (p PostgresBuildRepo) UpdateStatus(ctx context.Context, id uint64, status s
 // SetConclusion sets the conclusion of a build. Available values are: "canceled", "failure", "success", "timed_out".
 //
 // See https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
-func (p PostgresBuildRepo) SetConclusion(ctx context.Context, id uint64, conclusion string) (err error) {
+func (p PostgresBuildRepo) SetConclusion(ctx context.Context, id int64, conclusion string) (err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
 		UPDATE bee_schema.builds
-		SET status = 'completed', conclusion = $2Ó
+		SET status = 'completed', conclusion = $2
 		WHERE id = $1
 	`)
 	if err != nil {
@@ -99,7 +100,7 @@ func (p PostgresBuildRepo) SetConclusion(ctx context.Context, id uint64, conclus
 
 // TODO: refactor to only get builds for a specific user
 
-func (p PostgresBuildRepo) GetAll(ctx context.Context, repoID uint64) (builds []NewBuild, err error) {
+func (p PostgresBuildRepo) GetAll(ctx context.Context, repoID int64) (builds []NewBuild, err error) {
 	builds = make([]NewBuild, 0)
 	err = p.db.SelectContext(ctx, builds, "SELECT * FROM bee_schema.builds WHERE repo_id = $1", repoID)
 	if err != nil {

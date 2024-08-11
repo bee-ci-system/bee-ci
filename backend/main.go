@@ -98,9 +98,10 @@ func main() {
 
 	buildRepo := data.NewPostgresBuildRepo(db)
 	userRepo := data.NewPostgresUserRepo(db)
+	repoRepo := data.NewPostgresRepoRepo(db)
 
 	w := worker.New(ctx, buildRepo)
-	webhooks := NewWebhookHandler(userRepo, w)
+	webhooks := NewWebhookHandler(userRepo, repoRepo, w)
 	app := NewApp(buildRepo)
 
 	mux := http.NewServeMux()

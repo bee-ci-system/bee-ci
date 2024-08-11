@@ -1,4 +1,4 @@
-// Package worker implements a worker that executes jobs.
+// Package worker implements a Worker that executes jobs.
 //
 // It spawns a single goroutine per new job.
 package worker
@@ -12,22 +12,24 @@ import (
 	"github.com/bartekpacia/ghapp/data"
 )
 
-type Worker interface {
-	Add(build data.NewBuild)
-}
-
-type worker struct {
+type Worker struct {
 	ctx       context.Context
 	buildRepo data.BuildRepo
 }
 
-func (w worker) Add(build data.NewBuild) {
+func New(ctx context.Context, buildRepo data.BuildRepo) *Worker {
+	return &Worker{
+		ctx:       ctx,
+		buildRepo: buildRepo,
+	}
+}
+
+func (w Worker) Add(build data.NewBuild) {
 	go w.job(build)
 }
 
-func (w worker) job(build data.NewBuild) {
+func (w Worker) job(build data.NewBuild) {
 	slog.Info("Starting job for build")
-	// Do some work
 	buildId, err := w.buildRepo.Create(w.ctx, build)
 	if err != nil {
 		slog.Error("failed to create build", slog.Any("error", err))
@@ -35,7 +37,7 @@ func (w worker) job(build data.NewBuild) {
 		return
 	}
 
-	slog.Info("job queued", slog.Uint64("build_id", buildId))
+	slog.Info("job queued", slog.Int64("build_id", buildId))
 
 	time.Sleep(5 * time.Second)
 	err = w.buildRepo.UpdateStatus(w.ctx, buildId, "in_progress")
@@ -44,7 +46,7 @@ func (w worker) job(build data.NewBuild) {
 		return
 	}
 
-	slog.Info("job running", slog.Uint64("build_id", buildId))
+	slog.Info("job running", slog.Int64("build_id", buildId))
 
 	time.Sleep(5 * time.Second)
 
@@ -56,20 +58,13 @@ func (w worker) job(build data.NewBuild) {
 			return
 		}
 
-		slog.Info("job failed", slog.Uint64("build_id", buildId))
+		slog.Info("job failed", slog.Int64("build_id", buildId))
 	} else {
 		err := w.buildRepo.SetConclusion(w.ctx, buildId, "success")
 		if err != nil {
 			slog.Error("failed to update success conclusion", slog.Any("error", err))
 			return
 		}
-		slog.Info("job succeeded", slog.Uint64("build_id", buildId))
-	}
-}
-
-func New(ctx context.Context, buildRepo data.BuildRepo) Worker {
-	return &worker{
-		ctx:       ctx,
-		buildRepo: buildRepo,
+		slog.Info("job succeeded", slog.Int64("build_id", buildId))
 	}
 }
