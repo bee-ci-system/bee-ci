@@ -9,12 +9,14 @@ import (
 
 type NewUser struct {
 	ID           int64
+	Username     string
 	AccessToken  string
 	RefreshToken string
 }
 
 type User struct {
-	ID           int64  `db:"user_id"`
+	ID           int64  `db:"id"`
+	Username     string `db:"username"`
 	AccessToken  string `db:"access_token"`
 	RefreshToken string `db:"refresh_token"`
 }
@@ -30,14 +32,14 @@ type PostgresUserRepo struct {
 
 func (p PostgresUserRepo) Create(ctx context.Context, user NewUser) (err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
-		INSERT INTO bee_schema.users (id, access_token, refresh_token)
-		VALUES ($1, $2, $3)
+		INSERT INTO bee_schema.users (id, username, access_token, refresh_token)
+		VALUES ($1, $2, $3, $4)
 	`)
 	if err != nil {
 		return fmt.Errorf("preparing query: %v", err)
 	}
 
-	_, err = stmt.ExecContext(ctx, user.ID, user.AccessToken, user.RefreshToken)
+	_, err = stmt.ExecContext(ctx, user.ID, user.Username, user.AccessToken, user.RefreshToken)
 	if err != nil {
 		return fmt.Errorf("executing INSERT query: %v", err)
 	}
@@ -47,7 +49,7 @@ func (p PostgresUserRepo) Create(ctx context.Context, user NewUser) (err error) 
 
 func (p PostgresUserRepo) GetByID(ctx context.Context, id int64) (user User, err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
-		SELECT id, access_token, refresh_token
+		SELECT id, username, access_token, refresh_token
 		FROM bee_schema.users
 		WHERE id = $1
 	`)

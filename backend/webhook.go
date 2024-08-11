@@ -196,7 +196,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	action, _ := payload["action"].(string)
-	l.Info("handling webhook",
+	l.Debug("handling webhook",
 		slog.Any("action", action),
 		slog.Int64("installation_id", installationID),
 	)
@@ -212,46 +212,13 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		if payload["action"] == "created" {
 			repositories := payload["repositories"].([]interface{})
 			l.Info("app installation created", slog.Any("id", installation["id"]), slog.String("login", login), slog.Int("repositories", len(repositories)))
+
+			// CREATE user, add their repos
 		}
 		if payload["action"] == "deleted" {
 			l.Info("app installation deleted", slog.Any("id", installation["id"]), slog.String("login", login))
-		}
-	case "check_suite":
-		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#check_suite
-		if payload["action"] == "requested" || payload["action"] == "rerequested" {
-			repository := payload["repository"].(map[string]interface{})
-			repoName := repository["name"].(string)
-			repoOwner := repository["owner"].(map[string]interface{})["login"].(string)
-			repoID, _ := repository["id"].(json.Number).Int64()
 
-			checkSuite := payload["check_suite"].(map[string]interface{})
-
-			headCommit := checkSuite["head_commit"].(map[string]interface{})
-			headSHA := checkSuite["head_sha"].(string)
-			message := headCommit["message"].(string)
-
-			l.Info("check suite requested", slog.String("owner", repoOwner), slog.String("repo", repoName), slog.String("head_sha", headSHA))
-
-			// Create 3 random builds
-			h.worker.Add(data.NewBuild{
-				RepoID:    repoID,
-				CommitSHA: headSHA,
-				CommitMsg: message,
-			})
-
-			// Create 3 random builds
-			h.worker.Add(data.NewBuild{
-				RepoID:    repoID,
-				CommitSHA: headSHA,
-				CommitMsg: message,
-			})
-
-			// Create 3 random builds
-			h.worker.Add(data.NewBuild{
-				RepoID:    repoID,
-				CommitSHA: headSHA,
-				CommitMsg: message,
-			})
+			// DELETE user, their repos and builds
 		}
 	case "installation_repositories":
 		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories
@@ -280,6 +247,43 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 					l.Error("error deleting repository", slog.Any("error", err))
 				}
 			}
+		}
+	case "check_suite":
+		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#check_suite
+		if payload["action"] == "requested" || payload["action"] == "rerequested" {
+			repository := payload["repository"].(map[string]interface{})
+			repoName := repository["name"].(string)
+			repoOwner := repository["owner"].(map[string]interface{})["login"].(string)
+			repoID, _ := repository["id"].(json.Number).Int64()
+
+			checkSuite := payload["check_suite"].(map[string]interface{})
+
+			headCommit := checkSuite["head_commit"].(map[string]interface{})
+			headSHA := checkSuite["head_sha"].(string)
+			message := headCommit["message"].(string)
+
+			l.Debug("check suite requested", slog.String("owner", repoOwner), slog.String("repo", repoName), slog.String("head_sha", headSHA))
+
+			// Create 3 random builds
+			h.worker.Add(data.NewBuild{
+				RepoID:    repoID,
+				CommitSHA: headSHA,
+				CommitMsg: message,
+			})
+
+			// Create 3 random builds
+			h.worker.Add(data.NewBuild{
+				RepoID:    repoID,
+				CommitSHA: headSHA,
+				CommitMsg: message,
+			})
+
+			// Create 3 random builds
+			h.worker.Add(data.NewBuild{
+				RepoID:    repoID,
+				CommitSHA: headSHA,
+				CommitMsg: message,
+			})
 		}
 
 	default:

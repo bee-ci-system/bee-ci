@@ -46,11 +46,11 @@ func (l Listener) Start(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			l.logger.Info("context cancelled, stopping listener")
+			l.logger.Debug("context cancelled, stopping listener")
 			_ = l.listener.Close()
 			return nil
 		case msg := <-l.listener.Notify:
-			l.logger.Info("received notification", slog.Any("channel", msg.Channel))
+			l.logger.Debug("received notification", slog.Any("channel", msg.Channel))
 
 			updatedBuild := data.Build{}
 			err := json.Unmarshal([]byte(msg.Extra), &updatedBuild)

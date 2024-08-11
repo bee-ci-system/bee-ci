@@ -3,11 +3,9 @@ package main
 import (
 	"context"
 	"crypto/rsa"
-	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"log/slog"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,8 +23,6 @@ import (
 
 	_ "github.com/lib/pq"
 )
-
-const defaultPort = "8080"
 
 var (
 	githubAppID   int64
@@ -49,7 +45,7 @@ func main() {
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 
 	slog.SetDefault(setUpLogging())
-	slog.Info("server is starting...")
+	slog.Debug("server is starting...")
 
 	var err error
 	githubAppID, err = strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
@@ -168,15 +164,4 @@ func setUpLogging() *slog.Logger {
 		handler := tint.NewHandler(os.Stdout, &opts)
 		return slog.New(handler)
 	}
-}
-
-// MakeRequestID generates a short, random hash for use as a request ID.
-func makeRequestID() string {
-	randomData := make([]byte, 10)
-	for i := range randomData {
-		randomData[i] = byte(rand.Intn(256))
-	}
-
-	strHash := fmt.Sprintf("%x", sha256.Sum256(randomData))
-	return strHash[:7]
 }

@@ -8,8 +8,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/felixge/httpsnoop"
 	"io"
 	"log/slog"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -30,23 +32,26 @@ func WithTrailingSlashes(next http.Handler) http.Handler {
 
 func WithLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		l := slog.With(
+		logger := slog.With(slog.String("request_id", makeRequestID()))
+
+		props := []any{
 			slog.String("method", r.Method),
 			slog.String("path", r.URL.Path),
-			slog.String("request_id", makeRequestID()),
-		)
-		if r.Header.Get("X-GitHub-Event") != "" {
-			l = l.With(slog.String("event", r.Header.Get("X-GitHub-Event")))
 		}
-		l.Info("new request")
+		if r.Header.Get("X-GitHub-Event") != "" {
+			props = append(props, slog.String("event", r.Header.Get("X-GitHub-Event")))
+		}
+		logger.Info("new request", props...)
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, ctxLogger{}, l)
+		ctx = context.WithValue(ctx, ctxLogger{}, logger)
 		r = r.Clone(ctx)
 
-		next.ServeHTTP(w, r)
+		metrics := httpsnoop.CaptureMetrics(next, w, r) // this calls next.ServeHTTP
+		props = append(props, slog.Int("code", metrics.Code))
+		props = append(props, slog.String("duration", metrics.Duration.String()))
 
-		l.Info("request completed")
+		logger.Info("request completed", props...)
 	})
 }
 
@@ -204,11 +209,22 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		appInstallationClient := http.Client{
 			Transport: &BearerTransport{Token: appInstallationToken},
 		}
-		l.Info("installation access token obtained", slog.Any("token", appInstallationToken))
+		l.Debug("installation access token obtained", slog.Any("token", appInstallationToken))
 
 		ctx := context.WithValue(r.Context(), ctxGHInstallationClient{}, appInstallationClient)
 		r = r.Clone(ctx)
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// MakeRequestID generates a short, random hash for use as a request ID.
+func makeRequestID() string {
+	randomData := make([]byte, 10)
+	for i := range randomData {
+		randomData[i] = byte(rand.Intn(256))
+	}
+
+	strHash := fmt.Sprintf("%x", sha256.Sum256(randomData))
+	return strHash[:7]
 }
