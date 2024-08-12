@@ -118,8 +118,8 @@ func (p PostgresBuildRepo) SetConclusion(ctx context.Context, id int64, conclusi
 
 func (p PostgresBuildRepo) GetAll(ctx context.Context, userID int64) (builds []FatBuild, err error) {
 	builds = make([]FatBuild, 0)
-	err = p.db.SelectContext(ctx, builds, `
-         		SELECT builds.*, repos.name AS repo_name, users.id AS user_id, users.name AS user_name
+	err = p.db.SelectContext(ctx, &builds, `
+         		SELECT builds.*, repos.name AS repo_name, users.id AS user_id, users.username AS user_name
          		FROM bee_schema.builds builds
          		JOIN bee_schema.repos repos ON builds.repo_id = repos.id
          		JOIN bee_schema.users users ON repos.user_id = users.id

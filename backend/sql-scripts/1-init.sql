@@ -42,12 +42,3 @@ CREATE TABLE bee_schema.builds
         conclusion IS NULL OR status = 'completed'
         )
 );
-
-INSERT INTO bee_schema.users (id, username, access_token, refresh_token)
-VALUES (-3, 'example_user', 'access_token', 'refresh_token');
-
-INSERT INTO bee_schema.repos (id, name, user_id)
-VALUES (-2, 'example_repo', -3);
-
-INSERT INTO bee_schema.builds (repo_id, commit_sha, commit_message, status)
-VALUES (-2, '1234567890abcdef', 'example commit message', 'queued');
