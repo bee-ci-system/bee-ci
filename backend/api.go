@@ -28,22 +28,43 @@ func (a *App) Mux() http.Handler {
 		// For now, let's assume that the userID is in header
 		userID, err := strconv.ParseInt(r.Header.Get("X-User-ID"), 10, 64)
 		if err != nil {
-			http.Error(w, "invalid user ID", http.StatusBadRequest)
+			msg := "invalid user ID"
+			slog.Debug(msg, slog.Any("error", err))
+			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
 
 		// var bartekpaciaID int64 = 40357511
 		// userID := bartekpaciaID
+		var result []data.FatBuild
 
-		builds, err := a.BuildRepo.GetAll(r.Context(), userID)
-		if err != nil {
-			msg := "failed to get builds"
-			slog.Error(msg, slog.Any("error", err))
-			http.Error(w, msg, http.StatusInternalServerError)
-			return
+		if r.URL.Query().Get("repo_id") == "" {
+			result, err = a.BuildRepo.GetAll(r.Context(), userID)
+			if err != nil {
+				msg := "failed to get all builds"
+				slog.Debug(msg, slog.Any("error", err))
+				http.Error(w, msg, http.StatusInternalServerError)
+				return
+			}
+		} else {
+			repoID, err := strconv.ParseInt(r.URL.Query().Get("repo_id"), 10, 64)
+			if err != nil {
+				msg := "invalid repo ID"
+				slog.Debug(msg, slog.Any("error", err))
+				http.Error(w, msg, http.StatusBadRequest)
+				return
+			}
+
+			result, err = a.BuildRepo.GetAllByRepoID(r.Context(), userID, repoID)
+			if err != nil {
+				msg := "failed to get builds by repo id"
+				slog.Debug(msg, slog.Any("error", err))
+				http.Error(w, msg, http.StatusInternalServerError)
+				return
+			}
 		}
 
-		responseBodyBytes, err := json.Marshal(builds)
+		responseBodyBytes, err := json.Marshal(result)
 		if err != nil {
 			msg := "failed to marshal builds"
 			slog.Error(msg, slog.Any("error", err))

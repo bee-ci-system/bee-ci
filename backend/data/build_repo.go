@@ -3,8 +3,10 @@ package data
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
+	l "github.com/bartekpacia/ghapp/internal/logger"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -40,8 +42,8 @@ type FatBuild struct {
 
 type BuildRepo interface {
 	Create(ctx context.Context, build NewBuild) (id int64, err error)
-	UpdateStatus(ctx context.Context, id int64, status string) (err error)
-	SetConclusion(ctx context.Context, id int64, conclusion string) (err error)
+	UpdateStatus(ctx context.Context, buildID int64, status string) (err error)
+	SetConclusion(ctx context.Context, buildID int64, conclusion string) (err error)
 
 	// GetAll returns all builds for all repositories of userID.
 	GetAll(ctx context.Context, userID int64) (builds []FatBuild, err error)
@@ -75,7 +77,7 @@ func (p PostgresBuildRepo) Create(ctx context.Context, build NewBuild) (id int64
 // UpdateStatus sets the status of a build. Available values are: "queued", "in_progress", "completed".
 //
 // See https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
-func (p PostgresBuildRepo) UpdateStatus(ctx context.Context, id int64, status string) (err error) {
+func (p PostgresBuildRepo) UpdateStatus(ctx context.Context, buildID int64, status string) (err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
 		UPDATE bee_schema.builds
 		SET status = $2
@@ -85,7 +87,7 @@ func (p PostgresBuildRepo) UpdateStatus(ctx context.Context, id int64, status st
 		return fmt.Errorf("preparing query: %v", err)
 	}
 
-	_, err = stmt.ExecContext(ctx, id, status)
+	_, err = stmt.ExecContext(ctx, buildID, status)
 	if err != nil {
 		return fmt.Errorf("executing UPDATE query: %v", err)
 	}
@@ -96,7 +98,7 @@ func (p PostgresBuildRepo) UpdateStatus(ctx context.Context, id int64, status st
 // SetConclusion sets the conclusion of a build. Available values are: "canceled", "failure", "success", "timed_out".
 //
 // See https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
-func (p PostgresBuildRepo) SetConclusion(ctx context.Context, id int64, conclusion string) (err error) {
+func (p PostgresBuildRepo) SetConclusion(ctx context.Context, buildID int64, conclusion string) (err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
 		UPDATE bee_schema.builds
 		SET status = 'completed', conclusion = $2
@@ -106,7 +108,7 @@ func (p PostgresBuildRepo) SetConclusion(ctx context.Context, id int64, conclusi
 		return fmt.Errorf("preparing query: %v", err)
 	}
 
-	_, err = stmt.ExecContext(ctx, id, conclusion)
+	_, err = stmt.ExecContext(ctx, buildID, conclusion)
 	if err != nil {
 		return fmt.Errorf("executing UPDATE query: %v", err)
 	}
@@ -117,6 +119,9 @@ func (p PostgresBuildRepo) SetConclusion(ctx context.Context, id int64, conclusi
 // TODO: refactor to only get builds for a specific user
 
 func (p PostgresBuildRepo) GetAll(ctx context.Context, userID int64) (builds []FatBuild, err error) {
+	logger, _ := l.FromContext(ctx)
+	logger.Debug("BuildRepo.GetAll", slog.Any("userID", userID))
+
 	builds = make([]FatBuild, 0)
 	err = p.db.SelectContext(ctx, &builds, `
          		SELECT builds.*, repos.name AS repo_name, users.id AS user_id, users.username AS user_name
@@ -126,17 +131,26 @@ func (p PostgresBuildRepo) GetAll(ctx context.Context, userID int64) (builds []F
          		WHERE users.id = $1
 		 	`, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("executing SELECT query for userID %d: %v", userID, err)
 	}
 
 	return builds, nil
 }
 
 func (p PostgresBuildRepo) GetAllByRepoID(ctx context.Context, userID, repoID int64) (builds []FatBuild, err error) {
+	logger, _ := l.FromContext(ctx)
+	logger.Debug("BuildRepo.GetAllByRepoID", slog.Any("userID", userID), slog.Any("repoID", repoID))
+
 	builds = make([]FatBuild, 0)
-	err = p.db.SelectContext(ctx, builds, "SELECT * FROM bee_schema.builds WHERE repo_id = $1", repoID)
+	err = p.db.SelectContext(ctx, &builds, `
+         		SELECT builds.*, repos.name AS repo_name, users.id AS user_id, users.username AS user_name
+         		FROM bee_schema.builds builds
+         		JOIN bee_schema.repos repos ON builds.repo_id = repos.id
+         		JOIN bee_schema.users users ON repos.user_id = users.id
+         		WHERE users.id = $1 AND repos.id = $2
+		 	`, userID, repoID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("executing SELECT query for userID %d and repo ID %d: %v", userID, repoID, err)
 	}
 
 	return builds, nil

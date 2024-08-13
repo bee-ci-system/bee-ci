@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/bartekpacia/ghapp/data"
+	l "github.com/bartekpacia/ghapp/internal/logger"
 	"github.com/bartekpacia/ghapp/worker"
 )
 
@@ -52,8 +53,9 @@ func (h WebhookHandler) Mux() http.Handler {
 }
 
 func (h WebhookHandler) githubUserInfo(ctx context.Context, accessToken string) (map[string]interface{}, error) {
-	l := ctx.Value(ctxLogger{}).(*slog.Logger)
 	const url = "https://api.github.com/user"
+
+	logger, _ := l.FromContext(ctx)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -79,7 +81,7 @@ func (h WebhookHandler) githubUserInfo(ctx context.Context, accessToken string) 
 	}
 
 	// TODO: store user data in a database
-	l.Info("authenticated user",
+	logger.Info("authenticated user",
 		slog.Any("login", userData["login"]),
 		slog.Any("id", userData["id"]),
 		slog.Any("name", userData["name"]),
@@ -143,7 +145,7 @@ func (h WebhookHandler) exchangeCode(ctx context.Context, code string) (userAcce
 //
 // [web application flow]: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#web-application-flow
 func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Request) {
-	l := r.Context().Value(ctxLogger{}).(*slog.Logger)
+	logger, _ := l.FromContext(r.Context())
 
 	code := r.URL.Query().Get("code")
 	if code == "" {
@@ -153,26 +155,26 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 
 	accessToken, err := h.exchangeCode(r.Context(), code)
 	if err != nil {
-		l.Error("error exchanging code for access token", slog.Any("error", err))
+		logger.Error("error exchanging code for access token", slog.Any("error", err))
 		http.Error(w, "error exchanging code for access token", http.StatusInternalServerError)
 		return
 	}
 
 	_, err = h.githubUserInfo(r.Context(), accessToken)
 	if err != nil {
-		l.Error("error getting user info", slog.Any("error", err))
+		logger.Error("error getting user info", slog.Any("error", err))
 		http.Error(w, "error getting user info", http.StatusInternalServerError)
 		return
 	}
 
 	msg := fmt.Sprintf("Successfully authorized! Got code %s and exchanged it for a user access token ending in %s", code, accessToken[len(accessToken)-9:])
-	l.Info(msg)
+	logger.Info(msg)
 
 	_, _ = fmt.Fprint(w, msg)
 }
 
 func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
-	l := r.Context().Value(ctxLogger{}).(*slog.Logger)
+	logger, _ := l.FromContext(r.Context())
 
 	decoder := json.NewDecoder(r.Body)
 	decoder.UseNumber()
@@ -181,7 +183,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&payload)
 	if err != nil {
 		msg := "error reading request body"
-		l.Error(msg, slog.Any("error", err))
+		logger.Error(msg, slog.Any("error", err))
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
@@ -189,14 +191,14 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	installationIDStr := payload["installation"].(map[string]interface{})["id"].(json.Number).String()
 	installationID, err := strconv.ParseInt(installationIDStr, 10, 64)
 	if err != nil {
-		l.Error("error parsing installation id", slog.Any("error", err))
+		logger.Error("error parsing installation id", slog.Any("error", err))
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = fmt.Fprintf(w, "Error parsing installation id: %v", err)
 		return
 	}
 
 	action, _ := payload["action"].(string)
-	l.Debug("handling webhook",
+	logger.Debug("handling webhook",
 		slog.Any("action", action),
 		slog.Int64("installation_id", installationID),
 	)
@@ -215,7 +217,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			account := installation["account"].(map[string]interface{})
 			userID, _ := account["id"].(json.Number).Int64()
 
-			l.Info("app installation created", slog.Any("id", installation["id"]), slog.String("login", login), slog.Int("repositories", len(repositories)))
+			logger.Info("app installation created", slog.Any("id", installation["id"]), slog.String("login", login), slog.Int("repositories", len(repositories)))
 
 			err = h.userRepo.Create(r.Context(), data.NewUser{
 				ID:           userID,
@@ -224,7 +226,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				RefreshToken: "TODO",
 			})
 			if err != nil {
-				l.Error("error creating user", slog.Any("error", err))
+				logger.Error("error creating user", slog.Any("error", err))
 				w.WriteHeader(http.StatusInternalServerError)
 				break
 			}
@@ -232,7 +234,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			repos := mapRepos(userID, repositories)
 			err = h.repoRepo.Create(r.Context(), repos)
 			if err != nil {
-				l.Error("error creating repositories", slog.Any("error", err))
+				logger.Error("error creating repositories", slog.Any("error", err))
 				w.WriteHeader(http.StatusInternalServerError)
 				break
 			}
@@ -240,7 +242,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			// CREATE user, add their repos
 		}
 		if payload["action"] == "deleted" {
-			l.Info("app installation deleted", slog.Any("id", installation["id"]), slog.String("login", login))
+			logger.Info("app installation deleted", slog.Any("id", installation["id"]), slog.String("login", login))
 
 			// TODO: DELETE user, their repos and builds
 		}
@@ -253,7 +255,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			repos := mapRepos(userID, addedRepositories)
 			err = h.repoRepo.Create(r.Context(), repos)
 			if err != nil {
-				l.Error("error creating repositories", slog.Any("error", err))
+				logger.Error("error creating repositories", slog.Any("error", err))
 			}
 		}
 
@@ -267,7 +269,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 			err = h.repoRepo.Delete(r.Context(), repoIDs)
 			if err != nil {
-				l.Error("error deleting repositories", slog.Any("error", err))
+				logger.Error("error deleting repositories", slog.Any("error", err))
 			}
 		}
 	case "check_suite":
@@ -284,7 +286,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			headSHA := checkSuite["head_sha"].(string)
 			message := headCommit["message"].(string)
 
-			l.Debug("check suite requested", slog.String("owner", repoOwner), slog.String("repo", repoName), slog.String("head_sha", headSHA))
+			logger.Debug("check suite requested", slog.String("owner", repoOwner), slog.String("repo", repoName), slog.String("head_sha", headSHA))
 
 			// Create 3 random builds
 			h.worker.Add(data.NewBuild{
@@ -309,7 +311,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 
 	default:
-		l.Error("unknown event", slog.String("event", event))
+		logger.Error("unknown event", slog.String("event", event))
 	}
 }
 

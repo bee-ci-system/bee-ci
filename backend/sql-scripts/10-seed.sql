@@ -31,7 +31,7 @@ INSERT INTO bee_schema.users (id, username, access_token, refresh_token)
 VALUES (-101, 'johnny', 'access_token', 'refresh_token');
 
 INSERT INTO bee_schema.repos (id, name, user_id)
-VALUES (-203, 'j_alpha', -100);
+VALUES (-203, 'j_alpha', -101);
 
 INSERT INTO bee_schema.builds (repo_id, commit_sha, commit_message, status)
 VALUES (-203, '1234567890jkl', 'j_alpha commit 1', 'queued');

@@ -12,10 +12,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bartekpacia/ghapp/listener"
-
 	"github.com/bartekpacia/ghapp/data"
+	l "github.com/bartekpacia/ghapp/internal/logger"
+	"github.com/bartekpacia/ghapp/listener"
 	"github.com/bartekpacia/ghapp/worker"
+
 	"github.com/jmoiron/sqlx"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -36,7 +37,6 @@ var (
 type (
 	ctxGHInstallationClient struct{}
 	ctxGHAppClient          struct{}
-	ctxLogger               struct{}
 )
 
 var db *sqlx.DB
@@ -82,9 +82,9 @@ func main() {
 	}
 	slog.Info("connected to database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
 
-	listener := queue.NewListener(db.DB, psqlInfo)
+	listen := listener.NewListener(db.DB, psqlInfo)
 	go func() {
-		err := listener.Start(ctx)
+		err := listen.Start(ctx)
 		if err != nil {
 			slog.Error("error starting listener", slog.Any("error", err))
 			panic(err)
@@ -116,8 +116,8 @@ func main() {
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
-	l := r.Context().Value(ctxLogger{}).(*slog.Logger)
-	l.Info("request received", slog.String("path", r.URL.Path))
+	logger, _ := l.FromContext(r.Context())
+	logger.Info("request received", slog.String("path", r.URL.Path))
 	_, _ = fmt.Fprintln(w, "hello world")
 }
 

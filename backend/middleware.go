@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/felixge/httpsnoop"
 	"io"
 	"log/slog"
 	"math/rand"
@@ -17,6 +16,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/felixge/httpsnoop"
+
+	l "github.com/bartekpacia/ghapp/internal/logger"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -44,7 +46,7 @@ func WithLogger(next http.Handler) http.Handler {
 		logger.Info("new request", props...)
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, ctxLogger{}, logger)
+		ctx = context.WithValue(ctx, logger, logger)
 		r = r.Clone(ctx)
 
 		metrics := httpsnoop.CaptureMetrics(next, w, r) // this calls next.ServeHTTP
@@ -95,7 +97,7 @@ func WithWebhookSecret(next http.Handler) http.Handler {
 
 func WithAuthenticatedApp(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		l := r.Context().Value(ctxLogger{}).(*slog.Logger)
+		logger, _ := l.FromContext(r.Context())
 
 		claims := jwt.MapClaims{
 			"iat": time.Now().Unix(),
@@ -106,7 +108,7 @@ func WithAuthenticatedApp(next http.Handler) http.Handler {
 		token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 		tokenStr, err := token.SignedString(rsaPrivateKey)
 		if err != nil {
-			l.Error("error signing JWT", slog.Any("error", err))
+			logger.Error("error signing JWT", slog.Any("error", err))
 			http.Error(w, "error signing JWT", http.StatusInternalServerError)
 			return
 		}
@@ -122,7 +124,7 @@ func WithAuthenticatedApp(next http.Handler) http.Handler {
 
 func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		l := r.Context().Value(ctxLogger{}).(*slog.Logger)
+		logger, _ := l.FromContext(r.Context())
 
 		// read request body
 		b, err := io.ReadAll(r.Body)
@@ -140,7 +142,7 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		var payload map[string]interface{}
 		err = decoder.Decode(&payload)
 		if err != nil {
-			l.Error("error reading body", slog.Any("error", err))
+			logger.Error("error reading body", slog.Any("error", err))
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "Error reading body: %v", err)
 			return
@@ -150,7 +152,7 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 
 		installation, ok := payload["installation"].(map[string]interface{})
 		if !ok {
-			l.Error("installation key not found in payload")
+			logger.Error("installation key not found in payload")
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -158,7 +160,7 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		installationIDStr := installation["id"].(json.Number).String()
 		installationID, err := strconv.ParseInt(installationIDStr, 10, 64)
 		if err != nil {
-			l.Error("error parsing installation id", slog.Any("error", err))
+			logger.Error("error parsing installation id", slog.Any("error", err))
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "Error parsing installation id: %v", err)
 			return
@@ -171,7 +173,7 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		res, err := appClient.Post(url, "application/json", nil)
 		if err != nil {
 			msg := "error calling endpoint " + url
-			l.Error(msg, slog.Any("error", err))
+			logger.Error(msg, slog.Any("error", err))
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
@@ -194,14 +196,14 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		err = decoder.Decode(&payload)
 		if err != nil {
 			msg := fmt.Sprint("error reading response body from " + res.Request.URL.String())
-			l.Error(msg, slog.Any("error", err))
+			logger.Error(msg, slog.Any("error", err))
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
 
 		appInstallationToken, ok := payload["token"].(string)
 		if !ok {
-			l.Error("token key not found in payload")
+			logger.Error("token key not found in payload")
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -209,7 +211,7 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		appInstallationClient := http.Client{
 			Transport: &BearerTransport{Token: appInstallationToken},
 		}
-		l.Debug("installation access token obtained", slog.Any("token", appInstallationToken))
+		logger.Debug("installation access token obtained", slog.Any("token", appInstallationToken))
 
 		ctx := context.WithValue(r.Context(), ctxGHInstallationClient{}, appInstallationClient)
 		r = r.Clone(ctx)
