@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "bee-ci",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
