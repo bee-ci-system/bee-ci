@@ -48,11 +48,7 @@ func main() {
 	slog.Debug("server is starting...")
 
 	var err error
-	githubAppID, err = strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
-	if err != nil {
-		slog.Error("APP_ID env var not set or not a valid int64", slog.Any("error", err))
-		os.Exit(1)
-	}
+	githubAppID = MustGetenvInt64("GITHUB_APP_ID")
 	webhookSecret = MustGetenv("GITHUB_APP_WEBHOOK_SECRET")
 	privateKeyBase64 := MustGetenv("GITHUB_APP_PRIVATE_KEY_BASE64")
 	privateKey, err := base64.StdEncoding.DecodeString(privateKeyBase64)
@@ -128,6 +124,16 @@ func MustGetenv(varname string) string {
 		os.Exit(1)
 	}
 	return value
+}
+
+func MustGetenvInt64(varname string) int64 {
+	value := MustGetenv(varname)
+	i, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		slog.Error(varname+" env var is not a valid int64", slog.Any("error", err))
+		os.Exit(1)
+	}
+	return i
 }
 
 func setUpLogging() *slog.Logger {
