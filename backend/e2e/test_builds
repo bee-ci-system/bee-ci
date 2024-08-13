@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+set -euo pipefail
+
+# test /builds endpoint
+
+curl \
+    -X GET \
+    -H 'X-User-ID: -100' \
+    http://localhost:8080/api/builds

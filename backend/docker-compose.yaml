@@ -1,21 +1,28 @@
 services:
   app:
     build: .
+    init: true
     ports:
-      - 8080:8080
+      - "8080:8080"
     depends_on:
       database:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
+      PORT: 8080
       DB_HOST: database
-      DB_USER: root
+      DB_PORT: 5432
+      DB_USER: postgres
       DB_PASSWORD: secret
       DB_NAME: bee
 
   database:
     image: postgres:16.3-alpine3.20
+    ports:
+      - "5432:5432"
     volumes:
-      - bee-mysql-data:/var/lib/mysql
+      - bee-postgres-data:/var/lib/postgresql/data
       - ./sql-scripts:/docker-entrypoint-initdb.d
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
@@ -23,8 +30,8 @@ services:
       timeout: 2s
       retries: 3
     environment:
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_DATABASE: bee
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
 
 volumes:
-  bee-mysql-data:
+  bee-postgres-data:

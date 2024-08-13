@@ -1,0 +1,24 @@
+meta {
+  name: List by repo ID
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:8080/api/builds?repo_id=-200
+  body: none
+  auth: none
+}
+
+params:query {
+  repo_id: -200
+}
+
+headers {
+  X-User-ID: -100
+}
+
+assert {
+  res.status: eq 200
+  res.body.length: eq 2
+}

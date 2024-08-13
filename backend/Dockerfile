@@ -11,6 +11,10 @@ RUN go mod download
 
 # Copy source files required for build
 COPY *.go ./
+COPY data/ ./data
+COPY worker/ ./worker
+COPY listener/ ./listener
+COPY internal/ ./internal
 RUN go build -o server .
 
 FROM alpine:3.20 AS runtime

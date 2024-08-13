@@ -1,5 +1,7 @@
 # backend
 
+We try to keep them to a **reasonable** minimum.
+
 ### Auth
 
 [GitHub Apps have three methods of authentication][link_1]. We support:
@@ -9,6 +11,33 @@
   installation access token
 - [ ] [Authenticating on behalf of a user][auth_gh_user]
 
+### Database
+
+We don't use an ORM, instead we use [sqlx](https://jmoiron.github.io/sqlx).
+
+[pgcli](https://www.pgcli.com) is a good client for PostgreSQL.
+
+```console
+pgcli -h localhost -p 5432 -u postgres -W -d bee
+```
+
+List schemas:
+
+```postgresql
+\dn
+```
+
+List tables:
+
+```postgresql
+\dt bee_schema.*
+```
+
+Example query:
+
+```postgresql
+SELECT * FROM bee_schema.users
+```
 
 ### Testing
 

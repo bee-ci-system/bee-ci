@@ -1,0 +1,20 @@
+meta {
+  name: List all
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:8080/api/builds
+  body: none
+  auth: none
+}
+
+headers {
+  X-User-ID: -100
+}
+
+assert {
+  res.status: eq 200
+  res.body.length: eq 4
+}
