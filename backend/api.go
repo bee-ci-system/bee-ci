@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/bartekpacia/ghapp/data"
+	l "github.com/bartekpacia/ghapp/internal/logger"
 )
 
 type App struct {
@@ -22,6 +23,8 @@ func NewApp(buildRepo data.BuildRepo) *App {
 func (a *App) Mux() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /builds/", func(w http.ResponseWriter, r *http.Request) {
+		logger, _ := l.FromContext(r.Context())
+
 		// Q: Where do we get userID from?
 		// A: From the JWT that was issued by our backend
 
@@ -29,7 +32,7 @@ func (a *App) Mux() http.Handler {
 		userID, err := strconv.ParseInt(r.Header.Get("X-User-ID"), 10, 64)
 		if err != nil {
 			msg := "invalid user ID"
-			slog.Debug(msg, slog.Any("error", err))
+			logger.Debug(msg, slog.Any("error", err))
 			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
@@ -42,7 +45,7 @@ func (a *App) Mux() http.Handler {
 			result, err = a.BuildRepo.GetAll(r.Context(), userID)
 			if err != nil {
 				msg := "failed to get all builds"
-				slog.Debug(msg, slog.Any("error", err))
+				logger.Debug(msg, slog.Any("error", err))
 				http.Error(w, msg, http.StatusInternalServerError)
 				return
 			}
@@ -50,7 +53,7 @@ func (a *App) Mux() http.Handler {
 			repoID, err := strconv.ParseInt(r.URL.Query().Get("repo_id"), 10, 64)
 			if err != nil {
 				msg := "invalid repo ID"
-				slog.Debug(msg, slog.Any("error", err))
+				logger.Debug(msg, slog.Any("error", err))
 				http.Error(w, msg, http.StatusBadRequest)
 				return
 			}
@@ -58,7 +61,7 @@ func (a *App) Mux() http.Handler {
 			result, err = a.BuildRepo.GetAllByRepoID(r.Context(), userID, repoID)
 			if err != nil {
 				msg := "failed to get builds by repo id"
-				slog.Debug(msg, slog.Any("error", err))
+				logger.Debug(msg, slog.Any("error", err))
 				http.Error(w, msg, http.StatusInternalServerError)
 				return
 			}
@@ -67,7 +70,7 @@ func (a *App) Mux() http.Handler {
 		responseBodyBytes, err := json.Marshal(result)
 		if err != nil {
 			msg := "failed to marshal builds"
-			slog.Error(msg, slog.Any("error", err))
+			logger.Error(msg, slog.Any("error", err))
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}

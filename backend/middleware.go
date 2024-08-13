@@ -46,7 +46,7 @@ func WithLogger(next http.Handler) http.Handler {
 		logger.Info("new request", props...)
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, logger, logger)
+		ctx = l.WithLogger(ctx, logger)
 		r = r.Clone(ctx)
 
 		metrics := httpsnoop.CaptureMetrics(next, w, r) // this calls next.ServeHTTP
