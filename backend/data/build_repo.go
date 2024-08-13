@@ -47,7 +47,7 @@ type BuildRepo interface {
 	GetAll(ctx context.Context, userID int64) (builds []FatBuild, err error)
 
 	// GetAllByRepoID returns all builds for the repository of repoID.
-	GetAllByRepoID(ctx context.Context, repoID int64) (builds []FatBuild, err error)
+	GetAllByRepoID(ctx context.Context, userID, repoID int64) (builds []FatBuild, err error)
 }
 
 type PostgresBuildRepo struct {
@@ -132,7 +132,7 @@ func (p PostgresBuildRepo) GetAll(ctx context.Context, userID int64) (builds []F
 	return builds, nil
 }
 
-func (p PostgresBuildRepo) GetAllByRepoID(ctx context.Context, repoID int64) (builds []FatBuild, err error) {
+func (p PostgresBuildRepo) GetAllByRepoID(ctx context.Context, userID, repoID int64) (builds []FatBuild, err error) {
 	builds = make([]FatBuild, 0)
 	err = p.db.SelectContext(ctx, builds, "SELECT * FROM bee_schema.builds WHERE repo_id = $1", repoID)
 	if err != nil {
