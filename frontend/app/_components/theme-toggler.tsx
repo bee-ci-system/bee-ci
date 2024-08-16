@@ -10,6 +10,8 @@ import {
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
+// from https://ui.shadcn.com/docs/dark-mode/next
+
 export function ThemeToggler() {
   const { setTheme } = useTheme();
 

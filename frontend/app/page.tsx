@@ -15,10 +15,10 @@ export default function Home() {
             <ContainerizationLottie />
           </div>
           <div className='w-3/5 sm:px-4'>
-            <p className='mb-6 text-center text-2xl font-medium lg:text-left'>
+            <p className='mb-6 text-center text-2xl font-medium text-white dark:text-primary lg:text-left'>
               🌐 Seamless GitHub Integration
             </p>
-            <p className='text-center lg:text-left'>
+            <p className='text-center text-white dark:text-primary lg:text-left'>
               Automatically trigger CI actions with
               <strong className='ml-1'>every pull request</strong>. Stay in sync
               with your team and streamline code reviews and merges.
@@ -30,10 +30,10 @@ export default function Home() {
             <AutomateWorkflowLottie loop={1} />
           </div>
           <div className='w-3/5'>
-            <p className='mb-6 text-center text-2xl font-medium lg:text-left'>
+            <p className='mb-6 text-center text-2xl font-medium text-white dark:text-primary lg:text-left'>
               Automate Your Workflow 🛠️
             </p>
-            <p className='text-center lg:text-left'>
+            <p className='text-center text-white dark:text-primary lg:text-left'>
               Define and manage your CI workflows easily with
               <strong className='ml-1'>YAML files</strong>. Customize every step
               of your build, test, and deploy processes.
@@ -45,10 +45,10 @@ export default function Home() {
             <GithubLottie />
           </div>
           <div className='mb-2 w-3/5 sm:px-4'>
-            <p className='mb-6 text-center text-2xl font-medium lg:text-left'>
+            <p className='mb-6 text-center text-2xl font-medium text-white dark:text-primary lg:text-left'>
               Containerized Testing 🐳
             </p>
-            <p className='text-center lg:text-left'>
+            <p className='text-center text-white dark:text-primary lg:text-left'>
               Run your tests in
               <strong className='ml-1'>isolated Docker containers</strong>.
               Ensure consistent and reliable results across different
@@ -61,10 +61,10 @@ export default function Home() {
             <StatisticsLottie loop={1} />
           </div>
           <div className='w-3/5 px-4'>
-            <p className='mb-6 text-center text-2xl font-medium lg:text-left'>
+            <p className='mb-6 text-center text-2xl font-medium text-white dark:text-primary lg:text-left'>
               📊 Real-time Monitoring
             </p>
-            <p className='text-center lg:text-left'>
+            <p className='text-center text-white dark:text-primary lg:text-left'>
               Keep track of your build and test results with
               <strong className='ml-1'>detailed logs and statistics</strong>.
               Monitor progress and quickly identify issues.

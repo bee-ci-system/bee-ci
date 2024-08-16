@@ -6,6 +6,8 @@ import { X } from 'lucide-react';
 import * as React from 'react';
 import { cn } from '../_utils/cn';
 
+// from https://ui.shadcn.com/docs/components/sheet
+
 const Sheet = SheetPrimitive.Root;
 
 const SheetTrigger = SheetPrimitive.Trigger;

@@ -4,6 +4,8 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import * as React from 'react';
 import { cn } from '../_utils/cn';
 
+// from https://ui.shadcn.com/docs/components/tooltip
+
 const TooltipProvider = TooltipPrimitive.Provider;
 
 const Tooltip = TooltipPrimitive.Root;
