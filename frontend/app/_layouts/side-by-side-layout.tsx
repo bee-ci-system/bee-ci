@@ -1,9 +1,12 @@
 import { BookOpen } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { ReactNode } from 'react';
-import { Button } from '../_components/button';
+import { Button, buttonVariants } from '../_components/button';
 import { GithubIcon } from '../_icons/github-icon';
+import { cn } from '../_utils/cn';
 import { authUrl } from '../_utils/constants';
+import { documentationRoutes } from '../_utils/routes';
 import { staticAssets } from '../_utils/static-assets';
 
 export const SideBySideLayout = ({ children }: { children: ReactNode }) => {
@@ -15,40 +18,52 @@ export const SideBySideLayout = ({ children }: { children: ReactNode }) => {
             src={staticAssets.logo.BEECI_LOGO_DARK_MODE}
             height={151}
             width={209}
-            alt='beeci logo'
+            alt='bee-ci logo'
           />
         </div>
         <div>
-          <p className='font-display flex flex-col whitespace-pre-wrap text-4xl/tight font-light text-white'>
+          <p className='font-display flex flex-col whitespace-pre-wrap text-4xl/tight font-light text-white dark:text-primary'>
             Open-source CI system
             <span className='text-beeci-yellow-400'>for modern developers</span>
           </p>
-          <p className='mt-4 text-sm/6'>
+          <p className='mt-4 text-sm/6 text-white dark:text-primary'>
             BeeCI is a streamlined CI tool you can rely on to automate your
             build, test, and deployment processes effortlessly. With simple YAML
             workflow definitions and seamless GitHub integration, it's
             efficient, user-friendly, and designed to make your development
             lifecycle buzz 🐝 with productivity.
           </p>
-          <Button className='mt-6 w-1/2 min-w-max py-4'>
-            <a href={authUrl}>Sign in with GitHub</a>
-          </Button>
-        </div>
-        <div className='flex w-full flex-col items-start text-sm lg:flex-row lg:gap-4 lg:gap-8'>
-          <Button variant='link' className='px-0'>
-            <BookOpen size={18} className='mr-1' />
-            Read documentation
-          </Button>
-          <Button variant='link' className='px-0'>
+          <Button className='mt-6 w-1/2 min-w-max bg-white py-4 dark:bg-white'>
             <a
-              href='https://github.com/kacaleksandra/bee-ci'
-              target='_blank'
-              className='flex'
+              href={authUrl}
+              className='text-black dark:text-primary-foreground'
             >
-              <GithubIcon className='mr-1 px-0' />
-              View on GitHub
+              Sign in with GitHub
             </a>
           </Button>
+        </div>
+        <div className='mb-4 flex w-full flex-col items-start text-sm lg:flex-row lg:gap-8'>
+          <Link
+            className={cn(
+              buttonVariants({ variant: 'link' }),
+              'px-0 text-white dark:text-primary',
+            )}
+            href={documentationRoutes[0].href}
+          >
+            <BookOpen size={18} className='mr-1 text-white dark:text-primary' />
+            Read documentation
+          </Link>
+          <a
+            href='https://github.com/kacaleksandra/bee-ci'
+            target='_blank'
+            className={cn(
+              buttonVariants({ variant: 'link' }),
+              'px-0 text-white dark:text-primary',
+            )}
+          >
+            <GithubIcon className='mr-1 px-0' />
+            View on GitHub
+          </a>
         </div>
       </div>
       <div className='bg-gray-950 md:w-7/12 md:overflow-y-scroll'>

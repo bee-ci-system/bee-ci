@@ -17,11 +17,11 @@ const BuildTile = (props: BuildTileProps) => {
   let color = '';
 
   if (status === 'success') {
-    color = ' bg-green-500';
+    color = 'bg-green-500';
   } else if (status === 'in_progress') {
-    color = ' bg-yellow-500';
+    color = 'bg-yellow-500';
   } else {
-    color = ' bg-red-500';
+    color = 'bg-red-500';
   }
 
   return (

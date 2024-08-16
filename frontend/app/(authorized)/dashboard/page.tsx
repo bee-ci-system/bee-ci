@@ -1,4 +1,4 @@
-import { BuildTile, BuildTileProps } from '@/app/_components/build-tile';
+import { BuildTile, BuildTileProps } from './_components/build-tile';
 
 const mockBuilds: BuildTileProps[] = [
   {

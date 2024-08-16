@@ -2,6 +2,9 @@
 
 import { FolderClosed, Home, Library, PanelLeft, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '../_utils/cn';
+import { routes } from '../_utils/routes';
 import { Button } from './button';
 import { Sheet, SheetContent, SheetTrigger } from './sheet';
 import { ThemeToggler } from './theme-toggler';
@@ -12,7 +15,20 @@ import {
   TooltipTrigger,
 } from './tooltip';
 
+const getNavLinkClassNames = (
+  currentPathname: string,
+  targetPathname: string,
+) => {
+  return cn(
+    currentPathname === targetPathname
+      ? 'bg-accent text-accent-foreground'
+      : 'text-muted-foreground',
+    'flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:text-foreground md:h-8 md:w-8',
+  );
+};
+
 const NavBar = () => {
+  const currentPathname = usePathname();
   return (
     <>
       <aside className='fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex'>
@@ -21,8 +37,11 @@ const NavBar = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  href='/dashboard'
-                  className='flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8'
+                  href={routes.DASHBOARD}
+                  className={getNavLinkClassNames(
+                    currentPathname,
+                    routes.DASHBOARD,
+                  )}
                 >
                   <Home className='h-5 w-5' />
                   <span className='sr-only'>Dashboard</span>
@@ -33,8 +52,11 @@ const NavBar = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  href='#'
-                  className='flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground transition-colors hover:text-foreground md:h-8 md:w-8'
+                  href={routes.MY_REPOSITORIES}
+                  className={getNavLinkClassNames(
+                    currentPathname,
+                    routes.MY_REPOSITORIES,
+                  )}
                 >
                   <FolderClosed className='h-5 w-5' />
                   <span className='sr-only'>My repositories</span>
@@ -45,8 +67,11 @@ const NavBar = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
-                  href='#'
-                  className='flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8'
+                  href={routes.DOCUMENTATION}
+                  className={getNavLinkClassNames(
+                    currentPathname,
+                    routes.DOCUMENTATION,
+                  )}
                 >
                   <Library className='h-5 w-5' />
                   <span className='sr-only'>Documentation</span>
@@ -97,7 +122,7 @@ const NavBar = () => {
                   My repositories
                 </Link>
                 <Link
-                  href='#'
+                  href={routes.documentationRoutes[0].href}
                   className='flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground'
                 >
                   <Library className='h-5 w-5' />
