@@ -139,8 +139,8 @@ func MustGetenvInt64(varname string) int64 {
 func setUpLogging() *slog.Logger {
 	// Configure logging
 	logLevel := slog.LevelDebug
-	prod := os.Getenv("K_SERVICE") != "" // https://cloud.google.com/run/docs/container-contract#services-env-vars
-	if prod {
+	gcpProd := os.Getenv("K_SERVICE") != "" // https://cloud.google.com/run/docs/container-contract#services-env-vars
+	if gcpProd {
 		// Based on https://github.com/remko/cloudrun-slog
 		const LevelCritical = slog.Level(12)
 		opts := &slog.HandlerOptions{
@@ -165,9 +165,18 @@ func setUpLogging() *slog.Logger {
 
 		gcpHandler := slog.NewJSONHandler(os.Stderr, opts)
 		return slog.New(gcpHandler)
-	} else {
+	}
+
+	flyioProd := os.Getenv("FLY_APP_NAME") != ""
+	if flyioProd {
+		// TODO: Remove time since it's provided by fly.io
+		//  https://github.com/lmittmann/tint/issues/73
 		opts := tint.Options{Level: logLevel, TimeFormat: time.TimeOnly, AddSource: true}
 		handler := tint.NewHandler(os.Stdout, &opts)
 		return slog.New(handler)
 	}
+
+	opts := tint.Options{Level: logLevel, TimeFormat: time.TimeOnly, AddSource: true}
+	handler := tint.NewHandler(os.Stdout, &opts)
+	return slog.New(handler)
 }
