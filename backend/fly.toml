@@ -1,23 +1,23 @@
-# fly.toml app configuration file generated for bee-ci on 2024-08-13T23:46:35+01:00
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
-app = 'bee-ci'
-primary_region = 'ewr'
+app = "bee-ci"
+primary_region = "ewr" # https://fly.io/docs/reference/regions/
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = 'stop'
+  auto_stop_machines = "stop"
   auto_start_machines = true
   min_machines_running = 0
-  processes = ['app']
+  processes = ["app"]
 
 [env]
   PORT = 8080
 
-# https://fly.io/docs/reference/configuration/#the-checks-section
+  DB_HOST = "bee-ci-postgres.flycast"
+  DB_PORT = 5432
+  DB_USER = "postgres"
+  # DB_PASSWORD is secret
+  DB_NAME = "postgres"
+
 [checks]
   [checks.name_of_your_http_check]
     grace_period = "30s"
@@ -29,6 +29,6 @@ primary_region = 'ewr'
     type = "http"
 
 [[vm]]
-  memory = '1gb'
-  cpu_kind = 'shared'
+  memory = "512mb"
+  cpu_kind = "shared"
   cpus = 1
