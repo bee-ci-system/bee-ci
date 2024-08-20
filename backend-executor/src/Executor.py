@@ -10,9 +10,9 @@ from InfluxDBCredentials import InfluxDBCredentials
 
 # Rest of the code...
 influxDBCredentials = InfluxDBCredentials(
-influxdbBucket = "test",
+influxdbBucket = "home",
 influxdbOrg = "beeci",
-influxdbToken = "x0bTbvN7wuQe6CJHVMGeWwofjxrrz6uTHzAMdFlcBv6_K3zF_rsjh2QsIsNI2azuyUZqC5dZgruens6h3TOoyw==",
+influxdbToken = "F7EGfgf3ckz7gzpFA3ZHrmHQpSl1-8nW_IwwmgF8BGNz4p9lX6Ew-mwcl_ryLfCL-JNrE6srwytikagNeLavyw==",
 influxdbUrl = "http://localhost:8086"
 )
 
@@ -22,13 +22,13 @@ class Executor:
         self.client = docker.from_env()
         self.influxdbHandler = InfluxDBHandler(influxDBCredentials)
     def copy_to(self, src, container):
-        os.chdir(os.path.dirname(src))
         srcname = os.path.basename(src)
         tar = tarfile.open(src + '.tar', mode='w')
         try:
             tar.add(srcname)
         finally:
             tar.close()
+        print("Tar file created")
 
         data = open(src + '.tar', 'rb').read()
 

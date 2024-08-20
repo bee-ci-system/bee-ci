@@ -6,6 +6,16 @@ import os
 import influxdb_client
 from influxdb_client.client.write_api import SYNCHRONOUS
 
+client = docker.from_env()
+influxdbBucket = "home"
+influxdbOrg = "beeci"
+influxdbToken = "oDPScfvTrwxr3kKbb22GNpgQsRQ57idolaLxD3UBIARU9AbWmjz6cb8yDcJSUHrHrRQ-omeOhmh09Rn7RSEStg=="
+influxdbUrl = "http://localhost:8086"
+influxdbClient = influxdb_client.InfluxDBClient(
+            url=influxdbUrl,
+            token=influxdbToken,
+            org=influxdbOrg
+        )
 
 def copy_to(src, container):
 
