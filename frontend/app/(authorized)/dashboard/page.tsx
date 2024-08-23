@@ -1,50 +1,52 @@
-import { BuildTile, BuildTileProps } from './_components/build-tile';
+import { getUserServer } from '@/app/_api/server';
+import { BadgeCheck, BadgeX, Computer } from 'lucide-react';
+import { getDashboardData } from './_api/server';
+import { PipelinesCard } from './_components/pipelines-card';
+import { MyRepositoriesCard } from './_components/repositories-card';
+import { StatsCard } from './_components/stats-card';
+import { calculatePercent } from './_utils/calculate-percent';
 
-const mockBuilds: BuildTileProps[] = [
-  {
-    id: '1',
-    status: 'queued',
-    repoOwner: 'bartekpacia',
-    repoName: 'dumb',
-    commitName: 'feat: add new feature',
-    commitSha: '76de3f7',
-  },
-  {
-    id: '2',
-    status: 'in_progress',
-    repoOwner: 'kacaleksandra',
-    repoName: 'sample',
-    commitName: 'fix: broken tests',
-    commitSha: '76de3f7',
-  },
-  {
-    id: '3',
-    status: 'success',
-    repoOwner: 'P3T3R',
-    repoName: 'test',
-    commitName: 'chore: update dependencies',
-    commitSha: '76de3f7',
-  },
-];
+const DashboardPage = async () => {
+  const [userInfo, dashboardData] = await Promise.all([
+    getUserServer(),
+    getDashboardData(),
+  ]);
 
-const DashboardPage = () => {
   return (
-    <main className='px-4 py-4'>
-      <h1 className='pb-4 text-4xl'>Dashboard</h1>
-      <main className='container flex flex-col gap-4'>
-        {mockBuilds.map((build) => (
-          <BuildTile
-            key={build.id}
-            id={build.id}
-            status={build.status}
-            repoOwner={build.repoOwner}
-            repoName={build.repoName}
-            commitName={build.commitName}
-            commitSha={build.commitSha}
+    <div className='flex min-h-screen w-full flex-col'>
+      <main className='flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8'>
+        <h1 className='prose-2xl ml-4 sm:-mt-16'>Hello {userInfo.name}!</h1>
+        <div className='grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3'>
+          <StatsCard
+            title='Total pipelines'
+            value={dashboardData.stats.totalPipelines}
+            icon={<Computer className='h-4 w-4 text-muted-foreground' />}
           />
-        ))}
+          <StatsCard
+            title='Successful pipelines'
+            value={dashboardData.stats.successfulPipelines}
+            icon={<BadgeCheck className='h-4 w-4 text-muted-foreground' />}
+            percent={calculatePercent(
+              dashboardData.stats.successfulPipelines,
+              dashboardData.stats.totalPipelines,
+            )}
+          />
+          <StatsCard
+            title='Unsuccessful pipelines'
+            value={dashboardData.stats.unsuccessfulPipelines}
+            icon={<BadgeX className='h-4 w-4 text-muted-foreground' />}
+            percent={calculatePercent(
+              dashboardData.stats.unsuccessfulPipelines,
+              dashboardData.stats.totalPipelines,
+            )}
+          />
+        </div>
+        <div className='grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3'>
+          <MyRepositoriesCard repositories={dashboardData.repositories} />
+          <PipelinesCard pipelines={dashboardData.pipelines} />
+        </div>
       </main>
-    </main>
+    </div>
   );
 };
 
