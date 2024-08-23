@@ -1,5 +1,3 @@
-'use client';
-
 import Image from 'next/image';
 import { staticAssets } from '../_utils/static-assets';
 
