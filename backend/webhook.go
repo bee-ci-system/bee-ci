@@ -145,7 +145,8 @@ func (h WebhookHandler) exchangeCode(ctx context.Context, code string) (userAcce
 //
 // [web application flow]: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#web-application-flow
 func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Request) {
-	logger, _ := l.FromContext(r.Context())
+	ctx := r.Context()
+	logger, _ := l.FromContext(ctx)
 
 	code := r.URL.Query().Get("code")
 	if code == "" {
@@ -160,6 +161,7 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Make user request to GitHub to get data
 	_, err = h.githubUserInfo(r.Context(), accessToken)
 	if err != nil {
 		logger.Error("error getting user info", slog.Any("error", err))
@@ -169,6 +171,8 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 
 	msg := fmt.Sprintf("Successfully authorized! Got code %s and exchanged it for a user access token ending in %s", code, accessToken[len(accessToken)-9:])
 	logger.Info(msg, "access_token", accessToken)
+
+	// h.userRepo.Create(ctx)
 
 	_, _ = fmt.Fprint(w, msg)
 }
