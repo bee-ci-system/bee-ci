@@ -70,6 +70,9 @@ curl \
   https://api.github.com/repos/bartekpacia/discover_rudy
 ```
 
+This token can be entirely unrelated to the how sign in works in our webapp.
+
+Our webapp can issue a JWT that is completely independent from the access token.
 
 ## Database
 

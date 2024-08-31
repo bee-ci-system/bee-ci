@@ -219,6 +219,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 			logger.Info("app installation created", slog.Any("id", installation["id"]), slog.String("login", login), slog.Int("repositories", len(repositories)))
 
+			// TODO: This should happen when we handle web application flow (above in "exchangeCode" func)
 			err = h.userRepo.Create(r.Context(), data.NewUser{
 				ID:           userID,
 				Username:     account["login"].(string),
