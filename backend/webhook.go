@@ -168,7 +168,7 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 	}
 
 	msg := fmt.Sprintf("Successfully authorized! Got code %s and exchanged it for a user access token ending in %s", code, accessToken[len(accessToken)-9:])
-	logger.Info(msg)
+	logger.Info(msg, "access_token", accessToken)
 
 	_, _ = fmt.Fprint(w, msg)
 }

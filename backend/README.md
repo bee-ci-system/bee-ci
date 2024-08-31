@@ -13,7 +13,8 @@ We try to keep them to a **reasonable** minimum.
 
 ### How does auth work?
 
-The process is explained in the [Build a "Login" button tutorial][login_btn].
+We use a thing called [web application flow].
+It's also explained from the practical side in [Build a "Login" button tutorial][login_btn].
 
 Overall it looks like this:
 
@@ -36,8 +37,38 @@ Overall it looks like this:
   }
   ```
 
-  GitHub responds with an access token.
+- GitHub responds with an **access token**.
 
+### What is that access token?
+
+It looks like this:
+
+```
+ghu_Nr8ecJD8nWC4DKRvK694YpS8uJ5oHl0ix0sN
+```
+
+[TENTATIVE]
+- It's something like a PAT (Personal Access Token).
+- We persistently save it to a database and NEVER expose it to the user.
+  It's an important and sensitive secret!
+- Whenever we get a new token, we need to replace the old one.
+
+See also:
+- [GitHub's token format]
+
+### What can the access token be used for?
+
+The access token lets us to make requests to the API on a behalf of a user.
+
+For example, we can use it to access user's private repositories:
+
+```console
+curl \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  https://api.github.com/repos/bartekpacia/discover_rudy
+```
 
 
 ## Database
@@ -75,6 +106,7 @@ sends us.
 
 [ngrok](https://ngrok.com) is good for local testing of the backend.
 
+[web_appplication_flow]: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#web-application-flow
 [link_1]:
     https://docs.github.com/en/apps/creating-github-apps/writing-code-for-a-github-app/building-ci-checks-with-a-github-app#authenticating-as-a-github-app
 [login_btn]:
@@ -85,3 +117,4 @@ sends us.
     https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/authenticating-as-a-github-app-installation
 [auth_gh_user]:
     https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/authenticating-with-a-github-app-on-behalf-of-a-user
+[GitHub's token format]: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github#githubs-token-formats
