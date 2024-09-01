@@ -1,0 +1,4 @@
+[submodule "frontend"]
+	path = frontend
+	url = git@github.com:bartekpacia/bee-ci.git
+	branch = dockerize
