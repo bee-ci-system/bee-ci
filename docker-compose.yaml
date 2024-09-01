@@ -1,6 +1,12 @@
 services:
-  app:
-    build: .
+  frontend:
+    build: frontend
+    init: true
+    ports:
+      - "3000:3000"
+
+  backend:
+    build: backend
     init: true
     ports:
       - "8080:8080"
@@ -8,7 +14,7 @@ services:
       database:
         condition: service_healthy
     env_file:
-      - .env
+      - backend/.env
     environment:
       PORT: 8080
       DB_HOST: database
@@ -19,13 +25,11 @@ services:
 
   database:
     image: postgres:16.3-alpine3.20
-    ports:
-      - "5432:5432"
     volumes:
       - bee-postgres-data:/var/lib/postgresql/data
-      - ./sql-scripts:/docker-entrypoint-initdb.d
+      - ./backend/sql-scripts:/docker-entrypoint-initdb.d
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 2s
       timeout: 2s
       retries: 3
