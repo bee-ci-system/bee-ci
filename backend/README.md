@@ -109,7 +109,7 @@ sends us.
 
 [ngrok](https://ngrok.com) is good for local testing of the backend.
 
-[web_appplication_flow]: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#web-application-flow
+[web application flow]: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#web-application-flow
 [link_1]:
     https://docs.github.com/en/apps/creating-github-apps/writing-code-for-a-github-app/building-ci-checks-with-a-github-app#authenticating-as-a-github-app
 [login_btn]:

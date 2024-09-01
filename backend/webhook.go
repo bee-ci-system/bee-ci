@@ -200,7 +200,17 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 	msg := fmt.Sprintf("Successfully authorized! User %s (ID: %d) has been saved to the database.", username, userID)
 	logger.Info(msg, "access_token", accessToken)
 
-	_, _ = fmt.Fprint(w, msg)
+	// FIXME: This is getting set on the server's domain, not on the redirection target domain
+	cookie := &http.Cookie{
+		Name:  "auth_status",
+		Value: "success in cookie",
+		Path:  "/",
+	}
+	http.SetCookie(w, cookie)
+
+	logger.Info("Set auth_status cookie", slog.String("value", "success"))
+
+	http.Redirect(w, r, "https://bee-ci.vercel.app?auth_status=success", http.StatusSeeOther)
 }
 
 func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
