@@ -37,7 +37,7 @@ async function DocumentationPage({ params: { slug = [] } }: PageProps) {
 
 function Markdown({ children }: PropsWithChildren) {
   return (
-    <div className='prose-code:font-code prose prose-zinc dark:prose-invert prose-headings:scroll-m-20 prose-code:rounded-md prose-code:bg-neutral-100 prose-code:p-1 prose-code:text-sm prose-code:leading-6 prose-code:text-neutral-800 prose-code:before:content-none prose-code:after:content-none prose-pre:border prose-pre:bg-neutral-100 dark:prose-code:bg-neutral-900 dark:prose-code:text-white dark:prose-pre:bg-neutral-900 w-fit pt-2 sm:mx-auto'>
+    <div className='prose-code:font-code prose prose-zinc w-fit pt-2 dark:prose-invert prose-headings:scroll-m-20 prose-code:rounded-md prose-code:bg-neutral-100 prose-code:p-1 prose-code:text-sm prose-code:leading-6 prose-code:text-neutral-800 prose-code:before:content-none prose-code:after:content-none prose-pre:border prose-pre:bg-neutral-100 dark:prose-code:bg-neutral-900 dark:prose-code:text-white dark:prose-pre:bg-neutral-900 sm:mx-auto'>
       {children}
     </div>
   );
