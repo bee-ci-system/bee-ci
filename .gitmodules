@@ -1,0 +1,4 @@
+[submodule "frontend"]
+	path = frontend
+	url = git@github.com:kacaleksandra/bee-ci-frontend.git
+	branch = main

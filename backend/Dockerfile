@@ -1,8 +1,6 @@
-FROM golang:1.22-alpine3.20 AS builder
+FROM golang:1.23-alpine3.20 AS builder
 
 ARG CGO_ENABLED=0
-
-
 
 WORKDIR /tmp/server
 
