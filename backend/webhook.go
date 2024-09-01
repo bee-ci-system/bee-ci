@@ -162,17 +162,43 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Make user request to GitHub to get data
-	_, err = h.githubUserInfo(r.Context(), accessToken)
+	userData, err := h.githubUserInfo(r.Context(), accessToken)
 	if err != nil {
 		logger.Error("error getting user info", slog.Any("error", err))
 		http.Error(w, "error getting user info", http.StatusInternalServerError)
 		return
 	}
 
-	msg := fmt.Sprintf("Successfully authorized! Got code %s and exchanged it for a user access token ending in %s", code, accessToken[len(accessToken)-9:])
-	logger.Info(msg, "access_token", accessToken)
+	// Extract user information
+	userID, err := userData["id"].(json.Number).Int64()
+	if err != nil {
+		logger.Error("error parsing user ID", slog.Any("error", err))
+		http.Error(w, "error parsing user information", http.StatusInternalServerError)
+		return
+	}
 
-	// h.userRepo.Create(ctx)
+	username, ok := userData["login"].(string)
+	if !ok {
+		logger.Error("username not found or not a string")
+		http.Error(w, "error parsing user information", http.StatusInternalServerError)
+		return
+	}
+
+	// Save user to database
+	err = h.userRepo.Create(ctx, data.NewUser{
+		ID:           userID,
+		Username:     username,
+		AccessToken:  accessToken,
+		RefreshToken: "", // GitHub doesn't provide refresh tokens for OAuth Apps
+	})
+	if err != nil {
+		logger.Error("error saving user to database", slog.Any("error", err))
+		http.Error(w, "error saving user information", http.StatusInternalServerError)
+		return
+	}
+
+	msg := fmt.Sprintf("Successfully authorized! User %s (ID: %d) has been saved to the database.", username, userID)
+	logger.Info(msg, "access_token", accessToken)
 
 	_, _ = fmt.Fprint(w, msg)
 }
@@ -223,19 +249,6 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 			logger.Info("app installation created", slog.Any("id", installation["id"]), slog.String("login", login), slog.Int("repositories", len(repositories)))
 
-			// TODO: This should happen when we handle web application flow (above in "exchangeCode" func)
-			err = h.userRepo.Create(r.Context(), data.NewUser{
-				ID:           userID,
-				Username:     account["login"].(string),
-				AccessToken:  "TODO",
-				RefreshToken: "TODO",
-			})
-			if err != nil {
-				logger.Error("error creating user", slog.Any("error", err))
-				w.WriteHeader(http.StatusInternalServerError)
-				break
-			}
-
 			repos := mapRepos(userID, repositories)
 			err = h.repoRepo.Create(r.Context(), repos)
 			if err != nil {
@@ -243,13 +256,11 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusInternalServerError)
 				break
 			}
-
-			// CREATE user, add their repos
 		}
 		if payload["action"] == "deleted" {
 			logger.Info("app installation deleted", slog.Any("id", installation["id"]), slog.String("login", login))
 
-			// TODO: DELETE user, their repos and builds
+			// TODO: Delete all repos for this user
 		}
 	case "installation_repositories":
 		userID, _ := payload["sender"].(map[string]interface{})["id"].(json.Number).Int64()
