@@ -20,7 +20,7 @@ CREATE TABLE bee_schema.repos
     id      INTEGER PRIMARY KEY,   -- GitHub repo id
     name    VARCHAR(256) NOT NULL, -- name on GitHub (yes it can change, no we don't care)
     user_id INTEGER      NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES bee_schema.users (id)
+    FOREIGN KEY (user_id) REFERENCES bee_schema.users (id) ON DELETE CASCADE
 );
 
 -- Taken from https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
@@ -37,7 +37,7 @@ CREATE TABLE bee_schema.builds
     conclusion     build_conclusion,
     created_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (repo_id) REFERENCES bee_schema.repos (id),
+    FOREIGN KEY (repo_id) REFERENCES bee_schema.repos (id) ON DELETE CASCADE,
     CONSTRAINT status_completed_requires_conclusion CHECK (
         conclusion IS NULL OR status = 'completed'
         )

@@ -1,0 +1,13 @@
+# Inspired by:
+# - https://github.com/Vadorequest/JetBrains-Intellij-IDEA-.gitignore-best-practices
+# - https://github.com/salarmehr/idea-gitignore
+# - https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
+
+dataSources/
+inspectionProfiles/
+bee-ci.iml
+dataSources.local.xml
+misc.xml
+workspace.xml
+google-java-format.xml
+modules.xml
