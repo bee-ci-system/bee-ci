@@ -24,6 +24,7 @@ type User struct {
 type UserRepo interface {
 	Create(ctx context.Context, user NewUser) (err error)
 	GetByID(ctx context.Context, id int64) (user User, err error)
+	DeleteByID(ctx context.Context, id int64) (err error)
 }
 
 type PostgresUserRepo struct {
@@ -63,6 +64,23 @@ func (p PostgresUserRepo) GetByID(ctx context.Context, id int64) (user User, err
 	}
 
 	return user, nil
+}
+
+func (p PostgresUserRepo) DeleteByID(ctx context.Context, id int64) (err error) {
+	stmt, err := p.db.PreparexContext(ctx, `
+		DELETE FROM bee_schema.users
+		WHERE id = $1
+	`)
+	if err != nil {
+		return fmt.Errorf("preparing query: %v", err)
+	}
+
+	_, err = stmt.ExecContext(ctx, id)
+	if err != nil {
+		return fmt.Errorf("executing DELETE query: %v", err)
+	}
+
+	return nil
 }
 
 var _ UserRepo = &PostgresUserRepo{}

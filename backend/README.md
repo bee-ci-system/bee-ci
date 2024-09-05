@@ -19,7 +19,7 @@ It's also explained from the practical side in [Build a "Login" button tutorial]
 Overall it looks like this:
 
 - The user clicks the "Sign in with GitHub" button and is redirected
-  `https://github.com/login/oauth/authorize?client_id=$CLIENT_ID`
+  [https://github.com/login/oauth/authorize?client_id=Iv23liiZSvMGEpgOlexa]([https://github.com/login/oauth/authorize?client_id=Iv23liiZSvMGEpgOlexa])
 
   ![](./assets/demo.avif)
 
