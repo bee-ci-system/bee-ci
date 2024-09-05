@@ -1,4 +1,4 @@
-package logs
+package logger
 
 // Inspired by https://go.dev/blog/context
 

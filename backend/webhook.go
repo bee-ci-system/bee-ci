@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/golang-jwt/jwt/v5"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -14,6 +15,47 @@ import (
 	l "github.com/bartekpacia/ghapp/internal/logger"
 	"github.com/bartekpacia/ghapp/worker"
 )
+
+// Define your secret key (should be stored securely, e.g., in env variables)
+var jwtSecret = []byte("your-very-secret-key")
+
+// Function to create JWT tokens with claims
+func createToken(userID int64) (string, error) {
+	// Create a new JWT token with claims
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": strconv.FormatInt(userID, 10),
+		"iss": "bee-ci",
+		// "exp": time.Now().Add(time.Hour).Unix(), // Expiration time
+		"iat": time.Now().Unix(), // Issued at
+	})
+
+	// Print information about the created token
+	fmt.Printf("Token claims added: %+v\n", claims)
+
+	tokenString, err := claims.SignedString(jwtSecret)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
+// Function to verify JWT tokens
+func verifyToken(tokenString string) (*jwt.Token, error) {
+	// Parse the token with the secret key
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("parsing JWT: %w", err)
+	}
+
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid JWT")
+	}
+
+	return token, nil
+}
 
 type WebhookHandler struct {
 	userRepo   data.UserRepo
@@ -200,14 +242,29 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 	msg := fmt.Sprintf("Successfully authorized! User %s (ID: %d) has been saved to the database.", username, userID)
 	logger.Info(msg, "access_token", accessToken)
 
+	// Create JWT
+	token, err := createToken(userID)
+	if err != nil {
+		logger.Error("error creating token", slog.Any("error", err))
+		http.Error(w, "error creating token", http.StatusInternalServerError)
+		return
+	}
+
 	// FIXME: This is getting set on the server's domain, not on the redirection target domain
 	cookie := &http.Cookie{
 		Name:  "auth_status",
 		Value: "success in cookie",
 		Path:  "/",
 	}
-	http.SetCookie(w, cookie)
 
+	jwtTokenCookie := &http.Cookie{
+		Name:  "jwt_token",
+		Value: token,
+		Path:  "/",
+	}
+
+	http.SetCookie(w, cookie)
+	http.SetCookie(w, jwtTokenCookie)
 	logger.Info("Set auth_status cookie", slog.String("value", "success"))
 
 	http.Redirect(w, r, "https://bee-ci.vercel.app?auth_status=success", http.StatusSeeOther)

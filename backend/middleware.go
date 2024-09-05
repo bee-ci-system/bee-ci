@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/bartekpacia/ghapp/internal/userid"
 	"io"
 	"log/slog"
 	"math/rand"
@@ -214,6 +215,45 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		logger.Debug("installation access token obtained", slog.Any("token", appInstallationToken))
 
 		ctx := context.WithValue(r.Context(), ctxGHInstallationClient{}, appInstallationClient)
+		r = r.Clone(ctx)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func WithJWT(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// logger, _ := l.FromContext(r.Context())
+
+		tokenCookie, err := r.Cookie("jwt_token")
+		if err != nil {
+			http.Error(w, "missing JWT token", http.StatusUnauthorized)
+			return
+		}
+
+		// Verify the token
+		token, err := verifyToken(tokenCookie.Value)
+		if err != nil {
+			http.Error(w, "JWT verification failed", http.StatusUnauthorized)
+			return
+		}
+
+		subject, err := token.Claims.GetSubject()
+		if err != nil {
+			http.Error(w, "JWT verification failed (cannot retrieve subject)", http.StatusUnauthorized)
+			return
+		}
+
+		userID, err := strconv.ParseInt(subject, 10, 64)
+		if err != nil {
+			http.Error(w, "JWT verification failed (cannot parse subject)", http.StatusUnauthorized)
+			return
+		}
+
+		// Print information about the verified token
+		fmt.Printf("Token verified successfully. Claims: %+v\\n", token.Claims)
+
+		ctx := userid.WithUserID(r.Context(), userID)
 		r = r.Clone(ctx)
 
 		next.ServeHTTP(w, r)
