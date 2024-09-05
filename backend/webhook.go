@@ -227,6 +227,7 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// TODO: If the user exists, just update their info
 	// Save user to database
 	err = h.userRepo.Create(ctx, data.NewUser{
 		ID:           userID,
