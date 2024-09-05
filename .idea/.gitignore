@@ -4,6 +4,10 @@
 # - https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 
 dataSources/
+inspectionProfiles/
+bee-ci.iml
 dataSources.local.xml
 misc.xml
 workspace.xml
+google-java-format.xml
+modules.xml
