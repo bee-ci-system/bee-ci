@@ -62,5 +62,4 @@ func (w Worker) job(build data.NewBuild) {
 	}
 
 	slog.Debug("build finished", slog.Int64("build_id", buildId), slog.String("conclusion", conclusion))
-
 }

@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/bartekpacia/ghapp/internal/userid"
 	"log/slog"
 	"net/http"
 	"strconv"
+
+	"github.com/bartekpacia/ghapp/internal/userid"
 
 	"github.com/bartekpacia/ghapp/data"
 	l "github.com/bartekpacia/ghapp/internal/logger"

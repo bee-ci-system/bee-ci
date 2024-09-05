@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/bartekpacia/ghapp/data"
 	l "github.com/bartekpacia/ghapp/internal/logger"

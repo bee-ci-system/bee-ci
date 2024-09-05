@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/bartekpacia/ghapp/internal/userid"
 	"io"
 	"log/slog"
 	"math/rand"
@@ -16,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/bartekpacia/ghapp/internal/userid"
 
 	"github.com/felixge/httpsnoop"
 
