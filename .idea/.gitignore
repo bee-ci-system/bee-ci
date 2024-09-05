@@ -1,0 +1,9 @@
+# Inspired by:
+# - https://github.com/Vadorequest/JetBrains-Intellij-IDEA-.gitignore-best-practices
+# - https://github.com/salarmehr/idea-gitignore
+# - https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
+
+dataSources/
+dataSources.local.xml
+misc.xml
+workspace.xml
