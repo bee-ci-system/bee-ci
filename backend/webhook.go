@@ -227,6 +227,7 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// TODO: If the user exists, just update their info
 	// Save user to database
 	err = h.userRepo.Create(ctx, data.NewUser{
 		ID:           userID,
@@ -251,24 +252,16 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// FIXME: This is getting set on the server's domain, not on the redirection target domain
-	cookie := &http.Cookie{
-		Name:  "auth_status",
-		Value: "success in cookie",
-		Path:  "/",
-	}
-
 	jwtTokenCookie := &http.Cookie{
-		Name:  "jwt_token",
-		Value: token,
-		Path:  "/",
+		Name:   "jwt",
+		Value:  token,
+		Domain: "bee-ci.pacia.tech",
+		Path:   "/",
 	}
 
-	http.SetCookie(w, cookie)
 	http.SetCookie(w, jwtTokenCookie)
-	logger.Info("Set auth_status cookie", slog.String("value", "success"))
 
-	http.Redirect(w, r, "https://bee-ci.vercel.app?auth_status=success", http.StatusSeeOther)
+	http.Redirect(w, r, "https://app.bee-ci.vercel.app/dashboard", http.StatusSeeOther)
 }
 
 func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {

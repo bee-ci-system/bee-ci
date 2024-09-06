@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/go-github/v64/github"
+
 	"github.com/bartekpacia/ghapp/internal/userid"
 
 	"github.com/felixge/httpsnoop"
@@ -151,7 +153,6 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		}
 
 		// extract installation ID from the request body
-
 		installation, ok := payload["installation"].(map[string]interface{})
 		if !ok {
 			logger.Error("installation key not found in payload")
@@ -169,51 +170,20 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		}
 
 		// get app installation access token
-
-		url := fmt.Sprintf("https://api.github.com/app/installations/%d/access_tokens", installationID)
 		appClient := r.Context().Value(ctxGHAppClient{}).(http.Client)
-		res, err := appClient.Post(url, "application/json", nil)
+		gh := github.NewClient(&appClient)
+		res, _, err := gh.Apps.CreateInstallationToken(r.Context(), installationID, nil)
 		if err != nil {
-			msg := "error calling endpoint " + url
+			msg := "error creating app installation token"
 			logger.Error(msg, slog.Any("error", err))
 			http.Error(w, msg, http.StatusInternalServerError)
-			return
-		}
-
-		// read response body and extract the access token
-
-		// read body
-		b, err = io.ReadAll(res.Body)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("error reading request body: %v", err), http.StatusBadRequest)
-			return
-		}
-		body = bytes.NewBuffer(b)
-
-		// decode body from JSON into a map
-		decoder = json.NewDecoder(body)
-		decoder.UseNumber()
-
-		clear(payload)
-		err = decoder.Decode(&payload)
-		if err != nil {
-			msg := fmt.Sprint("error reading response body from " + res.Request.URL.String())
-			logger.Error(msg, slog.Any("error", err))
-			http.Error(w, msg, http.StatusInternalServerError)
-			return
-		}
-
-		appInstallationToken, ok := payload["token"].(string)
-		if !ok {
-			logger.Error("token key not found in payload")
-			next.ServeHTTP(w, r)
 			return
 		}
 
 		appInstallationClient := http.Client{
-			Transport: &BearerTransport{Token: appInstallationToken},
+			Transport: &BearerTransport{Token: *res.Token},
 		}
-		logger.Debug("installation access token obtained", slog.Any("token", appInstallationToken))
+		logger.Debug("installation access token obtained", slog.Any("token", *res.Token))
 
 		ctx := context.WithValue(r.Context(), ctxGHInstallationClient{}, appInstallationClient)
 		r = r.Clone(ctx)
@@ -226,7 +196,7 @@ func WithJWT(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// logger, _ := l.FromContext(r.Context())
 
-		tokenCookie, err := r.Cookie("jwt_token")
+		tokenCookie, err := r.Cookie("jwt")
 		if err != nil {
 			http.Error(w, "missing JWT token", http.StatusUnauthorized)
 			return
