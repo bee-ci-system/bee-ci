@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/google/go-github/v64/github"
 	"io"
 	"log/slog"
 	"math/rand"
@@ -16,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/go-github/v64/github"
 
 	"github.com/bartekpacia/ghapp/internal/userid"
 
@@ -195,7 +196,7 @@ func WithJWT(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// logger, _ := l.FromContext(r.Context())
 
-		tokenCookie, err := r.Cookie("jwt_token")
+		tokenCookie, err := r.Cookie("jwt")
 		if err != nil {
 			http.Error(w, "missing JWT token", http.StatusUnauthorized)
 			return
