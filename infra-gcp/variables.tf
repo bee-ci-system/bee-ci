@@ -25,7 +25,28 @@ variable "github_app_client_secret" {
 
 # Provider-specific variables
 
-variable "do_token" {
-  description = "DigitalOcean API token"
-  sensitive   = true
+# Asking for a project_id every time is annyoing.
+# variable "project_id" {}
+resource "random_string" "project_id" {
+  length  = 8
+  special = false
+  upper   = false
+}
+
+variable "credentials_file" {
+  description = "Path to the GCP credentials file"
+  type        = string
+}
+
+variable "billing_account_id" {
+  description = "Can be found with `gcloud billing accounts list`"
+  type        = string
+}
+
+variable "region" {
+  default = "us-central1"
+}
+
+variable "zone" {
+  default = "us-central1-c"
 }
