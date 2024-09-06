@@ -267,9 +267,9 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 
 	http.SetCookie(w, cookie)
 	http.SetCookie(w, jwtTokenCookie)
-	logger.Info("Set auth_status cookie", slog.String("value", "success"))
 
-	http.Redirect(w, r, "https://bee-ci.vercel.app?auth_status=success", http.StatusSeeOther)
+	// 2. REDIRECT DO APKI: frontend.bee-ci.pacia.tech
+	// http.Redirect(w, r, "https://bee-ci.vercel.app?auth_status=success", http.StatusSeeOther)
 }
 
 func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {

@@ -68,7 +68,7 @@ func main() {
 	dbUser := MustGetenv("DB_USER")
 	dbPassword := MustGetenv("DB_PASSWORD")
 	dbName := MustGetenv("DB_NAME")
-	dbOpts := "sslmode=disable"
+	dbOpts := MustGetenv("DB_OPTS")
 
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s %s", dbHost, dbPort, dbUser, dbPassword, dbName, dbOpts)
 	db, err = sqlx.Connect("postgres", psqlInfo)

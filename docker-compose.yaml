@@ -22,6 +22,7 @@ services:
       DB_USER: postgres
       DB_PASSWORD: secret
       DB_NAME: bee
+      DB_OPTS: sslmode=disable # sslmode=require for prod
 
   database:
     image: postgres:16.3-alpine3.20
