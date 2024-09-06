@@ -261,7 +261,7 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 
 	http.SetCookie(w, jwtTokenCookie)
 
-	http.Redirect(w, r, "https://app.bee-ci.vercel.app/dashboard", http.StatusSeeOther)
+	http.Redirect(w, r, "https://app.bee-ci.pacia.tech/dashboard", http.StatusSeeOther)
 }
 
 func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
