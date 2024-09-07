@@ -26,12 +26,12 @@ import (
 )
 
 var (
-	githubAppID   int64
-	webhookSecret string
-	rsaPrivateKey *rsa.PrivateKey
+	githubAppID            int64
+	githubAppWebhookSecret string
+	rsaPrivateKey          *rsa.PrivateKey
 
-	clientID     = os.Getenv("GITHUB_APP_CLIENT_ID")
-	clientSecret = os.Getenv("GITHUB_APP_CLIENT_SECRET")
+	githubAppClientID     string
+	githubAppClientSecret string
 )
 
 type (
@@ -49,7 +49,9 @@ func main() {
 
 	var err error
 	githubAppID = MustGetenvInt64("GITHUB_APP_ID")
-	webhookSecret = MustGetenv("GITHUB_APP_WEBHOOK_SECRET")
+	githubAppClientID = MustGetenv("GITHUB_APP_CLIENT_ID")
+	githubAppWebhookSecret = MustGetenv("GITHUB_APP_WEBHOOK_SECRET")
+	githubAppClientSecret = MustGetenv("GITHUB_APP_CLIENT_SECRET")
 	privateKeyBase64 := MustGetenv("GITHUB_APP_PRIVATE_KEY_BASE64")
 	privateKey, err := base64.StdEncoding.DecodeString(privateKeyBase64)
 	if err != nil {

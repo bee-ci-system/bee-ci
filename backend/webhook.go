@@ -137,8 +137,8 @@ func (h WebhookHandler) exchangeCode(ctx context.Context, code string) (userAcce
 	const url = "https://github.com/login/oauth/access_token"
 
 	reqBody := map[string]interface{}{
-		"client_id":     clientID,
-		"client_secret": clientSecret,
+		"client_id":     githubAppClientID,
+		"client_secret": githubAppClientSecret,
 		"code":          code,
 	}
 	reqBodyBytes, err := json.Marshal(reqBody)
