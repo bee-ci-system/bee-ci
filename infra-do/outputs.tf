@@ -13,4 +13,3 @@ output "live_url" {
   description = "The live URL for the app"
   value       = digitalocean_app.app.live_url
 }
-

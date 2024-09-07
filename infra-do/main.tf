@@ -30,7 +30,7 @@ resource "digitalocean_app" "app" {
     domain {
       name = "backend.bee-ci.pacia.tech"
       type = "ALIAS"
-      zone = "pacia.tech"
+      zone = "bee-ci.pacia.tech"
     }
 
     database {
@@ -180,6 +180,7 @@ resource "digitalocean_record" "backend" {
   domain = digitalocean_domain.main.id
   type   = "CNAME"
   name   = "backend"
-  value  = "bee-ci.pacia.tech."
+  value  = format("%s.", split("://", digitalocean_app.app.default_ingress)[1])
+  # value  = "bee-ci.pacia.tech."
 }
 
