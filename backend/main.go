@@ -116,7 +116,7 @@ func main() {
 func handleIndex(w http.ResponseWriter, r *http.Request) {
 	logger, _ := l.FromContext(r.Context())
 	logger.Info("request received", slog.String("path", r.URL.Path))
-	_, _ = fmt.Fprintln(w, "hello world")
+	_, _ = fmt.Fprintln(w, "hello world\n\nthis is bee-ci backend server")
 }
 
 func MustGetenv(varname string) string {
