@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/go-github/v64/github"
 
 	"github.com/bartekpacia/ghapp/data"
 	l "github.com/bartekpacia/ghapp/internal/logger"
@@ -268,45 +270,60 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	decoder.UseNumber()
 
-	var payload map[string]interface{}
-	err := decoder.Decode(&payload)
+	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		msg := "error reading request body"
+		msg := "failed to read request body"
 		logger.Error(msg, slog.Any("error", err))
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
 
-	installationIDStr := payload["installation"].(map[string]interface{})["id"].(json.Number).String()
-	installationID, err := strconv.ParseInt(installationIDStr, 10, 64)
+	eventType := github.WebHookType(r)
+	event, err := github.ParseWebHook(eventType, bodyBytes)
 	if err != nil {
-		logger.Error("error parsing installation id", slog.Any("error", err))
-		w.WriteHeader(http.StatusBadRequest)
-		_, _ = fmt.Fprintf(w, "Error parsing installation id: %v", err)
+		msg := "failed to parse webhook"
+		logger.Error(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
 
-	action, _ := payload["action"].(string)
-	logger.Debug("handling webhook",
-		slog.Any("action", action),
-		slog.Int64("installation_id", installationID),
-	)
+	// installationIDStr := payload["installation"].(map[strzxing]interface{})["id"].(json.Number).String()
+	// installationID, err := strconv.ParseInt(installationIDStr, 10, 64)
+	// if err != nil {
+	// 	logger.Error("error parsing installation id", slog.Any("error", err))
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	_, _ = fmt.Fprintf(w, "Error parsing installation id: %v", err)
+	// 	return
+	// }
 
-	// Check type of webhook event
-	event := r.Header.Get("X-GitHub-Event")
-	switch event {
-	case "installation":
-		installation := payload["installation"].(map[string]interface{})
-		login := installation["account"].(map[string]interface{})["login"].(string)
+	// action, _ := payload["action"].(string)
+	// logger.Debug("handling webhook",
+	// 	slog.Any("action", action),
+	// 	slog.Int64("installation_id", installationID),
+	// )
+
+	// // Check type of webhook event
+	// event := r.Header.Get("X-GitHub-Event")
+
+	switch event := event.(type) {
+	case *github.GitHubAppAuthorizationEvent:
+		// TODO: What to do when user revokes their authorization?
+		//  Idea 1: delete their all data. Problem: installation still exists?
+		//  Idea 2: kill their all JWTs and require reauthorization on next dashboard visit? Also stop running all their flows.
+	case *github.InstallationEvent:
+		installation := event.Installation
+		login := *installation.Account.Login
+		userID := *installation.Account.ID
 
 		// https://docs.github.com/en/webhooks/webhook-events-and-payloads?actionType=created#installation
-		if payload["action"] == "created" {
-			repositories := payload["repositories"].([]interface{})
+		if *event.Action == "created" {
+			repositories := event.Repositories
 
-			account := installation["account"].(map[string]interface{})
-			userID, _ := account["id"].(json.Number).Int64()
-
-			logger.Info("app installation created", slog.Any("id", installation["id"]), slog.String("login", login), slog.Int("repositories", len(repositories)))
+			logger.Info("app installation created",
+				slog.Any("id", installation.ID),
+				slog.String("login", login),
+				slog.Int("repositories", len(repositories)),
+			)
 
 			repos := mapRepos(userID, repositories)
 			err = h.repoRepo.Create(r.Context(), repos)
@@ -315,27 +332,27 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusInternalServerError)
 				break
 			}
-		}
-		if payload["action"] == "deleted" {
-			logger.Info("app installation deleted", slog.Any("id", installation["id"]), slog.String("login", login))
+		} else if *event.Action == "deleted" {
+			logger.Info("app installation deleted",
+				slog.Any("id", installation.ID),
+				slog.String("login", login),
+			)
 
 			// TODO: Delete all repos for this user
 		}
-	case "installation_repositories":
-		userID, _ := payload["sender"].(map[string]interface{})["id"].(json.Number).Int64()
+	case github.InstallationRepositoriesEvent:
+		userID := *event.Sender.ID
 
 		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories
-		if payload["action"] == "added" {
-			addedRepositories := payload["repositories_added"].([]interface{})
+		if *event.Action == "added" {
+			addedRepositories := event.RepositoriesAdded
 			repos := mapRepos(userID, addedRepositories)
 			err = h.repoRepo.Create(r.Context(), repos)
 			if err != nil {
 				logger.Error("error creating repositories", slog.Any("error", err))
 			}
-		}
-
-		if payload["action"] == "removed" {
-			removedRepositories := payload["repositories_removed"].([]interface{})
+		} else if *event.Action == "removed" {
+			removedRepositories := event.RepositoriesRemoved
 			repos := mapRepos(userID, removedRepositories)
 			repoIDs := make([]int64, 0, len(repos))
 			for _, repo := range repos {
@@ -347,56 +364,51 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				logger.Error("error deleting repositories", slog.Any("error", err))
 			}
 		}
-	case "check_suite":
+	case github.CheckSuiteEvent:
 		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#check_suite
-		if payload["action"] == "requested" || payload["action"] == "rerequested" {
-			repository := payload["repository"].(map[string]interface{})
-			repoName := repository["name"].(string)
-			repoOwner := repository["owner"].(map[string]interface{})["login"].(string)
-			repoID, _ := repository["id"].(json.Number).Int64()
+		if *event.Action == "requested" || *event.Action == "rerequested" {
+			headSHA := *event.CheckSuite.HeadCommit.SHA
+			message := *event.CheckSuite.HeadCommit.Message
 
-			checkSuite := payload["check_suite"].(map[string]interface{})
-
-			headCommit := checkSuite["head_commit"].(map[string]interface{})
-			headSHA := checkSuite["head_sha"].(string)
-			message := headCommit["message"].(string)
-
-			logger.Debug("check suite requested", slog.String("owner", repoOwner), slog.String("repo", repoName), slog.String("head_sha", headSHA))
+			logger.Debug("check suite requested",
+				slog.String("owner", *event.Repo.Owner.Login),
+				slog.String("repo", *event.Repo.Name),
+				slog.String("head_sha", headSHA),
+			)
 
 			// Create 3 random builds
 			h.worker.Add(data.NewBuild{
-				RepoID:    repoID,
+				RepoID:    *event.Repo.ID,
 				CommitSHA: headSHA,
 				CommitMsg: message,
 			})
 
 			// Create 3 random builds
 			h.worker.Add(data.NewBuild{
-				RepoID:    repoID,
+				RepoID:    *event.Repo.ID,
 				CommitSHA: headSHA,
 				CommitMsg: message,
 			})
 
 			// Create 3 random builds
 			h.worker.Add(data.NewBuild{
-				RepoID:    repoID,
+				RepoID:    *event.Repo.ID,
 				CommitSHA: headSHA,
 				CommitMsg: message,
 			})
 		}
 
 	default:
-		logger.Error("unknown event", slog.String("event", event))
+		logger.Error("unknown event", slog.String("event", eventType))
 	}
 }
 
-func mapRepos(userID int64, repositories []interface{}) []data.Repo {
+func mapRepos(userID int64, repositories []*github.Repository) []data.Repo {
 	repos := make([]data.Repo, 0, len(repositories))
 	for _, repo := range repositories {
-		repoID, _ := repo.(map[string]interface{})["id"].(json.Number).Int64()
 		repos = append(repos, data.Repo{
-			ID:     repoID,
-			Name:   repo.(map[string]interface{})["name"].(string),
+			ID:     *repo.ID,
+			Name:   *repo.Name,
 			UserID: userID,
 		})
 	}

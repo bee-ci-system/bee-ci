@@ -155,7 +155,7 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		// extract installation ID from the request body
 		installation, ok := payload["installation"].(map[string]interface{})
 		if !ok {
-			logger.Error("installation key not found in payload")
+			logger.Warn("installation key not found in payload")
 			next.ServeHTTP(w, r)
 			return
 		}
