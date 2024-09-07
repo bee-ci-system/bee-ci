@@ -22,7 +22,7 @@ type User struct {
 }
 
 type UserRepo interface {
-	Create(ctx context.Context, user NewUser) (err error)
+	Upsert(ctx context.Context, user NewUser) (err error)
 	GetByID(ctx context.Context, id int64) (user User, err error)
 	DeleteByID(ctx context.Context, id int64) (err error)
 }
@@ -31,10 +31,14 @@ type PostgresUserRepo struct {
 	db *sqlx.DB
 }
 
-func (p PostgresUserRepo) Create(ctx context.Context, user NewUser) (err error) {
+func (p PostgresUserRepo) Upsert(ctx context.Context, user NewUser) (err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
 		INSERT INTO bee_schema.users (id, username, access_token, refresh_token)
 		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (id) DO UPDATE
+		SET username = EXCLUDED.username,
+			access_token = EXCLUDED.access_token,
+			refresh_token = EXCLUDED.refresh_token
 	`)
 	if err != nil {
 		return fmt.Errorf("preparing query: %v", err)

@@ -227,17 +227,15 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// TODO: If the user exists, just update their info
-	// Save user to database
-	err = h.userRepo.Create(ctx, data.NewUser{
+	err = h.userRepo.Upsert(ctx, data.NewUser{
 		ID:           userID,
 		Username:     username,
 		AccessToken:  accessToken,
 		RefreshToken: "", // GitHub doesn't provide refresh tokens for OAuth Apps
 	})
 	if err != nil {
-		logger.Error("error saving user to database", slog.Any("error", err))
-		http.Error(w, "error saving user information", http.StatusInternalServerError)
+		logger.Error("error upserting user to database", slog.Any("error", err))
+		http.Error(w, "error upserting user to database", http.StatusInternalServerError)
 		return
 	}
 
