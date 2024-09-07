@@ -1,6 +1,3 @@
-CREATE DATABASE bee;
-GRANT ALL PRIVILEGES ON DATABASE bee TO "postgres";
-
 \c bee;
 
 CREATE SCHEMA bee_schema;

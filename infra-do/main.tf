@@ -29,8 +29,8 @@ resource "digitalocean_app" "app" {
 
     domain {
       name = "backend.bee-ci.pacia.tech"
-      type = "ALIAS"
-      zone = "bee-ci.pacia.tech"
+      type = "PRIMARY"
+      zone = digitalocean_domain.main.name
     }
 
     database {
@@ -46,80 +46,14 @@ resource "digitalocean_app" "app" {
       instance_count     = 1
       instance_size_slug = "apps-s-1vcpu-0.5gb"
 
-      env {
-        key   = "PORT"
-        value = "8080"
-        scope = "RUN_TIME"
-      }
-
-      env {
-        key   = "GITHUB_APP_ID"
-        value = var.github_app_id
-        scope = "RUN_TIME"
-      }
-
-      env {
-        key   = "GITHUB_APP_CLIENT_ID"
-        value = var.github_app_client_id
-        scope = "RUN_TIME"
-      }
-
-      env {
-        key   = "GITHUB_APP_WEBHOOK_SECRET"
-        value = var.github_app_webhook_secret
-        scope = "RUN_TIME"
-        type  = "SECRET"
-      }
-
-      env {
-        key   = "GITHUB_APP_PRIVATE_KEY_BASE64"
-        value = var.github_app_private_key_base64
-        scope = "RUN_TIME"
-        type  = "SECRET"
-      }
-
-      env {
-        key   = "GITHUB_APP_CLIENT_SECRET"
-        value = var.github_app_client_secret
-        scope = "RUN_TIME"
-        type  = "SECRET"
-      }
-
-      env {
-        key   = "DB_HOST"
-        value = digitalocean_database_cluster.main-db-cluster.host
-        scope = "RUN_TIME"
-      }
-
-      env {
-        key   = "DB_PORT"
-        value = digitalocean_database_cluster.main-db-cluster.port
-        scope = "RUN_TIME"
-      }
-
-      env {
-        key   = "DB_USER"
-        value = digitalocean_database_cluster.main-db-cluster.user
-        scope = "RUN_TIME"
-      }
-
-      env {
-        key   = "DB_PASSWORD"
-        value = digitalocean_database_cluster.main-db-cluster.password
-        scope = "RUN_TIME"
-        type  = "SECRET"
-      }
-
-      env {
-        key   = "DB_NAME"
-        value = digitalocean_database_db.main-db.name
-        scope = "RUN_TIME"
-      }
-
-      env {
-        key   = "DB_OPTS"
-        value = "sslmode=require"
-        scope = "RUN_TIME"
+      dynamic "env" {
+        for_each = local.env_vars
+        content {
+          key   = env.value.key
+          value = env.value.value
+          scope = env.value.scope
+          type  = lookup(env.value, "type", null)
+        }
       }
 
       #dockerfile_path = "./backend/Dockerfile"
@@ -152,7 +86,25 @@ resource "digitalocean_app" "app" {
 
 resource "digitalocean_database_db" "main-db" {
   cluster_id = digitalocean_database_cluster.main-db-cluster.id
-  name       = "main-db"
+  name       = "bee"
+
+  provisioner "local-exec" {
+    command = <<EOF
+      psql -f ../backend/sql-scripts/1-schema.sql
+      psql -f ../backend/sql-scripts/2-triggers.sql
+      psql -f ../backend/sql-scripts/3-views.sql
+      psql -f ../backend/sql-scripts/100-seed.sql
+    EOF
+
+    environment = {
+      "PGUSER"     = digitalocean_database_cluster.main-db-cluster.user # -U
+      "PGHOST"     = digitalocean_database_cluster.main-db-cluster.host # -h
+      "PGPORT"     = digitalocean_database_cluster.main-db-cluster.port # -p
+      "PGDATABASE" = digitalocean_database_db.main-db.name              # -d
+      "PGSSLMODE"  = "require"                                          # -c sslmode=require
+      "PGPASSWORD" = digitalocean_database_cluster.main-db-cluster.password
+    }
+  }
 }
 
 resource "digitalocean_database_cluster" "main-db-cluster" {
