@@ -97,44 +97,6 @@ func (h WebhookHandler) Mux() http.Handler {
 	return mux
 }
 
-func (h WebhookHandler) githubUserInfo(ctx context.Context, accessToken string) (map[string]interface{}, error) {
-	const url = "https://api.github.com/user"
-
-	logger, _ := l.FromContext(ctx)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("creating new request: %w", err)
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-
-	// Do the request
-	resp, err := h.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("making request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	userData := map[string]interface{}{}
-	decoder := json.NewDecoder(resp.Body)
-	decoder.UseNumber()
-	err = decoder.Decode(&userData)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshalling response body: %w", err)
-	}
-
-	// TODO: store user data in a database
-	logger.Info("authenticated user",
-		slog.Any("login", userData["login"]),
-		slog.Any("id", userData["id"]),
-		slog.Any("name", userData["name"]),
-	)
-
-	return userData, nil
-}
-
 func (h WebhookHandler) exchangeCode(ctx context.Context, code string) (userAccessToken string, err error) {
 	const url = "https://github.com/login/oauth/access_token"
 
@@ -206,32 +168,17 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Make user request to GitHub to get data
-	userData, err := h.githubUserInfo(r.Context(), accessToken)
+	ghClient := github.NewClient(nil).WithAuthToken(accessToken)
+	user, _, err := ghClient.Users.Get(ctx, "")
 	if err != nil {
 		logger.Error("error getting user info", slog.Any("error", err))
 		http.Error(w, "error getting user info", http.StatusInternalServerError)
 		return
 	}
 
-	// Extract user information
-	userID, err := userData["id"].(json.Number).Int64()
-	if err != nil {
-		logger.Error("error parsing user ID", slog.Any("error", err))
-		http.Error(w, "error parsing user information", http.StatusInternalServerError)
-		return
-	}
-
-	username, ok := userData["login"].(string)
-	if !ok {
-		logger.Error("username not found or not a string")
-		http.Error(w, "error parsing user information", http.StatusInternalServerError)
-		return
-	}
-
 	err = h.userRepo.Upsert(ctx, data.NewUser{
-		ID:           userID,
-		Username:     username,
+		ID:           *user.ID,
+		Username:     *user.Login,
 		AccessToken:  accessToken,
 		RefreshToken: "", // GitHub doesn't provide refresh tokens for OAuth Apps
 	})
@@ -241,11 +188,11 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	msg := fmt.Sprintf("Successfully authorized! User %s (ID: %d) has been saved to the database.", username, userID)
+	msg := fmt.Sprintf("Successfully authorized! User %s (ID: %d) has been saved to the database.", *user.Login, *user.ID)
 	logger.Info(msg, "access_token", accessToken)
 
 	// Create JWT
-	token, err := createToken(userID)
+	token, err := createToken(*user.ID)
 	if err != nil {
 		logger.Error("error creating token", slog.Any("error", err))
 		http.Error(w, "error creating token", http.StatusInternalServerError)
@@ -286,24 +233,6 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
-
-	// installationIDStr := payload["installation"].(map[strzxing]interface{})["id"].(json.Number).String()
-	// installationID, err := strconv.ParseInt(installationIDStr, 10, 64)
-	// if err != nil {
-	// 	logger.Error("error parsing installation id", slog.Any("error", err))
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	_, _ = fmt.Fprintf(w, "Error parsing installation id: %v", err)
-	// 	return
-	// }
-
-	// action, _ := payload["action"].(string)
-	// logger.Debug("handling webhook",
-	// 	slog.Any("action", action),
-	// 	slog.Int64("installation_id", installationID),
-	// )
-
-	// // Check type of webhook event
-	// event := r.Header.Get("X-GitHub-Event")
 
 	switch event := event.(type) {
 	case *github.GitHubAppAuthorizationEvent:
