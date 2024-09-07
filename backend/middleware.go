@@ -85,7 +85,7 @@ func WithWebhookSecret(next http.Handler) http.Handler {
 		}
 		r.Body = io.NopCloser(bytes.NewBuffer(payload)) // make body available for reading again
 
-		hash := hmac.New(sha256.New, []byte(webhookSecret))
+		hash := hmac.New(sha256.New, []byte(githubAppWebhookSecret))
 		hash.Write(payload)
 		ourMac := hash.Sum(nil)
 
