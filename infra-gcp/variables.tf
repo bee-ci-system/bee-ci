@@ -24,14 +24,18 @@ variable "github_app_client_secret" {
 }
 
 # Provider-specific variables
-
-# Asking for a project_id every time is annyoing.
-# variable "project_id" {}
-resource "random_string" "project_id" {
-  length  = 8
-  special = false
-  upper   = false
+variable "project_id" {
+  description = "GCP Project ID"
+  type        = string
+  default     = "bee-ci"
 }
+
+# Asking for a project_id every time is annyoing. But I had some problems with the below.
+# resource "random_string" "project_id" {
+#   length  = 8
+#   special = false
+#   upper   = false
+# }
 
 variable "credentials_file" {
   description = "Path to the GCP credentials file"
