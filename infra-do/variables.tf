@@ -1,8 +1,3 @@
-variable "do_token" {
-  description = "DigitalOcean API token"
-  sensitive   = true
-}
-
 variable "github_app_id" {
   description = "GitHub App ID"
   type        = string
@@ -26,4 +21,11 @@ variable "github_app_client_id" {
 variable "github_app_client_secret" {
   description = "GitHub App Client Secret"
   type        = string
+}
+
+# Provider-specific variables
+
+variable "do_token" {
+  description = "DigitalOcean API token"
+  sensitive   = true
 }
