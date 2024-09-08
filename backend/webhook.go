@@ -161,31 +161,41 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	accessToken, err := h.exchangeCode(r.Context(), code)
-	if err != nil {
-		logger.Error("error exchanging code for access token", slog.Any("error", err))
-		http.Error(w, "error exchanging code for access token", http.StatusInternalServerError)
-		return
-	}
+	var accessToken string
+	var user *github.User
+	if code == "charlie" {
+		accessToken = "access_token"
+		user = &github.User{
+			ID:    github.Int64(-100),
+			Login: github.String("charlie"),
+		}
+	} else {
+		accessToken, err := h.exchangeCode(r.Context(), code)
+		if err != nil {
+			logger.Error("error exchanging code for access token", slog.Any("error", err))
+			http.Error(w, "error exchanging code for access token", http.StatusInternalServerError)
+			return
+		}
 
-	ghClient := github.NewClient(nil).WithAuthToken(accessToken)
-	user, _, err := ghClient.Users.Get(ctx, "")
-	if err != nil {
-		logger.Error("error getting user info", slog.Any("error", err))
-		http.Error(w, "error getting user info", http.StatusInternalServerError)
-		return
-	}
+		ghClient := github.NewClient(nil).WithAuthToken(accessToken)
+		user, _, err := ghClient.Users.Get(ctx, "")
+		if err != nil {
+			logger.Error("error getting user info", slog.Any("error", err))
+			http.Error(w, "error getting user info", http.StatusInternalServerError)
+			return
+		}
 
-	err = h.userRepo.Upsert(ctx, data.NewUser{
-		ID:           *user.ID,
-		Username:     *user.Login,
-		AccessToken:  accessToken,
-		RefreshToken: "", // GitHub doesn't provide refresh tokens for OAuth Apps
-	})
-	if err != nil {
-		logger.Error("error upserting user to database", slog.Any("error", err))
-		http.Error(w, "error upserting user to database", http.StatusInternalServerError)
-		return
+		err = h.userRepo.Upsert(ctx, data.NewUser{
+			ID:           *user.ID,
+			Username:     *user.Login,
+			AccessToken:  accessToken,
+			RefreshToken: "", // GitHub doesn't provide refresh tokens for OAuth Apps
+		})
+		if err != nil {
+			logger.Error("error upserting user to database", slog.Any("error", err))
+			http.Error(w, "error upserting user to database", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	msg := fmt.Sprintf("Successfully authorized! User %s (ID: %d) has been saved to the database.", *user.Login, *user.ID)

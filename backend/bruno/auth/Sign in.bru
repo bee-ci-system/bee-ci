@@ -1,0 +1,18 @@
+meta {
+  name: Sign in
+  type: http
+}
+
+get {
+  url: http://localhost:8080/webhook/github/callback
+  body: none
+  auth: none
+}
+
+headers {
+  X-User-ID: -100
+}
+
+assert {
+  res.status: eq 200
+}

@@ -88,7 +88,6 @@ func main() {
 			panic(err)
 		}
 	}()
-	slog.Info("started listener")
 
 	buildRepo := data.NewPostgresBuildRepo(db)
 	userRepo := data.NewPostgresUserRepo(db)
@@ -96,7 +95,7 @@ func main() {
 
 	w := worker.New(ctx, buildRepo)
 	webhooks := NewWebhookHandler(userRepo, repoRepo, w)
-	app := NewApp(buildRepo)
+	app := NewApp(buildRepo, repoRepo)
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /{$}", http.HandlerFunc(handleIndex))

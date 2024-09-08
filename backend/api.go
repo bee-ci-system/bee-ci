@@ -14,16 +14,20 @@ import (
 
 type App struct {
 	BuildRepo data.BuildRepo
+	RepoRepo  data.RepoRepo
 }
 
-func NewApp(buildRepo data.BuildRepo) *App {
+func NewApp(buildRepo data.BuildRepo, repoRepo data.RepoRepo) *App {
 	return &App{
 		BuildRepo: buildRepo,
+		RepoRepo:  repoRepo,
 	}
 }
 
 func (a *App) Mux() http.Handler {
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /repos/", a.getRepos)
 
 	mux.HandleFunc("GET /builds/", a.getBuilds)
 
@@ -32,6 +36,37 @@ func (a *App) Mux() http.Handler {
 
 	authMux := WithJWT(mux)
 	return authMux
+}
+
+func (a *App) getRepos(w http.ResponseWriter, r *http.Request) {
+	logger, _ := l.FromContext(r.Context())
+
+	userID, ok := userid.FromContext(r.Context())
+	if !ok {
+		msg := "invalid user ID"
+		logger.Debug(msg)
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	repos, err := a.RepoRepo.GetAll(r.Context(), userID)
+	if err != nil {
+		msg := "failed to get repositories"
+		logger.Debug(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+
+	decoder := json.NewEncoder(w)
+	err = decoder.Encode(repos)
+	if err != nil {
+		msg := "failed to encode repositories into json"
+		logger.Debug(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 }
 
 func (a *App) getBuilds(w http.ResponseWriter, r *http.Request) {
