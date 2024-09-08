@@ -8,6 +8,7 @@ import {
 } from '@/app/_components/card';
 import { RepositoriesDashboardData } from '@/app/_types/dashboard';
 import { cn } from '@/app/_utils/cn';
+import { routes } from '@/app/_utils/routes';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -23,7 +24,7 @@ const MyRepositoriesCard = ({
         <CardDescription>A list of all your repositories</CardDescription>
       </div>
       <Button asChild size='sm' className='ml-auto gap-1 bg-beeci-yellow-600'>
-        <Link href='#'>
+        <Link href={routes.MY_REPOSITORIES}>
           View All
           <ArrowUpRight className='h-4 w-4' />
         </Link>

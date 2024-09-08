@@ -1,8 +1,8 @@
 import { Logo } from '@/app/_components/logo';
 import { ThemeToggler } from '@/app/_components/theme-toggler';
 import Link from 'next/link';
-import Search from '../../_components/search';
 import { SheetLeftbar } from './leftbar';
+import Search from './search';
 
 export function Navbar() {
   return (
