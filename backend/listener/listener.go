@@ -43,6 +43,8 @@ func (l Listener) Start(ctx context.Context) error {
 		return fmt.Errorf("listen on channel %s: %w", channelName, err)
 	}
 
+	l.logger.Info("started listener", slog.String("channel", channelName))
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -67,6 +69,7 @@ func (l Listener) createCheckRun(ctx context.Context, build data.Build) error {
 	logger := l.logger
 
 	// FIXME: FIMXE!!
+	// TODO: go from thread to ball...
 	owner := "bartekpacia"
 	repo := "dumbpkg"
 

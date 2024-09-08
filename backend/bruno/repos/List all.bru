@@ -1,0 +1,18 @@
+meta {
+  name: List all
+  type: http
+}
+
+get {
+  url: http://localhost:8080/api/repos
+  body: none
+  auth: none
+}
+
+headers {
+  X-User-ID: -100
+}
+
+assert {
+  res.status: eq 200
+}

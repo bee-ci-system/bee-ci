@@ -16,6 +16,7 @@ type Repo struct {
 type RepoRepo interface {
 	Create(ctx context.Context, repo []Repo) (err error)
 	Delete(ctx context.Context, id []int64) (err error)
+	GetAll(ctx context.Context, userID int64) (repos []Repo, err error)
 }
 
 type PostgresRepoRepo struct {
@@ -60,6 +61,19 @@ func (p PostgresRepoRepo) Delete(ctx context.Context, ids []int64) (err error) {
 	}
 
 	return nil
+}
+
+func (p PostgresRepoRepo) GetAll(ctx context.Context, userID int64) (repos []Repo, err error) {
+	err = p.db.SelectContext(ctx, &repos, `
+		SELECT id, name, user_id
+		FROM bee_schema.repos
+		WHERE user_id = $1
+	`, userID)
+	if err != nil {
+		return nil, fmt.Errorf("selecting from repos: %v", err)
+	}
+
+	return repos, nil
 }
 
 var _ RepoRepo = &PostgresRepoRepo{}
