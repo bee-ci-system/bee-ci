@@ -5,6 +5,15 @@ terraform {
       version = "2.40.0"
     }
   }
+
+  cloud {
+    organization = "bpacia"
+
+    workspaces {
+      project = "bee-ci"
+      name    = "bee-ci-workspace"
+    }
+  }
 }
 
 provider "digitalocean" {
@@ -125,6 +134,7 @@ resource "digitalocean_record" "frontend" {
   type   = "CNAME"
   name   = "app"
   value  = "cname.vercel-dns.com."
+  ttl    = 1800
 }
 
 
@@ -134,5 +144,6 @@ resource "digitalocean_record" "backend" {
   name   = "backend"
   value  = format("%s.", split("://", digitalocean_app.app.default_ingress)[1])
   # value  = "bee-ci.pacia.tech."
+  ttl = 1800
 }
 
