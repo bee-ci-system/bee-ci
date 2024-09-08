@@ -170,15 +170,16 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 			Login: github.String("charlie"),
 		}
 	} else {
-		accessToken, err := h.exchangeCode(r.Context(), code)
+		var err error
+		accessToken, err = h.exchangeCode(r.Context(), code)
 		if err != nil {
-			logger.Error("error exchanging code for access token", slog.Any("error", err))
+			logger.Error(fmt.Sprintf("error exchanging code \"%s\" for access token", code), slog.Any("error", err))
 			http.Error(w, "error exchanging code for access token", http.StatusInternalServerError)
 			return
 		}
 
 		ghClient := github.NewClient(nil).WithAuthToken(accessToken)
-		user, _, err := ghClient.Users.Get(ctx, "")
+		user, _, err = ghClient.Users.Get(ctx, "")
 		if err != nil {
 			logger.Error("error getting user info", slog.Any("error", err))
 			http.Error(w, "error getting user info", http.StatusInternalServerError)
