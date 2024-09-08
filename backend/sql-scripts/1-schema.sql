@@ -39,3 +39,10 @@ CREATE TABLE bee_schema.builds
         conclusion IS NULL OR status = 'completed'
         )
 );
+
+CREATE TABLE bee_schema.installations
+(
+    id      INTEGER PRIMARY KEY, -- GitHub App installation id
+    user_id INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES bee_schema.users (id) ON DELETE CASCADE
+);

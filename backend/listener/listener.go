@@ -73,6 +73,9 @@ func (l Listener) createCheckRun(ctx context.Context, build data.Build) error {
 	owner := "bartekpacia"
 	repo := "dumbpkg"
 
+	// TODO: Use build.RepoID to find Repo name, and then find username
+
+	// TODO: Replace with github.Client.Checks.CreateCheckRun()
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/check-runs", owner, repo)
 
 	// githubInstallationClient := ctx.Value(ctxGHInstallationClient{}).(http.Client)

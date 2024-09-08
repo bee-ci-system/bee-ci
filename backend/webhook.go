@@ -265,6 +265,9 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				slog.Int("repositories", len(repositories)),
 			)
 
+			// // Save installation ID to database, so
+			// installation.ID
+
 			repos := mapRepos(userID, repositories)
 			err = h.repoRepo.Create(r.Context(), repos)
 			if err != nil {
@@ -278,6 +281,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				slog.String("login", login),
 			)
 
+			// TODO: Delete an installation
 			// TODO: Delete all repos for this user
 		}
 	case github.InstallationRepositoriesEvent:
