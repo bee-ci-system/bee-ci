@@ -1,5 +1,6 @@
 'use client';
 
+import Anchor from '@/app/_components/anchor';
 import {
   Dialog,
   DialogClose,
@@ -10,11 +11,10 @@ import {
 } from '@/app/_components/dialog';
 import { Input } from '@/app/_components/input';
 import { ScrollArea } from '@/app/_components/scroll-area';
+import { documentationRoutes } from '@/app/_utils/routes';
 import { DialogTitle } from '@radix-ui/react-dialog';
 import { FileTextIcon, SearchIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { documentationRoutes } from '../_utils/routes';
-import Anchor from './anchor';
 
 export default function Search() {
   const [searchedInput, setSearchedInput] = useState('');
