@@ -40,5 +40,26 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
 
+  influxdb2:
+    image: influxdb:2
+    ports:
+      - 8086:8086
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: beeci
+      DOCKER_INFLUXDB_INIT_PASSWORD: BeeCI2021@
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: 9uNp_AJQknsl8OWY65VGyAVZ0wpLXrm9Ep9_4L4-LJJWkP4HJxQvgMCd0vIElfFVU-9cIMdPgPGuUZvaDJsn5g==
+      DOCKER_INFLUXDB_INIT_ORG: beeci 
+      DOCKER_INFLUXDB_INIT_BUCKET: home
+    volumes:
+      - type: volume
+        source: influxdb2-data
+        target: /var/lib/influxdb2
+      - type: volume
+        source: influxdb2-config
+        target: /etc/influxdb2
+
 volumes:
+  influxdb2-data:
+  influxdb2-config:
   bee-postgres-data:
