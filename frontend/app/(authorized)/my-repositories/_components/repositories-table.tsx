@@ -69,6 +69,7 @@ const RepositoriesTable = () => {
               <TableRow
                 key={repository.id}
                 onClick={() => router.push(`/repository/${repository.id}`)}
+                className='cursor-pointer'
               >
                 <TableCell className='font-medium'>{repository.name}</TableCell>
                 <TableCell>{repository.dateOfLastUpdate}</TableCell>

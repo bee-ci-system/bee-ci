@@ -8,7 +8,7 @@ import {
 } from '@/app/_components/card';
 import { RepositoriesDashboardData } from '@/app/_types/dashboard';
 import { cn } from '@/app/_utils/cn';
-import { routes } from '@/app/_utils/routes';
+import { routeGenerators, routes } from '@/app/_utils/routes';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -17,7 +17,7 @@ const MyRepositoriesCard = ({
 }: {
   repositories: RepositoriesDashboardData[];
 }) => (
-  <Card className='border-beeci-yellow-600' x-chunk='dashboard-01-chunk-3'>
+  <Card className='border-beeci-yellow-600'>
     <CardHeader className='flex flex-row items-center'>
       <div className='grid gap-2'>
         <CardTitle>Repositories</CardTitle>
@@ -43,7 +43,7 @@ const MyRepositoriesCard = ({
               </p>
             </div>
             <Link
-              href='#'
+              href={routeGenerators.repository(repository.id)}
               aria-label='open info about pipeline'
               className={cn(buttonVariants({ size: 'icon', variant: 'ghost' }))}
             >
