@@ -22,6 +22,11 @@ export const routes = {
   ],
 };
 
+export const routeGenerators = {
+  repository: (id: string) => `/repository/${id}`,
+  pipeline: (id: string) => `/pipeline/${id}`,
+};
+
 export const documentationRoutes = routes.documentationRoutes
   .map(({ href, items }) =>
     items.map((link) => ({
