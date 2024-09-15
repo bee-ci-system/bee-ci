@@ -23,7 +23,6 @@ import (
 	"github.com/lmittmann/tint"
 
 	"github.com/lib/pq"
-	_ "github.com/lib/pq"
 )
 
 var (
@@ -85,10 +84,12 @@ func main() {
 	userRepo := data.NewPostgresUserRepo(db)
 	repoRepo := data.NewPostgresRepoRepo(db)
 
+	githubService := updater.NewGithubService(githubAppID, rsaPrivateKey)
+
 	minReconnectInterval := 10 * time.Second
 	maxReconnectInterval := time.Minute
 	dbListener := pq.NewListener(psqlInfo, minReconnectInterval, maxReconnectInterval, nil)
-	listen := updater.New(dbListener, repoRepo, userRepo, buildRepo)
+	listen := updater.New(dbListener, repoRepo, userRepo, buildRepo, githubService)
 	go func() {
 		err := listen.Start(ctx)
 		if err != nil {

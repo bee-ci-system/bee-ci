@@ -18,6 +18,7 @@ import (
 
 	"github.com/google/go-github/v64/github"
 
+	"github.com/bee-ci/bee-ci-system/internal/auth"
 	"github.com/bee-ci/bee-ci-system/internal/userid"
 
 	"github.com/felixge/httpsnoop"
@@ -117,7 +118,9 @@ func WithAuthenticatedApp(next http.Handler) http.Handler {
 			return
 		}
 
-		appClient := http.Client{Transport: &BearerTransport{Token: tokenStr}}
+		appClient := http.Client{
+			Transport: &auth.BearerTransport{Token: tokenStr},
+		}
 
 		ctx := context.WithValue(r.Context(), ctxGHAppClient{}, appClient)
 		r = r.Clone(ctx)
@@ -181,7 +184,7 @@ func WithAuthenticatedAppInstallation(next http.Handler) http.Handler {
 		}
 
 		appInstallationClient := http.Client{
-			Transport: &BearerTransport{Token: *res.Token},
+			Transport: &auth.BearerTransport{Token: *res.Token},
 		}
 		logger.Debug("installation access token obtained", slog.Any("token", *res.Token))
 

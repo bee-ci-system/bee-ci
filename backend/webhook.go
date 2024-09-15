@@ -61,20 +61,18 @@ func verifyToken(tokenString string) (*jwt.Token, error) {
 }
 
 type WebhookHandler struct {
+	worker     *worker.Worker
+	httpClient *http.Client
 	userRepo   data.UserRepo
 	repoRepo   data.RepoRepo
-	httpClient *http.Client
-	worker     *worker.Worker
 }
 
 func NewWebhookHandler(userRepo data.UserRepo, repoRepo data.RepoRepo, w *worker.Worker) *WebhookHandler {
 	return &WebhookHandler{
-		userRepo: userRepo,
-		repoRepo: repoRepo,
-		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
-		},
-		worker: w,
+		httpClient: &http.Client{Timeout: 10 * time.Second},
+		userRepo:   userRepo,
+		repoRepo:   repoRepo,
+		worker:     w,
 	}
 }
 

@@ -19,24 +19,32 @@ import (
 const channelName = "builds_channel"
 
 type Updater struct {
-	listener    *pq.Listener
-	channelName string
-	logger      *slog.Logger
-	repoRepo    data.RepoRepo
-	userRepo    data.UserRepo
-	buildRepo   data.BuildRepo
+	logger        *slog.Logger
+	httpClient    *http.Client
+	dbListener    *pq.Listener
+	channelName   string
+	repoRepo      data.RepoRepo
+	userRepo      data.UserRepo
+	buildRepo     data.BuildRepo
+	githubService *GithubService
 }
 
-func New(dbListener *pq.Listener, repoRepo data.RepoRepo, userRepo data.UserRepo, buildRepo data.BuildRepo) *Updater {
-	listener := dbListener
-
+func New(
+	dbListener *pq.Listener,
+	repoRepo data.RepoRepo,
+	userRepo data.UserRepo,
+	buildRepo data.BuildRepo,
+	githubService *GithubService,
+) *Updater {
 	return &Updater{
-		channelName: channelName,
-		listener:    listener,
-		logger:      slog.Default(), // TODO: add some "subsystem name" to this logger
-		repoRepo:    repoRepo,
-		userRepo:    userRepo,
-		buildRepo:   buildRepo,
+		logger:        slog.Default(), // TODO: add some "subsystem name" to this logger
+		httpClient:    &http.Client{Timeout: 10 * time.Second},
+		channelName:   channelName,
+		dbListener:    dbListener,
+		repoRepo:      repoRepo,
+		userRepo:      userRepo,
+		buildRepo:     buildRepo,
+		githubService: githubService,
 	}
 }
 
@@ -44,65 +52,67 @@ func New(dbListener *pq.Listener, repoRepo data.RepoRepo, userRepo data.UserRepo
 // create check runs on GitHub when the updates happen.
 //
 // To shutdown the updater, cancel the context.
-func (l Updater) Start(ctx context.Context) error {
-	err := l.listener.Listen(channelName)
+func (u Updater) Start(ctx context.Context) error {
+	err := u.dbListener.Listen(channelName)
 	if err != nil {
 		return fmt.Errorf("listen on channel %s: %w", channelName, err)
 	}
 
-	l.logger.Info("started listener", slog.String("channel", channelName))
+	u.logger.Info("updater started, listens to db changes", slog.String("channel", channelName))
 
 	for {
 		select {
 		case <-ctx.Done():
-			l.logger.Debug("context cancelled, stopping listener")
-			err = l.listener.Close()
+			u.logger.Debug("context cancelled, db listener will be closed")
+			err = u.dbListener.Close()
 			if err != nil {
-				l.logger.Error("failed to close listener", slog.Any("error", err))
+				u.logger.Error("failed to close db listener", slog.Any("error", err))
 				return err
 			}
 			return nil
-		case msg := <-l.listener.Notify:
-			l.logger.Debug("received notification", slog.Any("channel", msg.Channel))
+		case msg := <-u.dbListener.Notify:
+			u.logger.Debug("db listener got notification", slog.Any("channel", msg.Channel))
 
 			updatedBuild := data.Build{}
 			err := json.Unmarshal([]byte(msg.Extra), &updatedBuild)
 			if err != nil {
-				l.logger.Error("failed to unmarshal build", slog.Any("error", err))
+				u.logger.Error("failed to unmarshal build", slog.Any("error", err))
 				break
 			}
 
-			err = l.createCheckRun(ctx, updatedBuild)
+			err = u.createCheckRun(ctx, updatedBuild)
 			if err != nil {
-				l.logger.Error("failed to create check run", slog.Any("error", err))
+				u.logger.Error("failed to create check run", slog.Any("error", err))
 				break
 			}
 
-			l.logger.Info("check run created", slog.Any("build", updatedBuild))
+			u.logger.Info("check run created", slog.Any("build", updatedBuild))
 		}
 	}
 }
 
 // Returns immediately and starts a goroutine in the background
-func (l Updater) createCheckRun(ctx context.Context, build data.Build) error {
-	logger := l.logger
+func (u Updater) createCheckRun(ctx context.Context, build data.Build) error {
+	logger := u.logger
 
-	repo, err := l.repoRepo.Get(ctx, build.RepoID)
+	repo, err := u.repoRepo.Get(ctx, build.RepoID)
 	if err != nil {
-		return fmt.Errorf("getting repo: %w", err)
+		return fmt.Errorf("ger repo: %w", err)
 	}
 	repoName := repo.Name
 
-	user, err := l.userRepo.Get(ctx, repo.UserID)
+	user, err := u.userRepo.Get(ctx, repo.UserID)
 	if err != nil {
-		return fmt.Errorf("getting user: %w", err)
+		return fmt.Errorf("get user: %w", err)
 	}
 	owner := user.Username
 
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/check-runs", owner, repoName)
 
-	// githubInstallationClient := ctx.Value(ctxGHInstallationClient{}).(http.Client)
-	githubInstallationClient := http.DefaultClient
+	installationAccessToken, err := u.githubService.GetInstallationAccessToken(ctx, installationID)
+	if err != nil {
+		return fmt.Errorf("get installation access token: %w", err)
+	}
 
 	body := map[string]interface{}{
 		"external_id": build.ID,
@@ -126,7 +136,9 @@ func (l Updater) createCheckRun(ctx context.Context, build data.Build) error {
 		return fmt.Errorf("creating request: %w", err)
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
-	resp, err := githubInstallationClient.Do(req)
+	req.Header.Set("Authorization", "Bearer "+installationAccessToken)
+
+	resp, err := u.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("sending POST request: %w", err)
 	}

@@ -8,6 +8,7 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"math/rand"
 	"time"
@@ -18,13 +19,15 @@ import (
 type Worker struct {
 	ctx       context.Context
 	buildRepo data.BuildRepo
+	logger    *slog.Logger
 }
 
 // New creates a new [Worker].
 //
-// The worker can be scheduled with [Add] method. All jobs will
+// The worker can be scheduled with [Add] method.
 func New(ctx context.Context, buildRepo data.BuildRepo) *Worker {
 	return &Worker{
+		logger:    slog.Default(), // TODO: add some "subsystem name" to this logger
 		ctx:       ctx,
 		buildRepo: buildRepo,
 	}
@@ -41,23 +44,23 @@ func (w Worker) Add(build data.NewBuild) {
 func (w Worker) job(build data.NewBuild) {
 	buildId, err := w.buildRepo.Create(w.ctx, build)
 	if err != nil {
-		slog.Error("failed to create build", slog.Any("error", err))
-		// TODO: handle error
+		w.logger.Error("failed to create build", slog.Any("error", err))
+		// TODO: handle error in a better way – update status on GitHub
 		return
 	}
 
-	slog.Info("created build", slog.Int64("build_id", buildId))
+	w.logger.Info("created build", slog.Int64("build_id", buildId))
 
-	time.Sleep(5 * time.Second)
+	SleepContext(w.ctx, 5*time.Second)
 	err = w.buildRepo.UpdateStatus(w.ctx, buildId, "in_progress")
 	if err != nil {
-		slog.Error("failed to update build status", slog.Any("error", err))
+		w.logger.Error("failed to update build status", slog.Any("error", err))
 		return
 	}
 
-	slog.Debug("build in progress", slog.Int64("build_id", buildId))
+	w.logger.Debug("build in progress", slog.Int64("build_id", buildId))
 
-	time.Sleep(5 * time.Second)
+	SleepContext(w.ctx, 5*time.Second)
 
 	// random failure or success, 50% chance of failure
 	conclusion := "success"
@@ -67,16 +70,19 @@ func (w Worker) job(build data.NewBuild) {
 
 	err = w.buildRepo.SetConclusion(w.ctx, buildId, conclusion)
 	if err != nil {
-		slog.Error("failed to set build conclusion", slog.Any("error", err))
+		w.logger.Error("failed to set build conclusion", slog.Any("error", err))
 		return
 	}
 
-	slog.Debug("build finished", slog.Int64("build_id", buildId), slog.String("conclusion", conclusion))
+	w.logger.Debug("build finished", slog.Int64("build_id", buildId), slog.String("conclusion", conclusion))
 }
 
-func SleepContext(ctx context.Context, d time.Duration) {
+// TODO: Create an issue for this func to be added to Go stdlib.
+func SleepContext(ctx context.Context, d time.Duration) error {
 	select {
 	case <-time.After(d):
+		return nil
 	case <-ctx.Done():
+		return fmt.Errorf("sleep was aborted because context is done before duration passed: %w", ctx.Err())
 	}
 }
