@@ -49,7 +49,7 @@ func (w Worker) job(build data.NewBuild) {
 		return
 	}
 
-	w.logger.Info("created build", slog.Int64("build_id", buildId))
+	w.logger.Debug("created build", slog.Int64("build_id", buildId))
 
 	SleepContext(w.ctx, 5*time.Second)
 	err = w.buildRepo.UpdateStatus(w.ctx, buildId, "in_progress")

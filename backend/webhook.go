@@ -84,11 +84,7 @@ func (h WebhookHandler) Mux() http.Handler {
 
 	mux.Handle("POST /{$}",
 		WithWebhookSecret(
-			WithAuthenticatedApp( // MAYBE provides gh_app_client
-				WithAuthenticatedAppInstallation( // MAYBE provides gh_installation_client
-					http.HandlerFunc(h.handleWebhook),
-				),
-			),
+			http.HandlerFunc(h.handleWebhook),
 		),
 	)
 
@@ -278,7 +274,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 			// TODO: Delete all repos for this user
 		}
-	case github.InstallationRepositoriesEvent:
+	case *github.InstallationRepositoriesEvent:
 		userID := *event.Sender.ID
 
 		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories
@@ -302,10 +298,10 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				logger.Error("error deleting repositories", slog.Any("error", err))
 			}
 		}
-	case github.CheckSuiteEvent:
+	case *github.CheckSuiteEvent:
 		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#check_suite
 		if *event.Action == "requested" || *event.Action == "rerequested" {
-			headSHA := *event.CheckSuite.HeadCommit.SHA
+			headSHA := *event.CheckSuite.HeadSHA
 			message := *event.CheckSuite.HeadCommit.Message
 			installationID := *event.Installation.ID
 

@@ -7,8 +7,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
+	"net/http/httputil"
+	"strconv"
 	"time"
 
 	"github.com/bee-ci/bee-ci-system/data"
@@ -115,9 +118,9 @@ func (u Updater) createCheckRun(ctx context.Context, build data.Build) error {
 	}
 
 	body := map[string]interface{}{
-		"external_id": build.ID,
+		"external_id": strconv.FormatInt(build.ID, 10),
 		"head_sha":    build.CommitSHA,
-		"name":        "build.CommitMSG" + ", started at: " + fmt.Sprint(time.Now().Format(time.RFC822Z)),
+		"name":        build.CommitMsg + ", started at: " + fmt.Sprint(time.Now().Format(time.RFC822Z)),
 		"details_url": "https://garden.pacia.com",
 		"status":      build.Status,
 	}
@@ -138,20 +141,25 @@ func (u Updater) createCheckRun(ctx context.Context, build data.Build) error {
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("Authorization", "Bearer "+installationAccessToken)
 
+	dat, _ := httputil.DumpRequestOut(req, true)
+	log.Println("---")
+	log.Println(string(dat))
+	log.Println("---")
+
 	resp, err := u.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("sending POST request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
 	respBodyBytes := make([]byte, 0)
 	_, err = resp.Body.Read(respBodyBytes)
 	if err != nil {
 		return fmt.Errorf("reading response body: %w", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(respBodyBytes))
 	}
 
 	logger.Info("request made", slog.Int("status", resp.StatusCode), slog.String("body", string(respBodyBytes)))

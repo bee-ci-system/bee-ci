@@ -68,7 +68,7 @@ func (p PostgresBuildRepo) Create(ctx context.Context, build NewBuild) (id int64
 		return 0, fmt.Errorf("preparing query: %v", err)
 	}
 
-	err = stmt.GetContext(ctx, &id, build.RepoID, build.CommitSHA, build.InstallationID, build.CommitMsg)
+	err = stmt.GetContext(ctx, &id, build.RepoID, build.CommitSHA, build.CommitMsg, build.InstallationID)
 	if err != nil {
 		return 0, fmt.Errorf("executing INSERT query: %v", err)
 	}
