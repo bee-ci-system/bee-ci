@@ -18,11 +18,11 @@ import (
 
 	"github.com/google/go-github/v64/github"
 
-	"github.com/bartekpacia/ghapp/internal/userid"
+	"github.com/bee-ci/bee-ci-system/internal/userid"
 
 	"github.com/felixge/httpsnoop"
 
-	l "github.com/bartekpacia/ghapp/internal/logger"
+	l "github.com/bee-ci/bee-ci-system/internal/logger"
 	"github.com/golang-jwt/jwt/v5"
 )
 

@@ -18,7 +18,7 @@ resource "google_cloudbuildv2_repository" "default" {
   name     = "my-github-repository-tf"
 
   parent_connection = "my-cloud-build-connection-manual"
-  remote_uri        = "https://github.com/bartekpacia/ghapp.git"
+  remote_uri        = "https://github.com/bee-ci/bee-ci-system.git"
 }
 
 resource "google_cloudbuild_trigger" "default" {

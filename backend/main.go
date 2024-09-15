@@ -12,10 +12,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bartekpacia/ghapp/data"
-	l "github.com/bartekpacia/ghapp/internal/logger"
-	"github.com/bartekpacia/ghapp/updater"
-	"github.com/bartekpacia/ghapp/worker"
+	"github.com/bee-ci/bee-ci-system/data"
+	l "github.com/bee-ci/bee-ci-system/internal/logger"
+	"github.com/bee-ci/bee-ci-system/updater"
+	"github.com/bee-ci/bee-ci-system/worker"
 
 	"github.com/jmoiron/sqlx"
 
@@ -88,7 +88,7 @@ func main() {
 	minReconnectInterval := 10 * time.Second
 	maxReconnectInterval := time.Minute
 	dbListener := pq.NewListener(psqlInfo, minReconnectInterval, maxReconnectInterval, nil)
-	listen := updater.NewUpdater(dbListener, repoRepo, userRepo, buildRepo)
+	listen := updater.New(dbListener, repoRepo, userRepo, buildRepo)
 	go func() {
 		err := listen.Start(ctx)
 		if err != nil {

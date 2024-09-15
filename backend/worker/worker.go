@@ -1,4 +1,7 @@
-// Package worker implements a Worker that executes jobs.
+// Package worker implements a thing that accepts jobs and schedules them for
+// execution.
+//
+// After the job is added, it is picked up by one of the active executors.
 //
 // It spawns a single goroutine per new job.
 package worker
@@ -9,7 +12,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/bartekpacia/ghapp/data"
+	"github.com/bee-ci/bee-ci-system/data"
 )
 
 type Worker struct {
@@ -17,6 +20,9 @@ type Worker struct {
 	buildRepo data.BuildRepo
 }
 
+// New creates a new [Worker].
+//
+// The worker can be scheduled with [Add] method. All jobs will
 func New(ctx context.Context, buildRepo data.BuildRepo) *Worker {
 	return &Worker{
 		ctx:       ctx,
@@ -24,6 +30,10 @@ func New(ctx context.Context, buildRepo data.BuildRepo) *Worker {
 	}
 }
 
+// Add schedules a new job for execution.
+//
+// The job will be canceled when the context that was passed to [New] is
+// canceled.
 func (w Worker) Add(build data.NewBuild) {
 	go w.job(build)
 }
@@ -62,4 +72,11 @@ func (w Worker) job(build data.NewBuild) {
 	}
 
 	slog.Debug("build finished", slog.Int64("build_id", buildId), slog.String("conclusion", conclusion))
+}
+
+func SleepContext(ctx context.Context, d time.Duration) {
+	select {
+	case <-time.After(d):
+	case <-ctx.Done():
+	}
 }

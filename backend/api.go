@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bartekpacia/ghapp/internal/userid"
+	"github.com/bee-ci/bee-ci-system/internal/userid"
 
-	"github.com/bartekpacia/ghapp/data"
-	l "github.com/bartekpacia/ghapp/internal/logger"
+	"github.com/bee-ci/bee-ci-system/data"
+	l "github.com/bee-ci/bee-ci-system/internal/logger"
 )
 
 type App struct {

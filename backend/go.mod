@@ -1,4 +1,4 @@
-module github.com/bartekpacia/ghapp
+module github.com/bee-ci/bee-ci-system
 
 go 1.23
 

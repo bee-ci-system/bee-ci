@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/bartekpacia/ghapp/data"
+	"github.com/bee-ci/bee-ci-system/data"
 
 	"github.com/lib/pq"
 )
@@ -27,7 +27,7 @@ type Updater struct {
 	buildRepo   data.BuildRepo
 }
 
-func NewUpdater(dbListener *pq.Listener, repoRepo data.RepoRepo, userRepo data.UserRepo, buildRepo data.BuildRepo) *Updater {
+func New(dbListener *pq.Listener, repoRepo data.RepoRepo, userRepo data.UserRepo, buildRepo data.BuildRepo) *Updater {
 	listener := dbListener
 
 	return &Updater{

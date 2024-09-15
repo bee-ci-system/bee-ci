@@ -14,9 +14,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-github/v64/github"
 
-	"github.com/bartekpacia/ghapp/data"
-	l "github.com/bartekpacia/ghapp/internal/logger"
-	"github.com/bartekpacia/ghapp/worker"
+	"github.com/bee-ci/bee-ci-system/data"
+	l "github.com/bee-ci/bee-ci-system/internal/logger"
+	"github.com/bee-ci/bee-ci-system/worker"
 )
 
 // Define your secret key (should be stored securely, e.g., in env variables)
