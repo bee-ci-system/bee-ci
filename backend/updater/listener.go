@@ -40,6 +40,10 @@ func NewUpdater(dbListener *pq.Listener, repoRepo data.RepoRepo, userRepo data.U
 	}
 }
 
+// Start starts the updater. It will listen for updates from the database and
+// create check runs on GitHub when the updates happen.
+//
+// To shutdown the updater, cancel the context.
 func (l Updater) Start(ctx context.Context) error {
 	err := l.listener.Listen(channelName)
 	if err != nil {
