@@ -1,4 +1,5 @@
 import psycopg2
+import logging
 from structures.BuildInfo import BuildInfo
 
 
@@ -8,6 +9,7 @@ class DbPuller:
         self.conn = psycopg2.connect(
             host="localhost", database="bee", user="postgres", password="secret"
         )
+        self.logger = logging.getLogger(__name__)
 
     def pull_from_db(self) -> BuildInfo:
 
@@ -64,10 +66,7 @@ class DbPuller:
             if owner_name and repo_name:
                 build_info.owner_name = owner_name
                 build_info.repo_name = repo_name
-            print("Got:", build_info)
-            # Example: Print the build_id of the fetched row
-            print("Build ID:", build_info.id)
-            # Do something with the row
+            self.logger.info("Got:" + str(build_info))
             return build_info
 
         # Close the cursor
@@ -92,4 +91,6 @@ class DbPuller:
         )
         self.conn.commit()
         cursor.close()
-        print("Build (id: ", build_id, ") conclusion updated to ", conclusion)
+        self.logger.info(
+            "Build (id: " + str(build_id) + ") conclusion updated to " + conclusion
+        )

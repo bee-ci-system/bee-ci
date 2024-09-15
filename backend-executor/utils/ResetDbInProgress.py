@@ -37,12 +37,7 @@ while True:
         conn.commit()
 
         # Process the fetched row
-        print("Start:", row)
-
-        # Do something with the row
-
-        # Print "Stop" after processing the row
-        print("Stop")
+        print("Modify:", row)
     else:
         break
 

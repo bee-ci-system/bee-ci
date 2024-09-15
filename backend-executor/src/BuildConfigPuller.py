@@ -1,5 +1,9 @@
 import requests
 from structures.BuildInfo import BuildInfo
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class BuildConfigPuller:
@@ -8,18 +12,21 @@ class BuildConfigPuller:
         repo_url = "https://raw.githubusercontent.com/{}/{}/{}/.bee-ci.json".format(
             build_info.owner_name, build_info.repo_name, build_info.commit_sha
         )
-        print(repo_url)
+        logger.debug("Repo url: " + repo_url)
         response = requests.get(repo_url)
 
         if response.status_code == 200:
             config_data = response.text
-            print(config_data)
+            logger.debug(config_data)
             return config_data
-        
-        print("Failed to pull config from GitHub: code " + str(response.status_code))
-        return None
 
-        
+        logger.error(
+            "Failed to pull config from GitHub: code "
+            + str(response.status_code)
+            + " from "
+            + repo_url
+        )
+        return None
 
 
 # Example usage

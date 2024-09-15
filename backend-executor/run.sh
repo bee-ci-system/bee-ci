@@ -1,4 +1,4 @@
 #!/bin/bash
 echo "Hello, World!"
-sleep 10
+sleep 1
 echo "Second Hello, World!"

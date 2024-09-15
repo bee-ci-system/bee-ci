@@ -20,7 +20,7 @@ class InfluxDBHandler:
         )
         self.write_api.write(bucket=self.cred.bucket, org=self.cred.org, record=p)
 
-    def download_logs(self):
-        query = f'from(bucket: "{self.cred.bucket}") |> range(start: -1h)'
+    def download_logs(self, build_id):
+        query = f'from(bucket: "{self.cred.bucket}") |> range(start: -1h) |> filter(fn: (r) => r["_measurement"] == "{build_id}")'
         tables = self.client.query_api().query(query, org=self.cred.org)
         return tables
