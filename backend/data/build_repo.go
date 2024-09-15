@@ -11,23 +11,25 @@ import (
 )
 
 type NewBuild struct {
-	RepoID    int64
-	CommitSHA string
-	CommitMsg string
+	RepoID         int64
+	CommitSHA      string
+	CommitMsg      string
+	InstallationID int64
 }
 
 // Build represents a row in the "builds" table.
 //
 // The JSON struct tags are only to be used when receiving a row from LISTEN/NOTIFY.
 type Build struct {
-	ID         int64     `db:"id" json:"id"`
-	RepoID     int64     `db:"repo_id" json:"repo_id"`
-	CommitSHA  string    `db:"commit_sha" json:"commit_sha"`
-	CommitMsg  string    `db:"commit_message" json:"commit_message"`
-	Status     string    `db:"status" json:"status"`
-	Conclusion *string   `db:"conclusion" json:"conclusion"`
-	CreatedAt  time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
+	ID             int64     `db:"id" json:"id"`
+	RepoID         int64     `db:"repo_id" json:"repo_id"`
+	CommitSHA      string    `db:"commit_sha" json:"commit_sha"`
+	CommitMsg      string    `db:"commit_message" json:"commit_message"`
+	InstallationID int64     `db:"installation_id" json:"installation_id"`
+	Status         string    `db:"status" json:"status"`
+	Conclusion     *string   `db:"conclusion" json:"conclusion"`
+	CreatedAt      time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt      time.Time `db:"updated_at" json:"updated_at"`
 }
 
 // FatBuild represents a row in the "builds" table, merged with information from other tables:
@@ -58,15 +60,15 @@ type PostgresBuildRepo struct {
 
 func (p PostgresBuildRepo) Create(ctx context.Context, build NewBuild) (id int64, err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
-		INSERT INTO bee_schema.builds (repo_id, commit_sha, commit_message, status)
-		VALUES ($1, $2, $3, 'queued')
+		INSERT INTO bee_schema.builds (repo_id, commit_sha, commit_message, installation_id, status)
+		VALUES ($1, $2, $3, $4, 'queued')
 		RETURNING id
 	`)
 	if err != nil {
 		return 0, fmt.Errorf("preparing query: %v", err)
 	}
 
-	err = stmt.GetContext(ctx, &id, build.RepoID, build.CommitSHA, build.CommitMsg)
+	err = stmt.GetContext(ctx, &id, build.RepoID, build.CommitSHA, build.InstallationID, build.CommitMsg)
 	if err != nil {
 		return 0, fmt.Errorf("executing INSERT query: %v", err)
 	}

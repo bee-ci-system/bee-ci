@@ -24,7 +24,7 @@ type Worker struct {
 
 // New creates a new [Worker].
 //
-// The worker can be scheduled with [Add] method.
+// The worker can be scheduled with [Worker.Add] method.
 func New(ctx context.Context, buildRepo data.BuildRepo) *Worker {
 	return &Worker{
 		logger:    slog.Default(), // TODO: add some "subsystem name" to this logger

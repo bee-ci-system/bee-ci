@@ -109,7 +109,7 @@ func (u Updater) createCheckRun(ctx context.Context, build data.Build) error {
 
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/check-runs", owner, repoName)
 
-	installationAccessToken, err := u.githubService.GetInstallationAccessToken(ctx, 69)
+	installationAccessToken, err := u.githubService.GetInstallationAccessToken(ctx, build.InstallationID)
 	if err != nil {
 		return fmt.Errorf("get installation access token: %w", err)
 	}

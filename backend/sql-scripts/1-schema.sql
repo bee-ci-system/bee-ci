@@ -30,6 +30,7 @@ CREATE TABLE bee_schema.builds
     repo_id        INTEGER                  NOT NULL,
     commit_sha     VARCHAR(40)              NOT NULL,
     commit_message VARCHAR(2048)            NOT NULl, -- we ain't handling longer commit messages
+    installation_id INTEGER                 NOT NULL,
     status         build_status             NOT NULL,
     conclusion     build_conclusion,
     created_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
