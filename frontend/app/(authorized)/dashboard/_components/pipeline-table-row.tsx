@@ -3,6 +3,7 @@ import { TableCell, TableRow } from '@/app/_components/table';
 import { PipelineDashboardData } from '@/app/_types/dashboard';
 import { cn } from '@/app/_utils/cn';
 import { PipelineStatusToIcon } from '@/app/_utils/pipeline-status-to-icon';
+import { routeGenerators } from '@/app/_utils/routes';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -21,7 +22,7 @@ const PipelineTableRow = ({
     <TableCell className='flex items-center justify-between gap-4 px-0'>
       <p>{PipelineStatusToIcon(pipeline.status)}</p>
       <Link
-        href='#'
+        href={routeGenerators.pipeline(pipeline.id)}
         aria-label='open info about pipeline'
         className={cn(buttonVariants({ size: 'icon', variant: 'ghost' }))}
       >
