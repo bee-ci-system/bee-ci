@@ -41,7 +41,7 @@ services:
       POSTGRES_PASSWORD: secret
 
   influxdb2:
-    image: influxdb:2
+    image: influxdb:2.7-alpine
     ports:
       - 8086:8086
     environment:

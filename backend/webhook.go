@@ -307,10 +307,12 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		if *event.Action == "requested" || *event.Action == "rerequested" {
 			headSHA := *event.CheckSuite.HeadCommit.SHA
 			message := *event.CheckSuite.HeadCommit.Message
+			installationID := event.Installation.ID
 
 			logger.Debug("check suite requested",
 				slog.String("owner", *event.Repo.Owner.Login),
 				slog.String("repo", *event.Repo.Name),
+				slog.Int64("installation_id", *installationID),
 				slog.String("head_sha", headSHA),
 			)
 
