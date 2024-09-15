@@ -10,6 +10,7 @@ services:
     init: true
     ports:
       - "8080:8080"
+      - "40000:40000" # debugger port
     depends_on:
       database:
         condition: service_healthy

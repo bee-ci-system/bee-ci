@@ -4,6 +4,8 @@ ARG CGO_ENABLED=0
 
 WORKDIR /tmp/server
 
+RUN go install github.com/go-delve/delve/cmd/dlv@v1.23.0
+
 # Copy source files necessary to download dependencies
 COPY go.mod ./
 COPY go.sum ./
@@ -15,12 +17,15 @@ COPY data/ ./data
 COPY worker/ ./worker
 COPY updater/ ./updater
 COPY internal/ ./internal
-RUN go build -o server .
+RUN go build -gcflags="all=-N -l" -o server .
 
 FROM alpine:3.20 AS runtime
 
 COPY --from=builder /tmp/server/server /usr/local/bin/server
+COPY --from=builder /go/bin/dlv /
 
 RUN chmod -R 777 /usr/local/bin/server
 
-ENTRYPOINT [ "/usr/local/bin/server" ]
+CMD [ "/dlv", "--listen=:40000", "--headless=true", "--continue", "--api-version=2", "--accept-multiclient", "exec", "/usr/local/bin/server" ]
+
+# ENTRYPOINT [ "/usr/local/bin/server" ]
