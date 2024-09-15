@@ -10,4 +10,5 @@ export const staticAssets = {
   icons: {
     GITHUB: '/icons/github.svg',
   },
+  LOADER: '/loader.gif',
 };

@@ -6,7 +6,7 @@ import {
   CardHeader,
 } from '@/app/_components/card';
 import { routes } from '@/app/_utils/routes';
-import { format } from 'date-fns';
+import { format, formatDistance } from 'date-fns';
 import { CircleChevronLeft, Clock3, SquareArrowOutUpRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -21,8 +21,8 @@ const RepositoryInfoCard = ({
   dateOfLastUpdate: string;
   url: string;
 }) => (
-  <Card className='flex w-full flex-col pr-6'>
-    <CardHeader>
+  <Card className='flex w-full flex-col'>
+    <CardHeader className='mb-8 border-b'>
       <h2 className='text-beeci-yellow-500 dark:text-beeci-yellow-400'>
         {name}
       </h2>
@@ -35,7 +35,10 @@ const RepositoryInfoCard = ({
             <Clock3 className='size-4' /> Date of last update:
           </span>
           <span className='block w-full text-right text-base'>
-            {format(dateOfLastUpdate, 'HH:mm - dd MMM yyyy')}
+            {format(dateOfLastUpdate, 'HH:mm - dd MMM yyyy')}{' '}
+            <span className='font-light'>
+              ({formatDistance(new Date(dateOfLastUpdate), new Date())} ago)
+            </span>
           </span>
         </p>
       </div>
@@ -45,7 +48,7 @@ const RepositoryInfoCard = ({
             <SquareArrowOutUpRight className='size-4' /> Url:
           </span>
           <Link
-            className='ml-4 block w-full break-words text-right text-base underline'
+            className='mt-1 block w-full break-words text-right text-base underline'
             href={url}
           >
             {url}
