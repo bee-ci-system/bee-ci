@@ -24,7 +24,10 @@ const PipelineTableRow = ({
       <Link
         href={routeGenerators.pipeline(pipeline.id)}
         aria-label='open info about pipeline'
-        className={cn(buttonVariants({ size: 'icon', variant: 'ghost' }))}
+        className={cn(
+          buttonVariants({ size: 'icon', variant: 'ghost' }),
+          'mr-1',
+        )}
       >
         <ArrowRight
           width={18}

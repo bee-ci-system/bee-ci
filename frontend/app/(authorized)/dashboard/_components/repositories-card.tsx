@@ -23,7 +23,11 @@ const MyRepositoriesCard = ({
         <CardTitle>Repositories</CardTitle>
         <CardDescription>A list of all your repositories</CardDescription>
       </div>
-      <Button asChild size='sm' className='ml-auto gap-1 bg-beeci-yellow-600'>
+      <Button
+        asChild
+        size='sm'
+        className='ml-auto gap-1 bg-beeci-yellow-500 dark:bg-beeci-yellow-600'
+      >
         <Link href={routes.MY_REPOSITORIES}>
           View All
           <ArrowUpRight className='h-4 w-4' />

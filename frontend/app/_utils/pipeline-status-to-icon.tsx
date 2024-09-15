@@ -11,7 +11,12 @@ const PipelineStatusToIcon = (status: PipelineStatus) => {
       return <CircleX width={24} height={24} className='text-red-500' />;
     case PipelineStatus.IN_PROGRESS:
       return (
-        <LoaderCircle width={24} height={24} className='text-yellow-500' />
+        <svg
+          className='h-6 w-6 animate-spin text-yellow-500'
+          viewBox='0 0 24 24'
+        >
+          <LoaderCircle />
+        </svg>
       );
   }
 };

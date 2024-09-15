@@ -21,8 +21,8 @@ const getNavLinkClassNames = (
 ) => {
   return cn(
     currentPathname === targetPathname
-      ? 'bg-beeci-yellow-600 dark:bg-accent dark:text-beeci-yellow-500 text-white'
-      : 'text-muted-foreground hover:text-white hover:bg-beeci-yellow-600',
+      ? 'bg-beeci-yellow-500 dark:bg-accent dark:text-beeci-yellow-500 text-white'
+      : 'text-muted-foreground hover:text-white hover:bg-beeci-yellow-500',
     'flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:h-8 md:w-8',
   );
 };

@@ -34,8 +34,8 @@ const PipelinesCard = ({ pipelines }: { pipelines: Pipeline[] }) => (
               </div>
               <div className='flex w-2/5 justify-end'>
                 <p className='flex items-center gap-2'>
-                  {PipelineStatusToIcon(pipeline.status)}
                   <span className='text-sm'>{pipeline.status}</span>
+                  {PipelineStatusToIcon(pipeline.status)}
                 </p>
               </div>
             </Link>
