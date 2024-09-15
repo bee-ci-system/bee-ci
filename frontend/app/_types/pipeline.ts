@@ -7,6 +7,7 @@ export enum PipelineStatus {
 export interface Pipeline {
   id: string;
   repositoryName: string;
+  repositoryId: string;
   commitName: string;
   status: PipelineStatus;
   startDate: string;

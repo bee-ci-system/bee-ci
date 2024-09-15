@@ -80,7 +80,7 @@ const NavBar = () => {
               <TooltipContent side='right'>Documentation</TooltipContent>
             </Tooltip>
           </nav>
-          <nav className='ml-1 mt-auto flex flex-col items-center gap-4 px-2 sm:py-5'>
+          <nav className='mt-auto flex flex-col items-center gap-4 px-2 sm:py-5'>
             <ThemeToggler />
           </nav>
         </TooltipProvider>

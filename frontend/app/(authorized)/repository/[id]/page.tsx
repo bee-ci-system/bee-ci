@@ -1,9 +1,9 @@
-import { getRepositoryData } from '../_api/server';
+import { getRepositoryDataServer } from '../_api/server';
 import { PipelinesCard } from './_components/pipelines-card';
 import { RepositoryInfoCard } from './_components/repository-info-card';
 
 const RepositoryPage = async ({ params }: { params: { id: string } }) => {
-  const repositoryData = await getRepositoryData({ id: params.id });
+  const repositoryData = await getRepositoryDataServer({ id: params.id });
 
   return (
     <div className='mb-4 mt-4 flex h-[90%] max-w-[1800px] flex-col gap-4 md:mt-0 md:flex-row'>
