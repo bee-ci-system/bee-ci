@@ -1,9 +1,10 @@
-package listener
+// Package updater implements a listener that listens the database for build
+// updates and creates/updates check runs on GitHub.
+package updater
 
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -17,27 +18,29 @@ import (
 
 const channelName = "builds_channel"
 
-type Listener struct {
-	db          *sql.DB
+type Updater struct {
 	listener    *pq.Listener
 	channelName string
 	logger      *slog.Logger
+	repoRepo    data.RepoRepo
+	userRepo    data.UserRepo
+	buildRepo   data.BuildRepo
 }
 
-func NewListener(db *sql.DB, connInfo string) *Listener {
-	minReconn := 10 * time.Second
-	maxReconn := time.Minute
-	listener := pq.NewListener(connInfo, minReconn, maxReconn, nil)
+func NewUpdater(dbListener *pq.Listener, repoRepo data.RepoRepo, userRepo data.UserRepo, buildRepo data.BuildRepo) *Updater {
+	listener := dbListener
 
-	return &Listener{
-		db:          db,
+	return &Updater{
 		channelName: channelName,
 		listener:    listener,
 		logger:      slog.Default(), // TODO: add some "subsystem name" to this logger
+		repoRepo:    repoRepo,
+		userRepo:    userRepo,
+		buildRepo:   buildRepo,
 	}
 }
 
-func (l Listener) Start(ctx context.Context) error {
+func (l Updater) Start(ctx context.Context) error {
 	err := l.listener.Listen(channelName)
 	if err != nil {
 		return fmt.Errorf("listen on channel %s: %w", channelName, err)
@@ -49,7 +52,11 @@ func (l Listener) Start(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			l.logger.Debug("context cancelled, stopping listener")
-			_ = l.listener.Close()
+			err = l.listener.Close()
+			if err != nil {
+				l.logger.Error("failed to close listener", slog.Any("error", err))
+				return err
+			}
 			return nil
 		case msg := <-l.listener.Notify:
 			l.logger.Debug("received notification", slog.Any("channel", msg.Channel))
@@ -57,23 +64,38 @@ func (l Listener) Start(ctx context.Context) error {
 			updatedBuild := data.Build{}
 			err := json.Unmarshal([]byte(msg.Extra), &updatedBuild)
 			if err != nil {
-				// TODO: handle error
 				l.logger.Error("failed to unmarshal build", slog.Any("error", err))
+				break
 			}
+
+			err = l.createCheckRun(ctx, updatedBuild)
+			if err != nil {
+				l.logger.Error("failed to create check run", slog.Any("error", err))
+				break
+			}
+
+			l.logger.Info("check run created", slog.Any("build", updatedBuild))
 		}
 	}
 }
 
 // Returns immediately and starts a goroutine in the background
-func (l Listener) createCheckRun(ctx context.Context, build data.Build) error {
+func (l Updater) createCheckRun(ctx context.Context, build data.Build) error {
 	logger := l.logger
 
-	// FIXME: FIMXE!!
-	// TODO: go from thread to ball...
-	owner := "bartekpacia"
-	repo := "dumbpkg"
+	repo, err := l.repoRepo.Get(ctx, build.RepoID)
+	if err != nil {
+		return fmt.Errorf("getting repo: %w", err)
+	}
+	repoName := repo.Name
 
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/check-runs", owner, repo)
+	user, err := l.userRepo.Get(ctx, repo.UserID)
+	if err != nil {
+		return fmt.Errorf("getting user: %w", err)
+	}
+	owner := user.Username
+
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/check-runs", owner, repoName)
 
 	// githubInstallationClient := ctx.Value(ctxGHInstallationClient{}).(http.Client)
 	githubInstallationClient := http.DefaultClient

@@ -23,8 +23,8 @@ type User struct {
 
 type UserRepo interface {
 	Upsert(ctx context.Context, user NewUser) (err error)
-	GetByID(ctx context.Context, id int64) (user User, err error)
-	DeleteByID(ctx context.Context, id int64) (err error)
+	Get(ctx context.Context, id int64) (user User, err error)
+	Delete(ctx context.Context, id int64) (err error)
 }
 
 type PostgresUserRepo struct {
@@ -52,7 +52,7 @@ func (p PostgresUserRepo) Upsert(ctx context.Context, user NewUser) (err error) 
 	return nil
 }
 
-func (p PostgresUserRepo) GetByID(ctx context.Context, id int64) (user User, err error) {
+func (p PostgresUserRepo) Get(ctx context.Context, id int64) (user User, err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
 		SELECT id, username, access_token, refresh_token
 		FROM bee_schema.users
@@ -70,7 +70,7 @@ func (p PostgresUserRepo) GetByID(ctx context.Context, id int64) (user User, err
 	return user, nil
 }
 
-func (p PostgresUserRepo) DeleteByID(ctx context.Context, id int64) (err error) {
+func (p PostgresUserRepo) Delete(ctx context.Context, id int64) (err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
 		DELETE FROM bee_schema.users
 		WHERE id = $1

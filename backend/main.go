@@ -14,7 +14,7 @@ import (
 
 	"github.com/bartekpacia/ghapp/data"
 	l "github.com/bartekpacia/ghapp/internal/logger"
-	"github.com/bartekpacia/ghapp/listener"
+	"github.com/bartekpacia/ghapp/updater"
 	"github.com/bartekpacia/ghapp/worker"
 
 	"github.com/jmoiron/sqlx"
@@ -22,6 +22,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/lmittmann/tint"
 
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
 
@@ -80,7 +81,14 @@ func main() {
 	}
 	slog.Info("connected to database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
 
-	listen := listener.NewListener(db.DB, psqlInfo)
+	buildRepo := data.NewPostgresBuildRepo(db)
+	userRepo := data.NewPostgresUserRepo(db)
+	repoRepo := data.NewPostgresRepoRepo(db)
+
+	minReconnectInterval := 10 * time.Second
+	maxReconnectInterval := time.Minute
+	dbListener := pq.NewListener(psqlInfo, minReconnectInterval, maxReconnectInterval, nil)
+	listen := updater.NewUpdater(dbListener, repoRepo, userRepo, buildRepo)
 	go func() {
 		err := listen.Start(ctx)
 		if err != nil {
@@ -88,10 +96,6 @@ func main() {
 			panic(err)
 		}
 	}()
-
-	buildRepo := data.NewPostgresBuildRepo(db)
-	userRepo := data.NewPostgresUserRepo(db)
-	repoRepo := data.NewPostgresRepoRepo(db)
 
 	w := worker.New(ctx, buildRepo)
 	webhooks := NewWebhookHandler(userRepo, repoRepo, w)
