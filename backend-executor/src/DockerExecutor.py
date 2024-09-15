@@ -8,6 +8,7 @@ import os
 from InfluxDBHandler import InfluxDBHandler
 from structures.InfluxDBCredentials import InfluxDBCredentials
 from structures.BuildInfo import BuildInfo
+from structures.BuildConfig import BuildConfig
 
 # Rest of the code...
 influxDBCredentials = InfluxDBCredentials(
@@ -17,8 +18,9 @@ influxDBCredentials = InfluxDBCredentials(
     influxdbUrl="http://localhost:8086",
 )
 
+
 # Rest of the code...
-class Executor:
+class DockerExecutor:
     def __init__(self):
         self.client = docker.from_env()
         self.influxdbHandler = InfluxDBHandler(influxDBCredentials)
@@ -36,19 +38,19 @@ class Executor:
 
         container.put_archive(os.path.dirname("/tmp/run.sh"), data)
 
-    def run_container(self, script_path: str, build: BuildInfo):
+    def run_container(self, build_config: BuildConfig, build_info: BuildInfo):
+        script_path = "run.sh"
         try:
             with open(script_path, "r") as f:
                 pass
         except FileNotFoundError:
-            print("File not found")
-            sys.exit(1)
-        if not os.access(script_path, os.X_OK):
-            print("File is not executable")
-            sys.exit(1)
+            print("Fatal error - File not found")
+            sys.exit(1) 
 
+        self.client.images.pull(build_config.image)
+        print("Image pulled")
         container = self.client.containers.create(
-            "alpine", ["/bin/sh", "/tmp/run.sh"], detach=True
+            build_config.image, ["/bin/sh", "/tmp/run.sh"], detach=True
         )
         print("Container created: " + container.name)
 
@@ -58,8 +60,7 @@ class Executor:
         container.start()
 
         for line in container.logs(stream=True):
-            # print(line.strip())
-            self.influxdbHandler.log_to_influxdb(build.id, str(line.strip()))
+            self.influxdbHandler.log_to_influxdb(build_info.id, str(line.strip()))
 
         container.remove()
         print("Container removed")

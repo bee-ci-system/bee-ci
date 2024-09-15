@@ -51,7 +51,7 @@ class DbPuller:
                 """,
                 (build_info.repo_id,),
             )
-            repo_name, owner_id  = cursor.fetchone()
+            repo_name, owner_id = cursor.fetchone()
             cursor.execute(
                 """
                     SELECT username
@@ -73,3 +73,23 @@ class DbPuller:
         # Close the cursor
         cursor.close()
         return None
+
+    # update build status to finished
+    def update_conclusion(self, build_id: int, conclusion: str):
+        cursor = self.conn.cursor()
+        cursor.execute(
+            """
+                UPDATE bee_schema.builds
+                SET conclusion = %s, status = 'completed'
+                WHERE id = (
+                    SELECT id
+                    FROM   bee_schema.builds
+                    WHERE  id = %s
+                    FOR    UPDATE SKIP LOCKED
+                )
+            """,
+            (conclusion, build_id),
+        )
+        self.conn.commit()
+        cursor.close()
+        print("Build (id: ", build_id, ") conclusion updated to ", conclusion)

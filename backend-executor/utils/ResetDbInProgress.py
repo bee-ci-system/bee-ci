@@ -15,7 +15,7 @@ while True:
         """
         SELECT *
         FROM bee_schema.builds
-        WHERE STATUS = 'in_progress'
+        WHERE STATUS IN ('in_progress', 'completed')
         FOR UPDATE SKIP LOCKED
     """
     )
@@ -29,7 +29,7 @@ while True:
         cursor.execute(
             """
             UPDATE bee_schema.builds
-            SET STATUS = 'queued'
+            SET STATUS = 'queued', CONCLUSION = NULL
             WHERE id = %s
         """,
             (build_id,),
@@ -43,6 +43,8 @@ while True:
 
         # Print "Stop" after processing the row
         print("Stop")
+    else:
+        break
 
     # Close the cursor
     cursor.close()
