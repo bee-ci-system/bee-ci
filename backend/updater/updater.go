@@ -83,13 +83,13 @@ func (u Updater) Start(ctx context.Context) error {
 				break
 			}
 
+			// TODO: either create a new check run, or update an existing one
+
 			err = u.createCheckRun(ctx, updatedBuild)
 			if err != nil {
 				u.logger.Error("failed to create check run", slog.Any("error", err))
 				break
 			}
-
-			u.logger.Info("check run created", slog.Any("build", updatedBuild))
 		}
 	}
 }
@@ -146,7 +146,10 @@ func (u Updater) createCheckRun(ctx context.Context, build data.Build) error {
 		return fmt.Errorf("create check run for repo %s/%s: %w", user.Username, repo.Name, err)
 	}
 
-	u.logger.Info("check run created", slog.String("url", *checkRun.URL))
+	u.logger.Info("check run created",
+		slog.String("html_url", *checkRun.HTMLURL),
+		slog.Any("build", build),
+	)
 
 	return nil
 }

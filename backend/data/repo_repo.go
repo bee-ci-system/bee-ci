@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -11,6 +12,14 @@ type Repo struct {
 	ID     int64  `db:"id"`
 	Name   string `db:"name"`
 	UserID int64  `db:"user_id"`
+}
+
+func (r Repo) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.Int64("id", r.ID),
+		slog.String("name", r.Name),
+		slog.Int64("user_id", r.UserID),
+	)
 }
 
 type RepoRepo interface {

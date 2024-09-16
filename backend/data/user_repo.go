@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -19,6 +20,14 @@ type User struct {
 	Username     string `db:"username"`
 	AccessToken  string `db:"access_token"`
 	RefreshToken string `db:"refresh_token"`
+}
+
+func (u User) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.Int64("id", u.ID),
+		slog.String("username", u.Username),
+		slog.String("access_token[:5]", u.AccessToken[:5]),
+	)
 }
 
 type UserRepo interface {

@@ -32,6 +32,22 @@ type Build struct {
 	UpdatedAt      time.Time `db:"updated_at" json:"updated_at"`
 }
 
+func (b Build) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.Int64("id", b.ID),
+		slog.Int64("repo_id", b.RepoID),
+		slog.String("commit_sha", b.CommitSHA),
+		// slog.String("commit_message", b.CommitMsg), // Purposefully don't log the commit message
+		slog.Int64("installation_id", b.InstallationID),
+		slog.String("status", b.Status),
+		slog.Any("conclusion", b.Conclusion),
+		slog.Time("created_at", b.CreatedAt),
+		slog.Time("updated_at", b.UpdatedAt),
+	)
+}
+
+var _ slog.LogValuer = Build{}
+
 // FatBuild represents a row in the "builds" table, merged with information from other tables:
 // - "repos" table, for repository information (repository name)
 // - "users" table, for owner information (userID and user name)

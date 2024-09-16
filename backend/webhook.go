@@ -190,8 +190,7 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	msg := fmt.Sprintf("Successfully authorized! User %s (id %d) has been saved to the database. First 5 digits of GH access token: %s", *user.Login, *user.ID, accessToken[:5])
-	logger.Info(msg)
+	logger.Info("user was created/updated", slog.Any("user", user))
 
 	// Create JWT
 	token, err := createToken(*user.ID)
