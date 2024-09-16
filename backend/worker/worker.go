@@ -51,7 +51,12 @@ func (w Worker) job(build data.NewBuild) {
 
 	w.logger.Debug("created build", slog.Int64("build_id", buildId))
 
-	SleepContext(w.ctx, 5*time.Second)
+	err = SleepContext(w.ctx, 5*time.Second)
+	if err != nil {
+		w.logger.Error("job processing aborted", slog.Any("error", err))
+		return
+	}
+
 	err = w.buildRepo.UpdateStatus(w.ctx, buildId, "in_progress")
 	if err != nil {
 		w.logger.Error("failed to update build status", slog.Any("error", err))
@@ -60,7 +65,10 @@ func (w Worker) job(build data.NewBuild) {
 
 	w.logger.Debug("build in progress", slog.Int64("build_id", buildId))
 
-	SleepContext(w.ctx, 5*time.Second)
+	err = SleepContext(w.ctx, 5*time.Second)
+	if err != nil {
+		w.logger.Error("job processing aborted", slog.Any("error", err))
+	}
 
 	// random failure or success, 50% chance of failure
 	conclusion := "success"

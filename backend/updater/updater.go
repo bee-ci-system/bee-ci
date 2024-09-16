@@ -3,16 +3,16 @@
 package updater
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
-	"net/http/httputil"
 	"strconv"
 	"time"
+
+	"github.com/bee-ci/bee-ci-system/internal/auth"
+	"github.com/google/go-github/v64/github"
 
 	"github.com/bee-ci/bee-ci-system/data"
 
@@ -96,73 +96,57 @@ func (u Updater) Start(ctx context.Context) error {
 
 // Returns immediately and starts a goroutine in the background
 func (u Updater) createCheckRun(ctx context.Context, build data.Build) error {
-	logger := u.logger
-
 	repo, err := u.repoRepo.Get(ctx, build.RepoID)
 	if err != nil {
 		return fmt.Errorf("ger repo: %w", err)
 	}
-	repoName := repo.Name
 
 	user, err := u.userRepo.Get(ctx, repo.UserID)
 	if err != nil {
 		return fmt.Errorf("get user: %w", err)
 	}
-	owner := user.Username
-
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/check-runs", owner, repoName)
 
 	installationAccessToken, err := u.githubService.GetInstallationAccessToken(ctx, build.InstallationID)
 	if err != nil {
 		return fmt.Errorf("get installation access token: %w", err)
 	}
 
-	body := map[string]interface{}{
-		"external_id": strconv.FormatInt(build.ID, 10),
-		"head_sha":    build.CommitSHA,
-		"name":        build.CommitMsg + ", started at: " + fmt.Sprint(time.Now().Format(time.RFC822Z)),
-		"details_url": "https://garden.pacia.com",
-		"status":      build.Status,
+	checkRunOptions := github.CreateCheckRunOptions{
+		// TODO: Get name from the BeeCI config file?
+		Name:        build.CommitMsg + ", started at: " + fmt.Sprint(time.Now().Format(time.RFC822Z)),
+		HeadSHA:     build.CommitSHA,
+		DetailsURL:  github.String("https://bee-ci.vercel.app/dashboad/"), // TODO: Use actual URL of the backend
+		ExternalID:  github.String(strconv.FormatInt(build.ID, 10)),
+		Status:      github.String(build.Status),
+		Conclusion:  nil,
+		StartedAt:   &github.Timestamp{Time: build.CreatedAt},
+		CompletedAt: nil,
+		Output: &github.CheckRunOutput{
+			Title:            github.String("This is check run title"),
+			Summary:          github.String("This is check run summary"),
+			Text:             github.String("This is check run text"),
+			AnnotationsCount: nil,
+			AnnotationsURL:   nil,
+			Annotations:      nil,
+			Images:           nil,
+		},
+		Actions: nil,
 	}
 	if build.Conclusion != nil {
-		body["conclusion"] = build.Conclusion
-		body["completed_at"] = build.UpdatedAt
+		checkRunOptions.Conclusion = build.Conclusion
+		checkRunOptions.CompletedAt = &github.Timestamp{Time: build.UpdatedAt}
 	}
 
-	bodyBytes, err := json.Marshal(body)
+	ghClient := github.NewClient(&http.Client{
+		Transport: &auth.BearerTransport{Token: installationAccessToken},
+	})
+
+	checkRun, _, err := ghClient.Checks.CreateCheckRun(ctx, user.Username, repo.Name, checkRunOptions)
 	if err != nil {
-		return fmt.Errorf("marshalling body to JSON: %w", err)
+		return fmt.Errorf("create check run for repo %s/%s: %w", user.Username, repo.Name, err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return fmt.Errorf("creating request: %w", err)
-	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("Authorization", "Bearer "+installationAccessToken)
-
-	dat, _ := httputil.DumpRequestOut(req, true)
-	log.Println("---")
-	log.Println(string(dat))
-	log.Println("---")
-
-	resp, err := u.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("sending POST request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	respBodyBytes := make([]byte, 0)
-	_, err = resp.Body.Read(respBodyBytes)
-	if err != nil {
-		return fmt.Errorf("reading response body: %w", err)
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(respBodyBytes))
-	}
-
-	logger.Info("request made", slog.Int("status", resp.StatusCode), slog.String("body", string(respBodyBytes)))
+	u.logger.Info("check run created", slog.String("url", *checkRun.URL))
 
 	return nil
 }
