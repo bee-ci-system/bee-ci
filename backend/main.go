@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/bee-ci/bee-ci-system/data"
-	l "github.com/bee-ci/bee-ci-system/internal/logger"
 	"github.com/bee-ci/bee-ci-system/updater"
 	"github.com/bee-ci/bee-ci-system/worker"
 
@@ -117,9 +116,7 @@ func main() {
 	}
 }
 
-func handleIndex(w http.ResponseWriter, r *http.Request) {
-	logger, _ := l.FromContext(r.Context())
-	logger.Info("request received", slog.String("path", r.URL.Path))
+func handleIndex(w http.ResponseWriter, _ *http.Request) {
 	_, _ = fmt.Fprintln(w, "hello world\n\nthis is bee-ci backend server")
 }
 

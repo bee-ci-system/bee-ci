@@ -32,9 +32,6 @@ func createToken(userID int64) (string, error) {
 		"iat": time.Now().Unix(), // Issued at
 	})
 
-	// Print information about the created token
-	fmt.Printf("Token claims added: %+v\n", claims)
-
 	tokenString, err := claims.SignedString(jwtSecret)
 	if err != nil {
 		return "", err
@@ -193,8 +190,8 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	msg := fmt.Sprintf("Successfully authorized! User %s (ID: %d) has been saved to the database.", *user.Login, *user.ID)
-	logger.Info(msg, "access_token", accessToken)
+	msg := fmt.Sprintf("Successfully authorized! User %s (id %d) has been saved to the database. First 5 digits: %s", *user.Login, *user.ID, accessToken[:5])
+	logger.Info(msg)
 
 	// Create JWT
 	token, err := createToken(*user.ID)
@@ -207,7 +204,7 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 	jwtTokenCookie := &http.Cookie{
 		Name:   "jwt",
 		Value:  token,
-		Domain: "bee-ci.pacia.tech",
+		Domain: "bee-ci.pacia.tech", // TODO: Redirect to the actual URL we're running on
 		Path:   "/",
 	}
 
@@ -254,7 +251,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		if *event.Action == "created" {
 			repositories := event.Repositories
 
-			logger.Info("app installation created",
+			logger.Debug("app installation created",
 				slog.Any("id", installation.ID),
 				slog.String("login", login),
 				slog.Int("repositories", len(repositories)),
@@ -268,7 +265,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		} else if *event.Action == "deleted" {
-			logger.Info("app installation deleted",
+			logger.Debug("app installation deleted",
 				slog.Any("id", installation.ID),
 				slog.String("login", login),
 			)

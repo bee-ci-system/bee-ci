@@ -48,7 +48,7 @@ func WithLogger(next http.Handler) http.Handler {
 		if r.Header.Get("X-GitHub-Event") != "" {
 			props = append(props, slog.String("event", r.Header.Get("X-GitHub-Event")))
 		}
-		logger.Info("new request", props...)
+		logger.Debug("new request", props...)
 
 		ctx := r.Context()
 		ctx = l.WithLogger(ctx, logger)
