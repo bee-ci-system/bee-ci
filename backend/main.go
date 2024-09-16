@@ -109,10 +109,10 @@ func main() {
 
 	loggingMux := WithTrailingSlashes(WithLogger(mux))
 	addr := fmt.Sprint("0.0.0.0:", port)
-	slog.Info("server will start listening listening", "addr", addr)
+	slog.Info("server will listen and serve", "addr", addr)
 	err = http.ListenAndServe(addr, loggingMux)
 	if err != nil {
-		slog.Error("failed to start listening", slog.Any("error", err))
+		slog.Error("failed while listening and serving", slog.Any("error", err))
 		os.Exit(1)
 	}
 }
