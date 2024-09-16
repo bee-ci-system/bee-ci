@@ -82,6 +82,7 @@ func main() {
 	buildRepo := data.NewPostgresBuildRepo(db)
 	userRepo := data.NewPostgresUserRepo(db)
 	repoRepo := data.NewPostgresRepoRepo(db)
+	logsRepo := data.NewInfluxLogsRepo()
 
 	githubService := updater.NewGithubService(githubAppID, rsaPrivateKey)
 
@@ -99,7 +100,7 @@ func main() {
 
 	w := worker.New(ctx, buildRepo)
 	webhooks := NewWebhookHandler(userRepo, repoRepo, w)
-	app := NewApp(buildRepo, repoRepo)
+	app := NewApp(buildRepo, logsRepo, repoRepo)
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /{$}", http.HandlerFunc(handleIndex))

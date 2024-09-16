@@ -47,8 +47,11 @@ type BuildRepo interface {
 	UpdateStatus(ctx context.Context, buildID int64, status string) (err error)
 	SetConclusion(ctx context.Context, buildID int64, conclusion string) (err error)
 
-	// GetAll returns all builds for all repositories of userID.
-	GetAll(ctx context.Context, userID int64) (builds []FatBuild, err error)
+	// Get returns a build by its ID.
+	Get(ctx context.Context, buildID int64) (build FatBuild, err error)
+
+	// GetAllByUserID returns all builds for all repositories of userID.
+	GetAllByUserID(ctx context.Context, userID int64) (builds []FatBuild, err error)
 
 	// GetAllByRepoID returns all builds for the repository of repoID.
 	GetAllByRepoID(ctx context.Context, userID, repoID int64) (builds []FatBuild, err error)
@@ -120,9 +123,27 @@ func (p PostgresBuildRepo) SetConclusion(ctx context.Context, buildID int64, con
 
 // TODO: refactor to only get builds for a specific user
 
-func (p PostgresBuildRepo) GetAll(ctx context.Context, userID int64) (builds []FatBuild, err error) {
+func (p PostgresBuildRepo) Get(ctx context.Context, buildID int64) (build FatBuild, err error) {
 	logger, _ := l.FromContext(ctx)
-	logger.Debug("BuildRepo.GetAll", slog.Any("userID", userID))
+	logger.Debug("BuildRepo.Get", slog.Any("buildID", buildID))
+
+	err = p.db.GetContext(ctx, &build, `
+		 		SELECT builds.*, repos.name AS repo_name, users.id AS user_id, users.username AS user_name
+		 		FROM bee_schema.builds builds
+		 		JOIN bee_schema.repos repos ON builds.repo_id = repos.id
+		 		JOIN bee_schema.users users ON repos.user_id = users.id
+		 		WHERE builds.id = $1
+		 	`, buildID)
+	if err != nil {
+		return FatBuild{}, fmt.Errorf("executing SELECT query for buildID %d: %v", buildID, err)
+	}
+
+	return build, nil
+}
+
+func (p PostgresBuildRepo) GetAllByUserID(ctx context.Context, userID int64) (builds []FatBuild, err error) {
+	logger, _ := l.FromContext(ctx)
+	logger.Debug("BuildRepo.GetAllByUserID", slog.Any("userID", userID))
 
 	builds = make([]FatBuild, 0)
 	err = p.db.SelectContext(ctx, &builds, `

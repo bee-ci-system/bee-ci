@@ -190,7 +190,7 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	msg := fmt.Sprintf("Successfully authorized! User %s (id %d) has been saved to the database. First 5 digits: %s", *user.Login, *user.ID, accessToken[:5])
+	msg := fmt.Sprintf("Successfully authorized! User %s (id %d) has been saved to the database. First 5 digits of GH access token: %s", *user.Login, *user.ID, accessToken[:5])
 	logger.Info(msg)
 
 	// Create JWT
@@ -200,6 +200,8 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "error creating token", http.StatusInternalServerError)
 		return
 	}
+
+	logger.Debug("JWT token created", slog.String("username", *user.Name), slog.String("token", token))
 
 	jwtTokenCookie := &http.Cookie{
 		Name:   "jwt",
