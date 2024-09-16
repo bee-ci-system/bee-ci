@@ -213,6 +213,7 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 
 	http.SetCookie(w, jwtTokenCookie)
 
+	// TODO: Redirect to the actual URL we're running on
 	http.Redirect(w, r, "https://app.bee-ci.pacia.tech/dashboard", http.StatusSeeOther)
 }
 
@@ -312,23 +313,9 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				slog.String("head_sha", headSHA),
 			)
 
-			// Create 3 random builds
-			h.worker.Add(data.NewBuild{
-				RepoID:         *event.Repo.ID,
-				CommitSHA:      headSHA,
-				CommitMsg:      message,
-				InstallationID: installationID,
-			})
+			// TODO: Parse information from the BeeCI config file here (such as name)
 
-			// Create 3 random builds
-			h.worker.Add(data.NewBuild{
-				RepoID:         *event.Repo.ID,
-				CommitSHA:      headSHA,
-				CommitMsg:      message,
-				InstallationID: installationID,
-			})
-
-			// Create 3 random builds
+			// Create a build
 			h.worker.Add(data.NewBuild{
 				RepoID:         *event.Repo.ID,
 				CommitSHA:      headSHA,
