@@ -62,7 +62,7 @@ class DbPuller:
                 """,
                 (owner_id,),
             )
-            owner_name = cursor.fetchone()
+            owner_name = cursor.fetchone()[0]
             if owner_name and repo_name:
                 build_info.owner_name = owner_name
                 build_info.repo_name = repo_name

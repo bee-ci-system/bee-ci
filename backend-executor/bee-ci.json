@@ -1,7 +1,31 @@
+// to całe to jest 1 pipeline
 {
-    "image": "node:14",
-    "commands": [
-        "npm install",
-        "npm run test"
+    "jobs": [
+        {
+            "job_name": "Format code",
+            "timeout": 5,
+            "image": "node:20",
+            "commands": [
+                "npm install",
+                "prettier ."
+            ]
+        },
+        {
+            "job_name": "Run tests", // <--- Ten name musi też znać backend, nie tylko executor. Np. stworzenie check runa i wysłanie go do GitHuba.
+            "timeout": 10,
+            "image": "node:20",
+            "only_runs_after" : ["Format code"], // <--- Nie na teraz
+            "commands": [
+                "npm install",
+                "npm run test"
+            ]
+        }
     ]
 }
+
+// 1. push commita na gh
+// 2. backend parsuje config (beeci.json) i zapisuje pipeline i joby do bazy
+// 3. executor pobiera indywidualne joby z bazy
+
+// pipeline
+// job - moze byc ich kilka w 1 pipelinie

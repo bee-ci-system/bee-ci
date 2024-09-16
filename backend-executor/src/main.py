@@ -52,24 +52,24 @@ if __name__ == "__main__":
             time.sleep(sleep_time)
             continue
 
-        config_data = BuildConfigPuller.pull_config(build_test)
+        config_data = BuildConfigPuller.pull_config(build_info)
         if not config_data:
-            db_puller.update_conclusion(build_info.id, "failed")
+            db_puller.update_conclusion(build_info.id, "failure")
             continue
         build_config = BuildConfigAnalyzer.analyze(config_data)
         if not build_config:
-            db_puller.update_conclusion(build_info.id, "failed")
+            db_puller.update_conclusion(build_info.id, "failure")
             continue
 
         try:
             docker_executor.run_container(build_config, build_info)
         except ExecutorFailure:
             logger.error("Failed to execute the build")
-            db_puller.update_conclusion(build_info.id, "failed")
+            db_puller.update_conclusion(build_info.id, "failure")
             continue
         except Exception as e:
             logger.fatal("An unexpected error occurred: " + str(e))
-            db_puller.update_conclusion(build_info.id, "failed")
+            db_puller.update_conclusion(build_info.id, "failure")
             continue
 
         db_puller.update_conclusion(build_info.id, "success")

@@ -7,23 +7,23 @@ SET search_path TO bee_schema, public;
 -- user charlie
 
 INSERT INTO bee_schema.users (id, username, access_token, refresh_token)
-VALUES (-100, 'charlie', 'access_token', 'refresh_token');
+VALUES (-100, 'bee-ci-system', 'access_token', 'refresh_token');
 
 INSERT INTO bee_schema.repos (id, name, user_id)
-VALUES (-200, 'c_alpha', -100),
-       (-201, 'c_bravo', -100),
-       (-202, 'c_charlie', -100);
+VALUES (-200, 'example-using-beeci', -100),
+       (-201, 'example-using-beeci', -100),
+       (-202, 'example-using-beeci', -100);
 
 INSERT INTO bee_schema.builds (repo_id, commit_sha, commit_message, installation_id, status)
-VALUES (-200, '1234567890abc', 'c_alpha commit 1', 0, 'queued');
+VALUES (-200, '0262a10fb0590f29471feed5ecf53b418b5b0d67', 'c_alpha commit 1', 0, 'queued');
 INSERT INTO bee_schema.builds (repo_id, commit_sha, commit_message, installation_id, status)
-VALUES (-200, '1234567890xyz', 'c_alpha commit 2', 0, 'queued');
+VALUES (-200, '0262a10fb0590f29471feed5ecf53b418b5b0d67', 'c_alpha commit 2', 0, 'queued');
 
 INSERT INTO bee_schema.builds (repo_id, commit_sha, commit_message, installation_id, status)
-VALUES (-201, '1234567890def', 'c_bravo commit 1', 0, 'queued');
+VALUES (-201, '0262a10fb0590f29471feed5ecf53b418b5b0d67', 'c_bravo commit 1', 0, 'queued');
 
 INSERT INTO bee_schema.builds (repo_id, commit_sha, commit_message, installation_id, status)
-VALUES (-201, '1234567890ghi', 'c_bravo commit 2', 0, 'queued');
+VALUES (-201, '0262a10fb0590f29471feed5ecf53b418b5b0d67', 'c_bravo commit 2', 0, 'queued');
 
 -- user johnny
 
