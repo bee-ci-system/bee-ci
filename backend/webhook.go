@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/go-github/v64/github"
+	"github.com/google/go-github/v65/github"
 
 	"github.com/bee-ci/bee-ci-system/data"
 	l "github.com/bee-ci/bee-ci-system/internal/logger"

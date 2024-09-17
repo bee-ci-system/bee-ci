@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v64/github"
+	"github.com/google/go-github/v65/github"
 
 	"github.com/bee-ci/bee-ci-system/internal/auth"
 	"github.com/bee-ci/bee-ci-system/internal/userid"

@@ -10,7 +10,7 @@ import (
 
 	"github.com/bee-ci/bee-ci-system/internal/auth"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/go-github/v64/github"
+	"github.com/google/go-github/v65/github"
 )
 
 type GithubService struct {
