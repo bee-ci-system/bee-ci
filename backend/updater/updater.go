@@ -74,16 +74,19 @@ func (u Updater) Start(ctx context.Context) error {
 			}
 			return nil
 		case msg := <-u.dbListener.Notify:
-			u.logger.Debug("db listener got notification", slog.Any("channel", msg.Channel))
-
 			updatedBuild := data.Build{}
 			err := json.Unmarshal([]byte(msg.Extra), &updatedBuild)
 			if err != nil {
-				u.logger.Error("failed to unmarshal build", slog.Any("error", err))
+				u.logger.Error("db listener got notification but it failed to unmarshal build", slog.Any("error", err))
 				break
 			}
 
-			if updatedBuild.Status == "pending" && updatedBuild.CheckRunID == nil {
+			u.logger.Debug("db listener got notification",
+				slog.Any("channel", msg.Channel),
+				slog.Any("build", updatedBuild),
+			)
+
+			if updatedBuild.Status == "queued" && updatedBuild.CheckRunID == nil {
 				// The build is new and hasn't been sent to GitHub yet. Create a new check run.
 				checkRunID, err := u.createCheckRun(ctx, updatedBuild)
 				if err != nil {
@@ -92,7 +95,11 @@ func (u Updater) Start(ctx context.Context) error {
 				}
 
 				err = u.buildRepo.SetCheckRunID(ctx, updatedBuild.ID, checkRunID)
-			} else if updatedBuild.Status == "pending" && updatedBuild.CheckRunID != nil {
+				if err != nil {
+					u.logger.Error("failed to update check run ID in the database", slog.Any("error", err))
+					break
+				}
+			} else if updatedBuild.Status == "queued" && updatedBuild.CheckRunID != nil {
 				// Nothing to be done. Te check run on Gitub has been already created.
 			} else {
 				if updatedBuild.CheckRunID == nil {

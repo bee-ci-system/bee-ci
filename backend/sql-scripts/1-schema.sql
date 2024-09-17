@@ -5,7 +5,7 @@ SET search_path TO bee_schema, public;
 
 CREATE TABLE bee_schema.users
 (
-    id            INTEGER PRIMARY KEY,          -- GitHub user id
+    id            BIGINT PRIMARY KEY,           -- GitHub user id
     username      VARCHAR(255) UNIQUE NOT NULL, -- username on GitHub (yes it can change, no we don't care)
     --installation_token VARCHAR(40) NOT NULL,
     access_token  VARCHAR(40)         NOT NULL,
@@ -14,9 +14,9 @@ CREATE TABLE bee_schema.users
 
 CREATE TABLE bee_schema.repos
 (
-    id      INTEGER PRIMARY KEY,   -- GitHub repo id
+    id      BIGINT PRIMARY KEY,    -- GitHub repo id
     name    VARCHAR(256) NOT NULL, -- name on GitHub (yes it can change, no we don't care)
-    user_id INTEGER      NOT NULL,
+    user_id BIGINT       NOT NULL,
     FOREIGN KEY (user_id) REFERENCES bee_schema.users (id) ON DELETE CASCADE
 );
 
@@ -27,11 +27,11 @@ CREATE TYPE build_conclusion AS ENUM ('canceled', 'failure', 'success', 'timed_o
 CREATE TABLE bee_schema.builds
 (
     id              SERIAL PRIMARY KEY,                -- aka external_id for GitHub check run
-    repo_id         INTEGER                  NOT NULL,
+    repo_id         BIGINT                   NOT NULL,
     commit_sha      VARCHAR(40)              NOT NULL,
     commit_message  VARCHAR(2048)            NOT NULl, -- we ain't handling longer commit messages
-    installation_id INTEGER                  NOT NULL,
-    check_run_id    INTEGER,                           -- id of the check run on GitHub
+    installation_id BIGINT                   NOT NULL,
+    check_run_id    BIGINT,                            -- id of the check run on GitHub
     status          build_status             NOT NULL,
     conclusion      build_conclusion,
     created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,

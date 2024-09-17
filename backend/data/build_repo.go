@@ -34,15 +34,25 @@ type Build struct {
 }
 
 func (b Build) LogValue() slog.Value {
+	checkRunIDValue := slog.Any("check_run_id", b.CheckRunID)
+	if b.CheckRunID != nil {
+		checkRunIDValue = slog.Int64("check_run_id", *b.CheckRunID)
+	}
+
+	conclusionValue := slog.Any("conclusion", b.Conclusion)
+	if b.Conclusion != nil {
+		conclusionValue = slog.String("conclusion", *b.Conclusion)
+	}
+
 	return slog.GroupValue(
 		slog.Int64("id", b.ID),
 		slog.Int64("repo_id", b.RepoID),
 		slog.String("commit_sha", b.CommitSHA),
 		// slog.String("commit_message", b.CommitMsg), // Purposefully don't log the commit message
 		slog.Int64("installation_id", b.InstallationID),
-		slog.Any("check_run_id", b.CheckRunID),
+		checkRunIDValue,
 		slog.String("status", b.Status),
-		slog.Any("conclusion", b.Conclusion),
+		conclusionValue,
 		slog.Time("created_at", b.CreatedAt),
 		slog.Time("updated_at", b.UpdatedAt),
 	)

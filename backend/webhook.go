@@ -153,10 +153,10 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 	}
 
 	var accessToken string
-	var user *github.User
+	var ghUser *github.User
 	if code == "charlie" {
 		accessToken = "access_token"
-		user = &github.User{
+		ghUser = &github.User{
 			ID:    github.Int64(-100),
 			Login: github.String("charlie"),
 		}
@@ -170,37 +170,37 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		}
 
 		ghClient := github.NewClient(nil).WithAuthToken(accessToken)
-		user, _, err = ghClient.Users.Get(ctx, "")
+		ghUser, _, err = ghClient.Users.Get(ctx, "")
 		if err != nil {
-			logger.Error("error getting user info", slog.Any("error", err))
-			http.Error(w, "error getting user info", http.StatusInternalServerError)
+			logger.Error("error getting ghUser info", slog.Any("error", err))
+			http.Error(w, "error getting ghUser info", http.StatusInternalServerError)
 			return
 		}
 
 		err = h.userRepo.Upsert(ctx, data.NewUser{
-			ID:           *user.ID,
-			Username:     *user.Login,
+			ID:           *ghUser.ID,
+			Username:     *ghUser.Login,
 			AccessToken:  accessToken,
 			RefreshToken: "", // GitHub doesn't provide refresh tokens for OAuth Apps
 		})
 		if err != nil {
-			logger.Error("error upserting user to database", slog.Any("error", err))
-			http.Error(w, "error upserting user to database", http.StatusInternalServerError)
+			logger.Error("error upserting ghUser to database", slog.Any("error", err))
+			http.Error(w, "error upserting ghUser to database", http.StatusInternalServerError)
 			return
 		}
 	}
 
-	logger.Info("user was created/updated", slog.Any("user", user))
+	logger.Info("github user was created/updated", slog.Any("github_user", ghUser))
 
 	// Create JWT
-	token, err := createToken(*user.ID)
+	token, err := createToken(*ghUser.ID)
 	if err != nil {
 		logger.Error("error creating token", slog.Any("error", err))
 		http.Error(w, "error creating token", http.StatusInternalServerError)
 		return
 	}
 
-	logger.Debug("JWT token created", slog.String("username", *user.Name), slog.String("token", token))
+	logger.Debug("JWT token created", slog.String("username", *ghUser.Name), slog.String("token", token))
 
 	jwtTokenCookie := &http.Cookie{
 		Name:   "jwt",
