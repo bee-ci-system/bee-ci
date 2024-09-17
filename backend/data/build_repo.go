@@ -26,6 +26,7 @@ type Build struct {
 	CommitSHA      string    `db:"commit_sha" json:"commit_sha"`
 	CommitMsg      string    `db:"commit_message" json:"commit_message"`
 	InstallationID int64     `db:"installation_id" json:"installation_id"`
+	CheckRunID     *int64    `db:"check_run_id" json:"check_run_id"`
 	Status         string    `db:"status" json:"status"`
 	Conclusion     *string   `db:"conclusion" json:"conclusion"`
 	CreatedAt      time.Time `db:"created_at" json:"created_at"`
@@ -39,6 +40,7 @@ func (b Build) LogValue() slog.Value {
 		slog.String("commit_sha", b.CommitSHA),
 		// slog.String("commit_message", b.CommitMsg), // Purposefully don't log the commit message
 		slog.Int64("installation_id", b.InstallationID),
+		slog.Any("check_run_id", b.CheckRunID),
 		slog.String("status", b.Status),
 		slog.Any("conclusion", b.Conclusion),
 		slog.Time("created_at", b.CreatedAt),
@@ -61,7 +63,15 @@ type FatBuild struct {
 type BuildRepo interface {
 	Create(ctx context.Context, build NewBuild) (id int64, err error)
 	UpdateStatus(ctx context.Context, buildID int64, status string) (err error)
+
+	// SetConclusion sets the conclusion of a build.
+	// Available values are: "canceled", "failure", "success", "timed_out".
+	//
+	// See https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
 	SetConclusion(ctx context.Context, buildID int64, conclusion string) (err error)
+
+	// SetCheckRunID sets the check_run_id of a build.
+	SetCheckRunID(ctx context.Context, buildID, checkRunID int64) (err error)
 
 	// Get returns a build by its ID.
 	Get(ctx context.Context, buildID int64) (build FatBuild, err error)
@@ -116,9 +126,6 @@ func (p PostgresBuildRepo) UpdateStatus(ctx context.Context, buildID int64, stat
 	return nil
 }
 
-// SetConclusion sets the conclusion of a build. Available values are: "canceled", "failure", "success", "timed_out".
-//
-// See https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28#create-a-check-run
 func (p PostgresBuildRepo) SetConclusion(ctx context.Context, buildID int64, conclusion string) (err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
 		UPDATE bee_schema.builds
@@ -130,6 +137,24 @@ func (p PostgresBuildRepo) SetConclusion(ctx context.Context, buildID int64, con
 	}
 
 	_, err = stmt.ExecContext(ctx, buildID, conclusion)
+	if err != nil {
+		return fmt.Errorf("executing UPDATE query: %v", err)
+	}
+
+	return nil
+}
+
+func (p PostgresBuildRepo) SetCheckRunID(ctx context.Context, buildID, checkRunID int64) (err error) {
+	stmt, err := p.db.PreparexContext(ctx, `
+		UPDATE bee_schema.builds
+		SET check_run_id = $2
+		WHERE id = $1
+	`)
+	if err != nil {
+		return fmt.Errorf("preparing query: %v", err)
+	}
+
+	_, err = stmt.ExecContext(ctx, buildID, checkRunID)
 	if err != nil {
 		return fmt.Errorf("executing UPDATE query: %v", err)
 	}

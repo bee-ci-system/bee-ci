@@ -26,15 +26,16 @@ CREATE TYPE build_conclusion AS ENUM ('canceled', 'failure', 'success', 'timed_o
 
 CREATE TABLE bee_schema.builds
 (
-    id             SERIAL PRIMARY KEY,                -- aka external_id for GitHub check run
-    repo_id        INTEGER                  NOT NULL,
-    commit_sha     VARCHAR(40)              NOT NULL,
-    commit_message VARCHAR(2048)            NOT NULl, -- we ain't handling longer commit messages
-    installation_id INTEGER                 NOT NULL,
-    status         build_status             NOT NULL,
-    conclusion     build_conclusion,
-    created_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id              SERIAL PRIMARY KEY,                -- aka external_id for GitHub check run
+    repo_id         INTEGER                  NOT NULL,
+    commit_sha      VARCHAR(40)              NOT NULL,
+    commit_message  VARCHAR(2048)            NOT NULl, -- we ain't handling longer commit messages
+    installation_id INTEGER                  NOT NULL,
+    check_run_id    INTEGER,                           -- id of the check run on GitHub
+    status          build_status             NOT NULL,
+    conclusion      build_conclusion,
+    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (repo_id) REFERENCES bee_schema.repos (id) ON DELETE CASCADE,
     CONSTRAINT status_completed_requires_conclusion CHECK (
         conclusion IS NULL OR status = 'completed'

@@ -83,35 +83,54 @@ func (u Updater) Start(ctx context.Context) error {
 				break
 			}
 
-			// TODO: either create a new check run, or update an existing one
+			if updatedBuild.Status == "pending" && updatedBuild.CheckRunID == nil {
+				// The build is new and hasn't been sent to GitHub yet. Create a new check run.
+				checkRunID, err := u.createCheckRun(ctx, updatedBuild)
+				if err != nil {
+					u.logger.Error("failed to create check run", slog.Any("error", err))
+					break
+				}
 
-			err = u.createCheckRun(ctx, updatedBuild)
-			if err != nil {
-				u.logger.Error("failed to create check run", slog.Any("error", err))
-				break
+				err = u.buildRepo.SetCheckRunID(ctx, updatedBuild.ID, checkRunID)
+			} else if updatedBuild.Status == "pending" && updatedBuild.CheckRunID != nil {
+				// Nothing to be done. Te check run on Gitub has been already created.
+			} else {
+				if updatedBuild.CheckRunID == nil {
+					// This should never happen, but let's be extra safe.
+					u.logger.Error("check run ID is nil", slog.Any("build", updatedBuild))
+					break
+				}
+				// The build isn't new and has been sent to GitHub before. Update the check run.
+				err = u.updateCheckRun(ctx, *updatedBuild.CheckRunID, updatedBuild)
+				if err != nil {
+					u.logger.Error("failed to update check run", slog.Any("error", err))
+				}
 			}
 		}
 	}
 }
 
-// Returns immediately and starts a goroutine in the background
-func (u Updater) createCheckRun(ctx context.Context, build data.Build) error {
+func (u Updater) createCheckRun(ctx context.Context, build data.Build) (checkRunID int64, err error) {
 	repo, err := u.repoRepo.Get(ctx, build.RepoID)
 	if err != nil {
-		return fmt.Errorf("ger repo: %w", err)
+		return 0, fmt.Errorf("ger repo: %w", err)
 	}
 
 	user, err := u.userRepo.Get(ctx, repo.UserID)
 	if err != nil {
-		return fmt.Errorf("get user: %w", err)
+		return 0, fmt.Errorf("get user: %w", err)
 	}
 
 	installationAccessToken, err := u.githubService.GetInstallationAccessToken(ctx, build.InstallationID)
 	if err != nil {
-		return fmt.Errorf("get installation access token: %w", err)
+		return 0, fmt.Errorf("get installation access token: %w", err)
 	}
 
-	checkRunOptions := github.CreateCheckRunOptions{
+	ghClient := github.NewClient(&http.Client{
+		Transport: &auth.BearerTransport{Token: installationAccessToken},
+	})
+
+	createCheckRunOptions := github.CreateCheckRunOptions{
 		// TODO: Get name from the BeeCI config file?
 		Name:        build.CommitMsg + ", started at: " + fmt.Sprint(time.Now().Format(time.RFC822Z)),
 		HeadSHA:     build.CommitSHA,
@@ -132,21 +151,62 @@ func (u Updater) createCheckRun(ctx context.Context, build data.Build) error {
 		},
 		Actions: nil,
 	}
-	if build.Conclusion != nil {
-		checkRunOptions.Conclusion = build.Conclusion
-		checkRunOptions.CompletedAt = &github.Timestamp{Time: build.UpdatedAt}
+
+	checkRun, _, err := ghClient.Checks.CreateCheckRun(ctx, user.Username, repo.Name, createCheckRunOptions)
+	if err != nil {
+		return 0, fmt.Errorf("create check run for repo %s/%s: %w", user.Username, repo.Name, err)
+	}
+
+	u.logger.Info("check run created",
+		slog.String("html_url", *checkRun.HTMLURL),
+		slog.Any("build", build),
+	)
+
+	return *checkRun.ID, nil
+}
+
+func (u Updater) updateCheckRun(ctx context.Context, checkRunID int64, build data.Build) error {
+	repo, err := u.repoRepo.Get(ctx, build.RepoID)
+	if err != nil {
+		return fmt.Errorf("ger repo: %w", err)
+	}
+
+	user, err := u.userRepo.Get(ctx, repo.UserID)
+	if err != nil {
+		return fmt.Errorf("get user: %w", err)
+	}
+
+	installationAccessToken, err := u.githubService.GetInstallationAccessToken(ctx, build.InstallationID)
+	if err != nil {
+		return fmt.Errorf("get installation access token: %w", err)
 	}
 
 	ghClient := github.NewClient(&http.Client{
 		Transport: &auth.BearerTransport{Token: installationAccessToken},
 	})
 
-	checkRun, _, err := ghClient.Checks.CreateCheckRun(ctx, user.Username, repo.Name, checkRunOptions)
-	if err != nil {
-		return fmt.Errorf("create check run for repo %s/%s: %w", user.Username, repo.Name, err)
+	// TODO: Do I need to set these options again, or if I set them to null they will be removed?
+	checkRunUpdateOptions := github.UpdateCheckRunOptions{
+		Name:        build.CommitMsg + ", started at: " + fmt.Sprint(time.Now().Format(time.RFC822Z)),
+		DetailsURL:  github.String("https://bee-ci.vercel.app/dashboad/"), // TODO: Use actual URL of the backend
+		ExternalID:  nil,
+		Status:      nil,
+		Conclusion:  nil,
+		CompletedAt: nil,
+		Output:      nil,
+		Actions:     nil,
+	}
+	if build.Conclusion != nil {
+		checkRunUpdateOptions.Conclusion = build.Conclusion
+		checkRunUpdateOptions.CompletedAt = &github.Timestamp{Time: build.UpdatedAt}
 	}
 
-	u.logger.Info("check run created",
+	checkRun, _, err := ghClient.Checks.UpdateCheckRun(ctx, user.Username, repo.Name, checkRunID, checkRunUpdateOptions)
+	if err != nil {
+		return fmt.Errorf("update check run for repo %s/%s: %w", user.Username, repo.Name, err)
+	}
+
+	u.logger.Info("check run updated",
 		slog.String("html_url", *checkRun.HTMLURL),
 		slog.Any("build", build),
 	)
