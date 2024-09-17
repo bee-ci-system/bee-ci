@@ -6,9 +6,17 @@ require (
 	github.com/felixge/httpsnoop v1.0.4
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/go-github/v64 v64.0.0
+	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/lmittmann/tint v1.0.5
 )
 
-require github.com/google/go-querystring v1.1.0 // indirect
+require (
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/uuid v1.3.1 // indirect
+	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
+	github.com/oapi-codegen/runtime v1.0.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
+)

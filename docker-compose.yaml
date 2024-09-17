@@ -24,6 +24,10 @@ services:
       DB_PASSWORD: secret
       DB_NAME: bee
       DB_OPTS: sslmode=disable # sslmode=require for prod
+      INFLUXDB_URL: http://influxdb2:8086
+      INFLUXDB_TOKEN: 9uNp_AJQknsl8OWY65VGyAVZ0wpLXrm9Ep9_4L4-LJJWkP4HJxQvgMCd0vIElfFVU-9cIMdPgPGuUZvaDJsn5g==
+      INFLUXDB_ORG: beeci
+      INFLUXDB_BUCKET: home
 
   database:
     image: postgres:16.3-alpine3.20
@@ -44,7 +48,7 @@ services:
   influxdb2:
     image: influxdb:2.7-alpine
     ports:
-      - 8086:8086
+      - "8086:8086"
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: beeci

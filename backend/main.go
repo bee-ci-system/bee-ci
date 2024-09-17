@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"log/slog"
 	"net/http"
 	"os"
@@ -74,15 +75,40 @@ func main() {
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s %s", dbHost, dbPort, dbUser, dbPassword, dbName, dbOpts)
 	db, err = sqlx.Connect("postgres", psqlInfo)
 	if err != nil {
-		slog.Error("error connecting to database", slog.Any("error", err))
+		slog.Error("error connecting to Postgres database", slog.Any("error", err))
 		os.Exit(1)
 	}
-	slog.Info("connected to database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
+	slog.Info("connected to Postgres database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
+
+	influxURL := MustGetenv("INFLUXDB_URL")
+	influxToken := MustGetenv("INFLUXDB_TOKEN")
+	influxBucket := MustGetenv("INFLUXDB_BUCKET")
+	influxOrg := MustGetenv("INFLUXDB_ORG")
+
+	influxClient := influxdb2.NewClient(influxURL, influxToken)
+	_, err = influxClient.Health(ctx)
+	if err != nil {
+		slog.Error("error connecting to Influx database", slog.Any("error", err))
+		os.Exit(1)
+	}
+	slog.Info("connected to Influx database", "url", influxURL)
 
 	buildRepo := data.NewPostgresBuildRepo(db)
 	userRepo := data.NewPostgresUserRepo(db)
 	repoRepo := data.NewPostgresRepoRepo(db)
-	logsRepo := data.NewInfluxLogsRepo()
+	logsRepo := data.NewInfluxLogsRepo(influxClient, influxOrg, influxBucket)
+
+	slog.Debug("WILL PRINT LOGS")
+	logs, err := logsRepo.Get(ctx, 1)
+	if err != nil {
+		slog.Error("error getting logs", slog.Any("error", err))
+		os.Exit(1)
+	}
+
+	for _, log := range logs {
+		slog.Debug(log)
+	}
+	slog.Debug("DID PRINT LOGS")
 
 	githubService := updater.NewGithubService(githubAppID, rsaPrivateKey)
 
