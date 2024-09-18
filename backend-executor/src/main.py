@@ -5,13 +5,13 @@ from DockerExecutor import DockerExecutor, ExecutorFailure
 from DbPuller import DbPuller
 from BuildConfigPuller import BuildConfigPuller
 from BuildConfigAnalyzer import BuildConfigAnalyzer
-from structures.BuildInfo import BuildInfo
+from structures.BuildInfo import BuildInfo, BuildConclusion
 
 sleep_time = 10
 logger = logging.getLogger("MainExecutor")
 
 
-def print_logs(executor, build_id):
+def print_logs(executor: DockerExecutor, build_id: int):
     # printing logs from influx db
     fluxtable = executor.influxdbHandler.download_logs(build_id)
     for table in fluxtable:
@@ -20,7 +20,7 @@ def print_logs(executor, build_id):
 
 
 build_test = BuildInfo(
-    id=1,
+    build_id=1,
     repo_id=1,
     commit_sha="0262a10fb0590f29471feed5ecf53b418b5b0d67",
     commit_message="Update and rename .bee-ci.sh to .bee-ci.json ",
@@ -37,7 +37,9 @@ if __name__ == "__main__":
         print("Usage: python main.py")
         sys.exit(1)
     logging.basicConfig(
-        format="%(asctime)s %(name)s/%(levelname)s: %(message)s",datefmt='%H:%M:%S', level=logging.INFO
+        format="%(asctime)s %(name)s/%(levelname)s: %(message)s",
+        datefmt="%H:%M:%S",
+        level=logging.INFO,
     )
     db_puller = DbPuller()
     docker_executor = DockerExecutor()
@@ -45,32 +47,31 @@ if __name__ == "__main__":
         build_info = db_puller.pull_from_db()
         if not build_info:
             logger.info(
-                "No available requests found in the database - sleeping for "
-                + str(sleep_time)
-                + " seconds"
+                "No available requests found in the database - sleeping for %d seconds",
+                sleep_time
             )
             time.sleep(sleep_time)
             continue
 
         config_data = BuildConfigPuller.pull_config(build_info)
         if not config_data:
-            db_puller.update_conclusion(build_info.id, "failure")
+            db_puller.update_conclusion(build_info.build_id, BuildConclusion.FAILURE)
             continue
         build_config = BuildConfigAnalyzer.analyze(config_data)
         if not build_config:
-            db_puller.update_conclusion(build_info.id, "failure")
+            db_puller.update_conclusion(build_info.build_id, BuildConclusion.FAILURE)
             continue
 
         try:
             docker_executor.run_container(build_config, build_info)
         except ExecutorFailure:
             logger.error("Failed to execute the build")
-            db_puller.update_conclusion(build_info.id, "failure")
+            db_puller.update_conclusion(build_info.build_id, BuildConclusion.FAILURE)
             continue
-        except Exception as e:
-            logger.fatal("An unexpected error occurred: " + str(e))
-            db_puller.update_conclusion(build_info.id, "failure")
+        except (RuntimeError, ValueError) as e:  # Replace with specific exceptions you expect
+            logger.fatal("An unexpected error occurred: %s", str(e))
+            db_puller.update_conclusion(build_info.build_id, BuildConclusion.FAILURE)
             continue
 
-        db_puller.update_conclusion(build_info.id, "success")
-        print_logs(docker_executor, build_info.id)
+        db_puller.update_conclusion(build_info.build_id, BuildConclusion.SUCCESS)
+        print_logs(docker_executor, build_info.build_id)

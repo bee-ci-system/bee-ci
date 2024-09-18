@@ -1,6 +1,6 @@
 import psycopg2
 import logging
-from structures.BuildInfo import BuildInfo
+from structures.BuildInfo import BuildInfo, BuildConclusion
 
 
 class DbPuller:
@@ -66,7 +66,7 @@ class DbPuller:
             if owner_name and repo_name:
                 build_info.owner_name = owner_name
                 build_info.repo_name = repo_name
-            self.logger.info("Got:" + str(build_info))
+            self.logger.info("Got: %s", build_info)
             return build_info
 
         # Close the cursor
@@ -74,7 +74,8 @@ class DbPuller:
         return None
 
     # update build status to finished
-    def update_conclusion(self, build_id: int, conclusion: str):
+    def update_conclusion(self, build_id: int, conclusion: BuildConclusion):
+        conclusion_str = conclusion.value
         cursor = self.conn.cursor()
         cursor.execute(
             """
@@ -87,10 +88,10 @@ class DbPuller:
                     FOR    UPDATE SKIP LOCKED
                 )
             """,
-            (conclusion, build_id),
+            (conclusion_str, build_id),
         )
         self.conn.commit()
         cursor.close()
         self.logger.info(
-            "Build (id: " + str(build_id) + ") conclusion updated to " + conclusion
+            "Build (id: %d) conclusion updated to %s", build_id, conclusion_str
         )

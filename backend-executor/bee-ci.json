@@ -27,5 +27,5 @@
 // 2. backend parsuje config (beeci.json) i zapisuje pipeline i joby do bazy
 // 3. executor pobiera indywidualne joby z bazy
 
-// pipeline
+// pipeline - zawsze jest jeden - 
 // job - moze byc ich kilka w 1 pipelinie
