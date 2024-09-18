@@ -1,5 +1,4 @@
 import psycopg2
-import time
 
 # Connect to the PostgreSQL database
 conn = psycopg2.connect(
