@@ -1,7 +1,7 @@
 import sys
 import logging
 import time
-from DockerExecutor import DockerExecutor, ExecutorFailure
+from DockerExecutor import DockerExecutor, ExecutorFailure, ExecutorTimeout
 from DbPuller import DbPuller
 from BuildConfigPuller import BuildConfigPuller
 from BuildConfigAnalyzer import BuildConfigAnalyzer
@@ -32,6 +32,17 @@ build_test = BuildInfo(
     repo_name="example-using-beeci",
 )
 
+config_data_test = """
+{
+    "image": "alpine",
+    "commands": [
+        "sleep 1",
+        "echo 'Hello, World!'"
+    ],
+    "timeout": 300
+}
+"""
+
 if __name__ == "__main__":
     if len(sys.argv) != 1:
         print("Usage: python main.py")
@@ -48,7 +59,7 @@ if __name__ == "__main__":
         if not build_info:
             logger.info(
                 "No available requests found in the database - sleeping for %d seconds",
-                sleep_time
+                sleep_time,
             )
             time.sleep(sleep_time)
             continue
@@ -68,9 +79,9 @@ if __name__ == "__main__":
             logger.error("Failed to execute the build")
             db_puller.update_conclusion(build_info.build_id, BuildConclusion.FAILURE)
             continue
-        except (RuntimeError, ValueError) as e:  # Replace with specific exceptions you expect
-            logger.fatal("An unexpected error occurred: %s", str(e))
-            db_puller.update_conclusion(build_info.build_id, BuildConclusion.FAILURE)
+        except ExecutorTimeout:
+            logger.error("Build execution timed out")
+            db_puller.update_conclusion(build_info.build_id, BuildConclusion.TIMED_OUT)
             continue
 
         db_puller.update_conclusion(build_info.build_id, BuildConclusion.SUCCESS)

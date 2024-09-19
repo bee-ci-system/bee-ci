@@ -34,7 +34,7 @@ class DbPuller:
             cursor.execute(
                 """
                     UPDATE bee_schema.builds
-                    SET STATUS = 'in_progress'
+                    SET STATUS = 'in_progress', updated_at = NOW()
                     WHERE id = %s
                 """,
                 (build_id,),
@@ -80,7 +80,7 @@ class DbPuller:
         cursor.execute(
             """
                 UPDATE bee_schema.builds
-                SET conclusion = %s, status = 'completed'
+                SET conclusion = %s, status = 'completed', updated_at = NOW()
                 WHERE id = (
                     SELECT id
                     FROM   bee_schema.builds

@@ -3,6 +3,7 @@ import docker
 import tarfile
 import os
 import logging
+import time
 
 from InfluxDBHandler import InfluxDBHandler
 from structures.InfluxDBCredentials import InfluxDBCredentials
@@ -19,6 +20,10 @@ influxDBCredentials = InfluxDBCredentials(
 
 
 class ExecutorFailure(Exception):
+    pass
+
+
+class ExecutorTimeout(Exception):
     pass
 
 
@@ -72,10 +77,32 @@ class DockerExecutor:
         self.copy_to(script_path, container)
 
         container.start()
+        start_time = time.time()
+        timeout = build_config.timeout
 
-        for line in container.logs(stream=True):
-            self.logger.debug(line.strip())
-            self.influxdbHandler.log_to_influxdb(build_info.build_id, str(line.strip()))
+        try:
+            for line in container.logs(stream=True):
+                self.logger.debug(line.strip())
+                self.influxdbHandler.log_to_influxdb(
+                    build_info.build_id, str(line.strip())
+                )
 
-        container.remove()
-        self.logger.info("Container removed")
+                # Check for timeout
+                if time.time() - start_time > timeout:
+                    self.logger.error("Container execution timed out")
+                    container.stop()
+                    raise ExecutorTimeout("Container execution timed out")
+
+        except Exception as e:
+            self.logger.error("Error during container execution: %s", str(e))
+            container.stop()
+            raise e
+        finally:
+            exit_status = container.wait()
+            if exit_status["StatusCode"] != 0:
+                self.logger.error("Container exited with status code %s", exit_status["StatusCode"])
+                raise ExecutorFailure(f"Container exited with status code {exit_status['StatusCode']}")
+            else:
+                self.logger.info("Container exited successfully with status code 0")
+            container.remove()
+            self.logger.info("Container removed")

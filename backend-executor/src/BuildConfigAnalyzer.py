@@ -16,12 +16,15 @@ class BuildConfigAnalyzer:
     def analyze(json_data: str) -> BuildConfig:
         try:
             # Parse the JSON data
+            logger.debug("Parsing JSON data: %s", json_data)
             data = json.loads(json_data)
 
             # Extract the image and commands
             image = data.get("image")
             commands = data.get("commands")
-            config = BuildConfig(image, commands)
+            timeout = data.get("timeout", 600)
+
+            config = BuildConfig(image, commands, timeout)
 
             # Perform analysis on the extracted data
             # For example, you can print them or perform any other operations
