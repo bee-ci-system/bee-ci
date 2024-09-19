@@ -7,7 +7,7 @@ class DbPuller:
     def __init__(self):
         # Connect to the PostgreSQL database
         self.conn = psycopg2.connect(
-            host="localhost", database="bee", user="postgres", password="secret"
+            host="database", database="bee", user="postgres", password="secret"
         )
         self.logger = logging.getLogger(__name__)
 

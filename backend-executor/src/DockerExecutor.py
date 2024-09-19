@@ -15,7 +15,7 @@ influxDBCredentials = InfluxDBCredentials(
     influxdbBucket="home",
     influxdbOrg="beeci",
     influxdbToken="9uNp_AJQknsl8OWY65VGyAVZ0wpLXrm9Ep9_4L4-LJJWkP4HJxQvgMCd0vIElfFVU-9cIMdPgPGuUZvaDJsn5g==",
-    influxdbUrl="http://localhost:8086",
+    influxdbUrl="http://influxdb2:8086",
 )
 
 
