@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/app/_components/card';
-import { RepositoriesDashboardData } from '@/app/_types/dashboard';
+import { Repository } from '@/app/_types/my-repositories';
 import { cn } from '@/app/_utils/cn';
 import { routeGenerators, routes } from '@/app/_utils/routes';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
@@ -15,7 +15,7 @@ import Link from 'next/link';
 const MyRepositoriesCard = ({
   repositories,
 }: {
-  repositories: RepositoriesDashboardData[];
+  repositories: Repository[];
 }) => (
   <Card className='border-beeci-yellow-600'>
     <CardHeader className='flex flex-row items-center'>

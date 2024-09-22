@@ -13,7 +13,3 @@ export interface Pipeline {
   startDate: string;
   endDate?: string;
 }
-
-export interface PipelineLogs {
-  logs: string;
-}

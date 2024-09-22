@@ -1,3 +1,4 @@
+import { Repository } from './my-repositories';
 import { PipelineStatus } from './pipeline';
 
 export interface PipelineDashboardData {
@@ -7,18 +8,12 @@ export interface PipelineDashboardData {
   status: PipelineStatus;
 }
 
-export interface RepositoriesDashboardData {
-  id: string;
-  name: string;
-  dateOfLastUpdate: string;
-}
-
 export interface GetDashboardDataDto {
   stats: {
     totalPipelines: number;
     successfulPipelines: number;
     unsuccessfulPipelines: number;
   };
-  repositories: RepositoriesDashboardData[];
+  repositories: Repository[];
   pipelines: PipelineDashboardData[];
 }
