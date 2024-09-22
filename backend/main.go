@@ -5,13 +5,14 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"time"
+
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 
 	"github.com/bee-ci/bee-ci-system/data"
 	"github.com/bee-ci/bee-ci-system/updater"
