@@ -278,14 +278,15 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		userID := *event.Sender.ID
 
 		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories
-		if *event.Action == "added" {
+		switch *event.Action {
+		case "added":
 			addedRepositories := event.RepositoriesAdded
 			repos := mapRepos(userID, addedRepositories)
 			err = h.repoRepo.Create(r.Context(), repos)
 			if err != nil {
 				logger.Error("error creating repositories", slog.Any("error", err))
 			}
-		} else if *event.Action == "removed" {
+		case "removed":
 			removedRepositories := event.RepositoriesRemoved
 			repos := mapRepos(userID, removedRepositories)
 			repoIDs := make([]int64, 0, len(repos))
