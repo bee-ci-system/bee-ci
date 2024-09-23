@@ -25,6 +25,8 @@ import (
 )
 
 var (
+	serverURL string
+
 	githubAppID            int64
 	githubAppWebhookSecret string
 	rsaPrivateKey          *rsa.PrivateKey
@@ -44,7 +46,11 @@ func main() {
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 
 	slog.SetDefault(setUpLogging())
-	slog.Debug("server is starting...")
+
+	serverURL = mustGetenv("SERVER_URL")
+	port := mustGetenv("PORT")
+
+	slog.Debug("server is starting", slog.String("server_url", serverURL), slog.String("port", port))
 
 	var err error
 	githubAppID = mustGetenvInt64("GITHUB_APP_ID")
@@ -63,7 +69,6 @@ func main() {
 		slog.Error("error parsing GitHub App RSA private key from PEM", slog.Any("error", err))
 	}
 
-	port := mustGetenv("PORT")
 	dbHost := mustGetenv("DB_HOST")
 	dbPort := mustGetenv("DB_PORT")
 	dbUser := mustGetenv("DB_USER")
@@ -99,7 +104,7 @@ func main() {
 	}()
 
 	w := worker.New(ctx, buildRepo)
-	webhooks := NewWebhookHandler(userRepo, repoRepo, w)
+	webhooks := NewWebhookHandler(userRepo, repoRepo, w, serverURL)
 	app := NewApp(buildRepo, logsRepo, repoRepo)
 
 	mux := http.NewServeMux()
