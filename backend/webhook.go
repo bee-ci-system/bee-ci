@@ -62,21 +62,22 @@ type WebhookHandler struct {
 	httpClient *http.Client
 	userRepo   data.UserRepo
 	repoRepo   data.RepoRepo
+	serverURL  string
 }
 
-func NewWebhookHandler(userRepo data.UserRepo, repoRepo data.RepoRepo, w *worker.Worker) *WebhookHandler {
+func NewWebhookHandler(userRepo data.UserRepo, repoRepo data.RepoRepo, w *worker.Worker, serverURL string) *WebhookHandler {
 	return &WebhookHandler{
 		httpClient: &http.Client{Timeout: 10 * time.Second},
 		userRepo:   userRepo,
 		repoRepo:   repoRepo,
 		worker:     w,
+		serverURL:  serverURL,
 	}
 }
 
 func (h WebhookHandler) Mux() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.Handle("GET /{$}", http.HandlerFunc(handleIndex))
 	mux.Handle("GET /github/callback/", http.HandlerFunc(h.handleAuthCallback))
 
 	mux.Handle("POST /{$}",
@@ -205,14 +206,14 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 	jwtTokenCookie := &http.Cookie{
 		Name:   "jwt",
 		Value:  token,
-		Domain: "bee-ci.pacia.tech", // TODO: Redirect to the actual URL we're running on
+		Domain: serverURL,
 		Path:   "/",
 	}
 
 	http.SetCookie(w, jwtTokenCookie)
 
-	// TODO: Redirect to the actual URL we're running on
-	http.Redirect(w, r, "https://app.bee-ci.pacia.tech/dashboard", http.StatusSeeOther)
+	dashboardURL := fmt.Sprint(serverURL, "/dashboard")
+	http.Redirect(w, r, dashboardURL, http.StatusSeeOther)
 }
 
 func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
@@ -277,14 +278,15 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		userID := *event.Sender.ID
 
 		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories
-		if *event.Action == "added" {
+		switch *event.Action {
+		case "added":
 			addedRepositories := event.RepositoriesAdded
 			repos := mapRepos(userID, addedRepositories)
 			err = h.repoRepo.Create(r.Context(), repos)
 			if err != nil {
 				logger.Error("error creating repositories", slog.Any("error", err))
 			}
-		} else if *event.Action == "removed" {
+		case "removed":
 			removedRepositories := event.RepositoriesRemoved
 			repos := mapRepos(userID, removedRepositories)
 			repoIDs := make([]int64, 0, len(repos))

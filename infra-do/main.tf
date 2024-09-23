@@ -46,11 +46,63 @@ resource "digitalocean_app" "app" {
     }
     */
 
+    ingress {
+      rule {
+        component {
+          name = "frontend"
+        }
+        match {
+          path {
+            prefix = "/"
+          }
+        }
+      }
+
+      rule {
+        component {
+          name = "backend"
+        }
+        match {
+          path {
+            prefix = "/backend"
+          }
+        }
+      }
+    }
+
     database {
       name         = digitalocean_database_db.main-db.name
       db_name      = digitalocean_database_db.main-db.name
       cluster_name = digitalocean_database_cluster.main-db-cluster.name
       production   = true
+    }
+
+    service {
+      name               = "frontend"
+      environment_slug   = "go" # See https://github.com/digitalocean/terraform-provider-digitalocean/discussions/1190
+      instance_count     = 1
+      instance_size_slug = "apps-s-1vcpu-0.5gb"
+
+      http_port = 3000
+
+      image {
+        registry_type = "DOCR" # DigitalOcean Container Registry
+        repository    = "frontend"
+        tag           = "latest"
+
+        deploy_on_push {
+          enabled = true
+        }
+      }
+
+      health_check {
+        http_path             = "/"
+        initial_delay_seconds = 10
+        period_seconds        = 5
+        timeout_seconds       = 1
+        success_threshold     = 3
+        failure_threshold     = 3
+      }
     }
 
     service {
@@ -69,11 +121,7 @@ resource "digitalocean_app" "app" {
         }
       }
 
-      #dockerfile_path = "./backend/Dockerfile"
-      # git {
-      #   repo_clone_url = "https://github.com/bee-ci-system/bee-ci"
-      #   branch         = "master"
-      # }
+      http_port = 8080
 
       image {
         registry_type = "DOCR" # DigitalOcean Container Registry
@@ -131,7 +179,7 @@ resource "digitalocean_database_cluster" "main-db-cluster" {
 
 resource "digitalocean_container_registry" "default" {
   name                   = "bee-ci-container-registry"
-  subscription_tier_slug = "starter"
+  subscription_tier_slug = "basic" # $5/month
   region                 = "sfo2"
 }
 

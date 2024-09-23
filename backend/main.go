@@ -27,6 +27,8 @@ import (
 )
 
 var (
+	serverURL string
+
 	githubAppID            int64
 	githubAppWebhookSecret string
 	rsaPrivateKey          *rsa.PrivateKey
@@ -46,14 +48,18 @@ func main() {
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 
 	slog.SetDefault(setUpLogging())
-	slog.Debug("server is starting...")
+
+	serverURL = mustGetenv("SERVER_URL")
+	port := mustGetenv("PORT")
+
+	slog.Debug("server is starting", slog.String("server_url", serverURL), slog.String("port", port))
 
 	var err error
-	githubAppID = MustGetenvInt64("GITHUB_APP_ID")
-	githubAppClientID = MustGetenv("GITHUB_APP_CLIENT_ID")
-	githubAppWebhookSecret = MustGetenv("GITHUB_APP_WEBHOOK_SECRET")
-	githubAppClientSecret = MustGetenv("GITHUB_APP_CLIENT_SECRET")
-	privateKeyBase64 := MustGetenv("GITHUB_APP_PRIVATE_KEY_BASE64")
+	githubAppID = mustGetenvInt64("GITHUB_APP_ID")
+	githubAppClientID = mustGetenv("GITHUB_APP_CLIENT_ID")
+	githubAppWebhookSecret = mustGetenv("GITHUB_APP_WEBHOOK_SECRET")
+	githubAppClientSecret = mustGetenv("GITHUB_APP_CLIENT_SECRET")
+	privateKeyBase64 := mustGetenv("GITHUB_APP_PRIVATE_KEY_BASE64")
 	privateKey, err := base64.StdEncoding.DecodeString(privateKeyBase64)
 	if err != nil {
 		slog.Error("error decoding GitHub App private key from base64", slog.Any("error", err))
@@ -65,13 +71,12 @@ func main() {
 		slog.Error("error parsing GitHub App RSA private key from PEM", slog.Any("error", err))
 	}
 
-	port := MustGetenv("PORT")
-	dbHost := MustGetenv("DB_HOST")
-	dbPort := MustGetenv("DB_PORT")
-	dbUser := MustGetenv("DB_USER")
-	dbPassword := MustGetenv("DB_PASSWORD")
-	dbName := MustGetenv("DB_NAME")
-	dbOpts := MustGetenv("DB_OPTS")
+	dbHost := mustGetenv("DB_HOST")
+	dbPort := mustGetenv("DB_PORT")
+	dbUser := mustGetenv("DB_USER")
+	dbPassword := mustGetenv("DB_PASSWORD")
+	dbName := mustGetenv("DB_NAME")
+	dbOpts := mustGetenv("DB_OPTS")
 
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s %s", dbHost, dbPort, dbUser, dbPassword, dbName, dbOpts)
 	db, err = sqlx.Connect("postgres", psqlInfo)
@@ -126,11 +131,13 @@ func main() {
 	}()
 
 	w := worker.New(ctx, buildRepo)
-	webhooks := NewWebhookHandler(userRepo, repoRepo, w)
+	webhooks := NewWebhookHandler(userRepo, repoRepo, w, serverURL)
 	app := NewApp(buildRepo, logsRepo, repoRepo)
 
 	mux := http.NewServeMux()
-	mux.Handle("GET /{$}", http.HandlerFunc(handleIndex))
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprintln(w, "hello world\n\nthis is bee-ci backend server")
+	})
 	mux.Handle("/webhook/", http.StripPrefix("/webhook", webhooks.Mux()))
 	mux.Handle("/api/", http.StripPrefix("/api", app.Mux()))
 
@@ -144,11 +151,7 @@ func main() {
 	}
 }
 
-func handleIndex(w http.ResponseWriter, _ *http.Request) {
-	_, _ = fmt.Fprintln(w, "hello world\n\nthis is bee-ci backend server")
-}
-
-func MustGetenv(varname string) string {
+func mustGetenv(varname string) string {
 	value := os.Getenv(varname)
 	if value == "" {
 		slog.Error(varname + " env var is empty or not set")
@@ -157,8 +160,8 @@ func MustGetenv(varname string) string {
 	return value
 }
 
-func MustGetenvInt64(varname string) int64 {
-	value := MustGetenv(varname)
+func mustGetenvInt64(varname string) int64 {
+	value := mustGetenv(varname)
 	i, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
 		slog.Error(varname+" env var is not a valid int64", slog.Any("error", err))
