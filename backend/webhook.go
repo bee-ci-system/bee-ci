@@ -62,14 +62,16 @@ type WebhookHandler struct {
 	httpClient *http.Client
 	userRepo   data.UserRepo
 	repoRepo   data.RepoRepo
+	serverURL  string
 }
 
-func NewWebhookHandler(userRepo data.UserRepo, repoRepo data.RepoRepo, w *worker.Worker) *WebhookHandler {
+func NewWebhookHandler(userRepo data.UserRepo, repoRepo data.RepoRepo, w *worker.Worker, serverURL string) *WebhookHandler {
 	return &WebhookHandler{
 		httpClient: &http.Client{Timeout: 10 * time.Second},
 		userRepo:   userRepo,
 		repoRepo:   repoRepo,
 		worker:     w,
+		serverURL:  serverURL,
 	}
 }
 
@@ -204,14 +206,14 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 	jwtTokenCookie := &http.Cookie{
 		Name:   "jwt",
 		Value:  token,
-		Domain: "bee-ci.pacia.tech", // TODO: Redirect to the actual URL we're running on
+		Domain: serverURL,
 		Path:   "/",
 	}
 
 	http.SetCookie(w, jwtTokenCookie)
 
-	// TODO: Redirect to the actual URL we're running on
-	http.Redirect(w, r, "https://app.bee-ci.pacia.tech/dashboard", http.StatusSeeOther)
+	dashboardURL := fmt.Sprint(serverURL, "/dashboard")
+	http.Redirect(w, r, dashboardURL, http.StatusSeeOther)
 }
 
 func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {

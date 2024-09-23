@@ -25,6 +25,8 @@ import (
 )
 
 var (
+	serverURL string
+
 	githubAppID            int64
 	githubAppWebhookSecret string
 	rsaPrivateKey          *rsa.PrivateKey
@@ -45,6 +47,8 @@ func main() {
 
 	slog.SetDefault(setUpLogging())
 	slog.Debug("server is starting...")
+
+	serverURL = mustGetenv("SERVER_URL")
 
 	var err error
 	githubAppID = mustGetenvInt64("GITHUB_APP_ID")
@@ -99,7 +103,7 @@ func main() {
 	}()
 
 	w := worker.New(ctx, buildRepo)
-	webhooks := NewWebhookHandler(userRepo, repoRepo, w)
+	webhooks := NewWebhookHandler(userRepo, repoRepo, w, serverURL)
 	app := NewApp(buildRepo, logsRepo, repoRepo)
 
 	mux := http.NewServeMux()

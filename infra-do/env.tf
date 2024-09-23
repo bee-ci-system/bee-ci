@@ -1,6 +1,14 @@
 locals {
   env_vars = [
     {
+      // This is a bindable variable that will be replaced with the actual URL.
+      // See also:
+      // https://docs.digitalocean.com/products/app-platform/how-to/use-environment-variables
+      key   = "SERVER_URL",
+      value = format("$%s", "APP_URL"),
+      scope = "RUN_TIME"
+    },
+    {
       key   = "PORT"
       value = "8080"
       scope = "RUN_TIME"
