@@ -32,6 +32,8 @@ resource "digitalocean_project" "project" {
 }
 
 resource "digitalocean_app" "app" {
+  depends_on = [digitalocean_container_registry.default]
+
   spec {
     name   = "bee-ci-tf"
     region = "sfo"
@@ -125,6 +127,16 @@ resource "digitalocean_database_cluster" "main-db-cluster" {
   size       = "db-s-1vcpu-1gb"
   region     = "sfo2"
   node_count = 1
+}
+
+resource "digitalocean_container_registry" "default" {
+  name                   = "bee-ci-container-registry"
+  subscription_tier_slug = "starter"
+  region                 = "sfo2"
+}
+
+resource "digitalocean_container_registry_docker_credentials" "default" {
+  registry_name = "bee-ci-container-registry"
 }
 
 /*
