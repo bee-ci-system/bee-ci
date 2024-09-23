@@ -76,7 +76,6 @@ func NewWebhookHandler(userRepo data.UserRepo, repoRepo data.RepoRepo, w *worker
 func (h WebhookHandler) Mux() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.Handle("GET /{$}", http.HandlerFunc(handleIndex))
 	mux.Handle("GET /github/callback/", http.HandlerFunc(h.handleAuthCallback))
 
 	mux.Handle("POST /{$}",
