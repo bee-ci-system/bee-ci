@@ -5,14 +5,17 @@ locals {
       // See also:
       // https://docs.digitalocean.com/products/app-platform/how-to/use-environment-variables
       key   = "SERVER_URL",
-      value = format("$%s", "APP_URL"),
+      value = format("$%s", "{APP_URL}"),
       scope = "RUN_TIME"
     },
+    /*
+    // This is overridden by port configuration in main.tf
     {
       key   = "PORT"
       value = "8080"
       scope = "RUN_TIME"
     },
+    */
     {
       key   = "GITHUB_APP_ID"
       value = var.github_app_id
