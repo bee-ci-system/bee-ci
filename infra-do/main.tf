@@ -27,7 +27,7 @@ resource "digitalocean_project" "project" {
   resources = [
     digitalocean_app.app.urn,
     digitalocean_database_cluster.main-db-cluster.urn,
-    digitalocean_domain.main.urn,
+    # digitalocean_domain.main.urn,
   ]
 }
 
@@ -36,11 +36,13 @@ resource "digitalocean_app" "app" {
     name   = "bee-ci-tf"
     region = "sfo"
 
+    /*
     domain {
       name = "backend.bee-ci.pacia.tech"
       type = "PRIMARY"
       zone = digitalocean_domain.main.name
     }
+    */
 
     database {
       name         = digitalocean_database_db.main-db.name
@@ -125,6 +127,8 @@ resource "digitalocean_database_cluster" "main-db-cluster" {
   node_count = 1
 }
 
+/*
+
 resource "digitalocean_domain" "main" {
   name = "bee-ci.pacia.tech"
 }
@@ -152,3 +156,4 @@ resource "digitalocean_record" "backend" {
   # value = format("%s.", digitalocean_app.app.live_domain)
 }
 
+*/
