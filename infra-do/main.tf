@@ -2,7 +2,7 @@ terraform {
   required_providers {
     digitalocean = {
       source  = "digitalocean/digitalocean"
-      version = "2.40.0"
+      version = "2.41.0"
     }
   }
 
@@ -51,7 +51,7 @@ resource "digitalocean_app" "app" {
 
     service {
       name               = "backend"
-      environment_slug   = "go"
+      environment_slug   = "go" # See https://github.com/digitalocean/terraform-provider-digitalocean/discussions/1190
       instance_count     = 1
       instance_size_slug = "apps-s-1vcpu-0.5gb"
 
@@ -142,8 +142,13 @@ resource "digitalocean_record" "backend" {
   domain = digitalocean_domain.main.id
   type   = "CNAME"
   name   = "backend"
-  value  = format("%s.", split("://", digitalocean_app.app.default_ingress)[1])
+  ttl    = 1800
+
+  # It's a bit hard to get the value we need
   # value  = "bee-ci.pacia.tech."
-  ttl = 1800
+  value = format("%s.", split("://", digitalocean_app.app.default_ingress)[1])
+  # I also tried below, but it doesn't work. See also: https://github.com/digitalocean/terraform-provider-digitalocean/issues/1206
+  # value  = format("%s.", digitalocean_app.app.live_domain)
+  # value = format("%s.", digitalocean_app.app.live_domain)
 }
 
