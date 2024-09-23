@@ -8,6 +8,9 @@ RUN corepack enable pnpm
 
 WORKDIR /app
 
+# This is OK. GitHub App Client ID is public information, not an actual secret.
+RUN echo "NEXT_PUBLIC_GITHUB_APP_CLIENT_ID=Iv23liiZSvMGEpgOlexa" > .env.local
+
 COPY package.json pnpm-lock.yaml ./
 
 RUN pnpm install
