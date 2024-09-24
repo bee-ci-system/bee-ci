@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
 
   if (pathname === '/log-out') {
     const response = NextResponse.redirect(new URL('/', request.url));
-    response.cookies.delete('jwt');
+    response.cookies.set('jwt', '', { path: '/', expires: new Date(0) });
     return response;
   }
 
