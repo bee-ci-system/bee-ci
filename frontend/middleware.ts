@@ -3,13 +3,14 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { documentationRoutes, routes } from './app/_utils/routes';
 
 export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
   console.log(`
 -----
-DEBUG: New request! Content:
+DEBUG: New request! Pathname: ${pathname}. Content:
 ${JSON.stringify(request, null, 4)}
 -----
 `);
-  const { pathname } = request.nextUrl;
 
   if (pathname === '/log-out') {
     // Delete token on logout
@@ -27,7 +28,7 @@ ${JSON.stringify(request, null, 4)}
   }
 
   const token = cookies().get('jwt');
-  console.log(`DEBUG: token: ${token}`);
+  console.log(`DEBUG: token: ${JSON.stringify(token)}`);
 
   if (!token && pathname !== '/') {
     // For non-authenticated users, always redirect to landing
