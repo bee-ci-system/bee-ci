@@ -7,13 +7,12 @@ export function middleware(request: NextRequest) {
 
   if (pathname === '/log-out') {
     const response = NextResponse.redirect(new URL('/', request.url));
-    response.cookies.set('jwt', '', { expires: new Date(0) });
+    response.cookies.delete('jwt');
     return response;
   }
 
   if (pathname === '/docs') {
     const redirectUrl = new URL(documentationRoutes[0].href, request.url);
-    console.log('redirectUrl', redirectUrl);
     return NextResponse.redirect(redirectUrl);
   }
 
