@@ -3,7 +3,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { documentationRoutes, routes } from './app/_utils/routes';
 
 export function middleware(request: NextRequest) {
-  console.log(`DEBUG middleware: started. request: ${request}`);
+  console.log(
+    `DEBUG middleware: started. request: ${console.log(JSON.stringify(request, null, 4))}`,
+  );
   const { pathname } = request.nextUrl;
 
   if (pathname === '/docs') {
