@@ -84,7 +84,7 @@ const NavBar = () => {
             <ThemeToggler />
             <Tooltip>
               <TooltipTrigger asChild>
-                <Link href={routes.LOGOUT}>
+                <Link href={routes.LOGOUT} prefetch={false}>
                   <Button variant='outline' size='icon'>
                     <LogOut className='h-5 w-5' />
                     <span className='sr-only'>Log out</span>
@@ -134,7 +134,7 @@ const NavBar = () => {
 
           <div className='flex flex-row items-center gap-4 sm:hidden'>
             <ThemeToggler />
-            <Link href={routes.LOGOUT}>
+            <Link href={routes.LOGOUT} prefetch={false}>
               <Button variant='outline' size='icon'>
                 <LogOut className='h-5 w-5' />
                 <span className='sr-only'>Log out</span>
