@@ -1,6 +1,6 @@
 'use client';
 
-import { FolderClosed, Home, Library, PanelLeft } from 'lucide-react';
+import { FolderClosed, Home, Library, LogOut, PanelLeft } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '../_utils/cn';
@@ -82,6 +82,17 @@ const NavBar = () => {
           </nav>
           <nav className='mt-auto flex flex-col items-center gap-4 px-2 sm:py-5'>
             <ThemeToggler />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href={routes.LOGOUT}>
+                  <Button variant='outline' size='icon'>
+                    <LogOut className='h-5 w-5' />
+                    <span className='sr-only'>Log out</span>
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side='right'>Log out</TooltipContent>
+            </Tooltip>
           </nav>
         </TooltipProvider>
       </aside>
@@ -120,8 +131,15 @@ const NavBar = () => {
               </nav>
             </SheetContent>
           </Sheet>
-          <div className='sm:hidden'>
+
+          <div className='flex flex-row items-center gap-4 sm:hidden'>
             <ThemeToggler />
+            <Link href={routes.LOGOUT}>
+              <Button variant='outline' size='icon'>
+                <LogOut className='h-5 w-5' />
+                <span className='sr-only'>Log out</span>
+              </Button>
+            </Link>
           </div>
         </header>
       </div>
