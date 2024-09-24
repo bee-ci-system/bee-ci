@@ -11,14 +11,6 @@ from structures.BuildInfo import BuildInfo
 from structures.BuildConfig import BuildConfig
 
 
-influxDBCredentials = InfluxDBCredentials(
-    influxdbBucket="home",
-    influxdbOrg="beeci",
-    influxdbToken="9uNp_AJQknsl8OWY65VGyAVZ0wpLXrm9Ep9_4L4-LJJWkP4HJxQvgMCd0vIElfFVU-9cIMdPgPGuUZvaDJsn5g==",
-    influxdbUrl="http://influxdb2:8086",
-)
-
-
 class ExecutorFailure(Exception):
     pass
 
@@ -28,10 +20,11 @@ class ExecutorTimeout(Exception):
 
 
 class DockerExecutor:
-    def __init__(self):
+    def __init__(self, influxdb_credentials: InfluxDBCredentials):
         self.client = docker.from_env()
-        self.influxdbHandler = InfluxDBHandler(influxDBCredentials)
+        self.influxdbHandler = InfluxDBHandler(influxdb_credentials)
         self.logger = logging.getLogger(__name__)
+        self.logger.info("DockerExecutor initialized")
 
     def copy_to(self, src: str, container: docker.models.containers.Container):
         self.logger.debug("Copying file to container")
@@ -100,8 +93,12 @@ class DockerExecutor:
         finally:
             exit_status = container.wait()
             if exit_status["StatusCode"] != 0:
-                self.logger.error("Container exited with status code %s", exit_status["StatusCode"])
-                raise ExecutorFailure(f"Container exited with status code {exit_status['StatusCode']}")
+                self.logger.error(
+                    "Container exited with status code %s", exit_status["StatusCode"]
+                )
+                raise ExecutorFailure(
+                    f"Container exited with status code {exit_status['StatusCode']}"
+                )
             else:
                 self.logger.info("Container exited successfully with status code 0")
             container.remove()

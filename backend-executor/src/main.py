@@ -6,6 +6,8 @@ from DbPuller import DbPuller
 from BuildConfigPuller import BuildConfigPuller
 from BuildConfigAnalyzer import BuildConfigAnalyzer
 from structures.BuildInfo import BuildInfo, BuildConclusion
+from structures.InfluxDBCredentials import InfluxDBCredentials
+from EnvReader import EnvReader
 
 sleep_time = 10
 logger = logging.getLogger("MainExecutor")
@@ -18,31 +20,6 @@ def print_logs(executor: DockerExecutor, build_id: int):
         for record in table.records:
             logger.info(record.values.get("_value"))
 
-
-build_test = BuildInfo(
-    build_id=1,
-    repo_id=1,
-    commit_sha="0262a10fb0590f29471feed5ecf53b418b5b0d67",
-    commit_message="Update and rename .bee-ci.sh to .bee-ci.json ",
-    status="queued",
-    conclusion=None,
-    created_at="2022-01-01T00:00:00Z",
-    updated_at="2022-01-01T00:00:00Z",
-    owner_name="bee-ci-system",
-    repo_name="example-using-beeci",
-)
-
-config_data_test = """
-{
-    "image": "alpine",
-    "commands": [
-        "sleep 1",
-        "echo 'Hello, World!'"
-    ],
-    "timeout": 300
-}
-"""
-
 if __name__ == "__main__":
     if len(sys.argv) != 1:
         print("Usage: python main.py")
@@ -52,8 +29,22 @@ if __name__ == "__main__":
         datefmt="%H:%M:%S",
         level=logging.INFO,
     )
-    db_puller = DbPuller()
-    docker_executor = DockerExecutor()
+    env_vars = EnvReader.get_env_variables()
+
+    db_puller = DbPuller(
+        env_vars["db_host"],
+        env_vars["db_port"],
+        env_vars["db_name"],
+        env_vars["db_user"],
+        env_vars["db_password"],
+    )
+    influxdb_credentials = InfluxDBCredentials(
+        env_vars["influxdb_bucket"],
+        env_vars["influxdb_org"],
+        env_vars["influxdb_token"],
+        env_vars["influxdb_url"],
+    )
+    docker_executor = DockerExecutor(influxdb_credentials)
     while True:
         build_info = db_puller.pull_from_db()
         if not build_info:

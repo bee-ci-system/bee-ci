@@ -50,14 +50,8 @@ services:
         condition: service_healthy
       influxdb2:
         condition: service_healthy
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: secret
-      DB_HOST: database
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: secret
-      DB_NAME: bee
+    env_file:
+      - .env
     volumes:
       - type: bind
         source: /var/run/docker.sock
@@ -70,10 +64,10 @@ services:
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: beeci
-      DOCKER_INFLUXDB_INIT_PASSWORD: BeeCI2021@
-      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: 9uNp_AJQknsl8OWY65VGyAVZ0wpLXrm9Ep9_4L4-LJJWkP4HJxQvgMCd0vIElfFVU-9cIMdPgPGuUZvaDJsn5g==
-      DOCKER_INFLUXDB_INIT_ORG: beeci
-      DOCKER_INFLUXDB_INIT_BUCKET: home
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_PASSWORD}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_TOKEN}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET}
     volumes:
       - type: volume
         source: influxdb2-data

@@ -4,12 +4,13 @@ from structures.BuildInfo import BuildInfo, BuildConclusion
 
 
 class DbPuller:
-    def __init__(self):
+    def __init__(self, host: str, port: int, database: str, user: str, password: str):
         # Connect to the PostgreSQL database
         self.conn = psycopg2.connect(
-            host="database", database="bee", user="postgres", password="secret"
+            host=host, port=port, database=database, user=user, password=password
         )
         self.logger = logging.getLogger(__name__)
+        self.logger.info("Connected to the database")
 
     def pull_from_db(self) -> BuildInfo:
 

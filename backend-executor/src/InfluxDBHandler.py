@@ -1,7 +1,10 @@
+import logging
 from datetime import datetime, timezone
 import influxdb_client
 from influxdb_client.client.write_api import SYNCHRONOUS
 from structures.InfluxDBCredentials import InfluxDBCredentials
+
+logger = logging.getLogger(__name__)
 
 
 class InfluxDBHandler:
@@ -11,6 +14,7 @@ class InfluxDBHandler:
             url=self.cred.url, token=self.cred.token, org=self.cred.org
         )
         self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
+        logger.info("Connected to InfluxDB")
 
     def log_to_influxdb(self, build_id: int, message: str):
         p = (
