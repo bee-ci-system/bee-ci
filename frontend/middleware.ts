@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  const token = cookies().get('token');
+  const token = cookies().get('jwt');
 
   if (!token && pathname !== '/') {
     return NextResponse.redirect(new URL('/', request.url));
