@@ -109,7 +109,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintln(w, "hello world\n\nthis is bee-ci backend server")
+		_, _ = fmt.Fprintln(w, "hello world\n\nthis is bee-ci backend server\n\nhehe!")
 	})
 	mux.Handle("/webhook/", http.StripPrefix("/webhook", webhooks.Mux()))
 	mux.Handle("/api/", http.StripPrefix("/api", app.Mux()))
