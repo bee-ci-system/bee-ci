@@ -6,10 +6,18 @@ export function middleware(request: NextRequest) {
   console.log(`
 -----
 DEBUG: New request! Content:
-${console.log(JSON.stringify(request, null, 4))}
+${JSON.stringify(request, null, 4)}
 -----
 `);
   const { pathname } = request.nextUrl;
+
+  if (pathname === '/log-out') {
+    // Delete token on logout
+    console.log(`DEBUG: entered pathname === /docs`);
+    const response = NextResponse.redirect(new URL('/', request.url));
+    response.cookies.set('jwt', '', { path: '/', expires: new Date(0) });
+    return response;
+  }
 
   if (pathname === '/docs') {
     console.log(`DEBUG: entered pathname === /docs`);
