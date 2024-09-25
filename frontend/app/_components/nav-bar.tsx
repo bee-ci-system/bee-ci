@@ -108,22 +108,30 @@ const NavBar = () => {
             <SheetContent side='left' className='sm:max-w-xs'>
               <nav className='mt-4 grid gap-6 text-lg font-medium'>
                 <Link
-                  href='/dashboard'
-                  className='flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground'
+                  href={routes.DASHBOARD}
+                  className={cn(
+                    'flex items-center gap-4 px-2.5 text-muted-foreground',
+                    routes.DASHBOARD === currentPathname &&
+                      'text-beeci-yellow-500',
+                  )}
                 >
                   <Home className='h-5 w-5' />
                   Dashboard
                 </Link>
                 <Link
-                  href='#'
-                  className='flex items-center gap-4 px-2.5 text-foreground'
+                  href={routes.MY_REPOSITORIES}
+                  className={cn(
+                    'flex items-center gap-4 px-2.5 text-muted-foreground',
+                    routes.MY_REPOSITORIES === currentPathname &&
+                      'text-beeci-yellow-500',
+                  )}
                 >
                   <FolderClosed className='h-5 w-5' />
                   My repositories
                 </Link>
                 <Link
-                  href={routes.documentationRoutes[0].href}
-                  className='flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground'
+                  href={routes.DOCUMENTATION}
+                  className='flex items-center gap-4 px-2.5 text-muted-foreground'
                 >
                   <Library className='h-5 w-5' />
                   Documentation
