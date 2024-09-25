@@ -204,14 +204,15 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 	logger.Debug("JWT token created", slog.String("username", *ghUser.Name), slog.String("token", token))
 
 	jwtTokenCookie := &http.Cookie{
-        Name:   "jwt",
-        Value:  token,
-        Path:   "/",
-    }
+		Name:   "jwt",
+		Value:  token,
+		Domain: serverURL,
+		Path:   "/",
+	}
 
-    http.SetCookie(w, jwtTokenCookie)
+	http.SetCookie(w, jwtTokenCookie)
 
-    dashboardURL := fmt.Sprint("https://beeci.karolak.cc", "/dashboard")
+	dashboardURL := fmt.Sprint(serverURL, "/dashboard")
 	http.Redirect(w, r, dashboardURL, http.StatusSeeOther)
 }
 
