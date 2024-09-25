@@ -212,7 +212,7 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 
     http.SetCookie(w, jwtTokenCookie)
 
-    dashboardURL := fmt.Sprint("https://beeci.karolak.cc", "/dashboard") 
+    dashboardURL := fmt.Sprint("https://beeci.karolak.cc/", "/dashboard") 
 	http.Redirect(w, r, dashboardURL, http.StatusSeeOther)
 }
 
