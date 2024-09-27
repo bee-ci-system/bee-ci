@@ -19,3 +19,10 @@ output "live_domain" {
   value       = digitalocean_app.app.live_domain
 }
 
+output "droplet_ip" {
+  value = digitalocean_droplet.influxdb.ipv4_address
+}
+
+output "volume_id" {
+  value = digitalocean_volume.influxdb_volume.id
+}

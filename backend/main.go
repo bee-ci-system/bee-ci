@@ -86,10 +86,10 @@ func main() {
 	}
 	slog.Info("connected to Postgres database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
 
-	influxURL := MustGetenv("INFLUXDB_URL")
-	influxToken := MustGetenv("INFLUXDB_TOKEN")
-	influxBucket := MustGetenv("INFLUXDB_BUCKET")
-	influxOrg := MustGetenv("INFLUXDB_ORG")
+	influxURL := mustGetenv("INFLUXDB_URL")
+	influxToken := mustGetenv("INFLUXDB_TOKEN")
+	influxBucket := mustGetenv("INFLUXDB_BUCKET")
+	influxOrg := mustGetenv("INFLUXDB_ORG")
 
 	influxClient := influxdb2.NewClient(influxURL, influxToken)
 	_, err = influxClient.Health(ctx)
