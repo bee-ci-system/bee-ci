@@ -27,6 +27,7 @@ resource "digitalocean_project" "project" {
   resources = [
     digitalocean_app.app.urn,
     digitalocean_database_cluster.main-db-cluster.urn,
+    digitalocean_domain.default.urn,
     # digitalocean_domain.main.urn,
   ]
 }
@@ -235,3 +236,7 @@ resource "digitalocean_record" "backend" {
 }
 
 */
+
+resource "digitalocean_domain" "default" {
+  name = "bee-ci.karolak.cc"
+}

@@ -8,6 +8,16 @@ locals {
       value = format("$%s", "{APP_URL}"),
       scope = "RUN_TIME"
     },
+    {
+      key   = "MAIN_DOMAIN",
+      value = ".karolak.cc",
+      scope = "RUN_TIME",
+    },
+    {
+      key   = "REDIRECT_URL",
+      value = "https://beeci.karolak.cc/dashboard",
+      scope = "RUN_TIME"
+    },
     /*
     // This is overridden by port configuration in main.tf
     {

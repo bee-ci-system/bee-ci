@@ -62,16 +62,31 @@ type WebhookHandler struct {
 	httpClient *http.Client
 	userRepo   data.UserRepo
 	repoRepo   data.RepoRepo
-	serverURL  string
+
+	// The domain where the auth cookie will be placed. For example
+	// ".pacia.tech" or ".karolak.cc". Must be empty for localhost.
+	mainDomain string
+
+	// The URL the user will be redirected to after successful auth. For example
+	// "https://bee-ci.pacia.tech/dashboard" or
+	// "http://localhost:8080/dashboard".
+	redirectURL string
 }
 
-func NewWebhookHandler(userRepo data.UserRepo, repoRepo data.RepoRepo, w *worker.Worker, serverURL string) *WebhookHandler {
+func NewWebhookHandler(
+	userRepo data.UserRepo,
+	repoRepo data.RepoRepo,
+	w *worker.Worker,
+	mainDomain string,
+	redirectURL string,
+) *WebhookHandler {
 	return &WebhookHandler{
-		httpClient: &http.Client{Timeout: 10 * time.Second},
-		userRepo:   userRepo,
-		repoRepo:   repoRepo,
-		worker:     w,
-		serverURL:  serverURL,
+		httpClient:  &http.Client{Timeout: 10 * time.Second},
+		userRepo:    userRepo,
+		repoRepo:    repoRepo,
+		worker:      w,
+		mainDomain:  mainDomain,
+		redirectURL: redirectURL,
 	}
 }
 
@@ -206,14 +221,13 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 	jwtTokenCookie := &http.Cookie{
 		Name:   "jwt",
 		Value:  token,
-		Domain: serverURL,
+		Domain: mainDomain,
 		Path:   "/",
 	}
 
 	http.SetCookie(w, jwtTokenCookie)
 
-	dashboardURL := fmt.Sprint(serverURL, "/dashboard")
-	http.Redirect(w, r, dashboardURL, http.StatusSeeOther)
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
 
 func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
