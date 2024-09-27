@@ -27,7 +27,9 @@ import (
 )
 
 var (
-	serverURL string
+	serverURL   string
+	mainDomain  string
+	redirectURL string
 
 	githubAppID            int64
 	githubAppWebhookSecret string
@@ -51,6 +53,9 @@ func main() {
 
 	serverURL = mustGetenv("SERVER_URL")
 	port := mustGetenv("PORT")
+
+	mainDomain = mustGetenv("MAIN_DOMAIN")
+	redirectURL = mustGetenv("REDIRECT_URL")
 
 	slog.Debug("server is starting", slog.String("server_url", serverURL), slog.String("port", port))
 
@@ -131,12 +136,12 @@ func main() {
 	}()
 
 	w := worker.New(ctx, buildRepo)
-	webhooks := NewWebhookHandler(userRepo, repoRepo, w, serverURL)
+	webhooks := NewWebhookHandler(userRepo, repoRepo, w, mainDomain, redirectURL)
 	app := NewApp(buildRepo, logsRepo, repoRepo)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintln(w, "hello world\n\nthis is bee-ci backend server")
+		_, _ = fmt.Fprintln(w, "hello world\n\nthis is bee-ci backend server\n\nhehe!")
 	})
 	mux.Handle("/webhook/", http.StripPrefix("/webhook", webhooks.Mux()))
 	mux.Handle("/api/", http.StripPrefix("/api", app.Mux()))

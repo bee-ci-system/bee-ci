@@ -81,22 +81,31 @@ resource "digitalocean_app" "app" {
     }
 
     service {
-      name               = "frontend"
-      environment_slug   = "go" # See https://github.com/digitalocean/terraform-provider-digitalocean/discussions/1190
+      name = "frontend"
+      # environment_slug   = "go" # See https://github.com/digitalocean/terraform-provider-digitalocean/discussions/1190
       instance_count     = 1
       instance_size_slug = "apps-s-1vcpu-0.5gb"
 
       http_port = 3000
 
-      image {
-        registry_type = "DOCR" # DigitalOcean Container Registry
-        repository    = "frontend"
-        tag           = "latest"
-
-        deploy_on_push {
-          enabled = true
-        }
+      github {
+        repo           = "bee-ci-system/bee-ci"
+        branch         = "master"
+        deploy_on_push = true
       }
+
+      source_dir      = "./frontend"
+      dockerfile_path = "./frontend/Dockerfile"
+
+      # image {
+      #   registry_type = "DOCR" # DigitalOcean Container Registry
+      #   repository    = "frontend"
+      #   tag           = "latest"
+
+      #   deploy_on_push {
+      #     enabled = true
+      #   }
+      # }
 
       health_check {
         http_path             = "/"
@@ -109,8 +118,8 @@ resource "digitalocean_app" "app" {
     }
 
     service {
-      name               = "backend"
-      environment_slug   = "go" # See https://github.com/digitalocean/terraform-provider-digitalocean/discussions/1190
+      name = "backend"
+      # environment_slug   = "go" # See https://github.com/digitalocean/terraform-provider-digitalocean/discussions/1190
       instance_count     = 1
       instance_size_slug = "apps-s-1vcpu-0.5gb"
 
@@ -126,15 +135,24 @@ resource "digitalocean_app" "app" {
 
       http_port = 8080
 
-      image {
-        registry_type = "DOCR" # DigitalOcean Container Registry
-        repository    = "backend"
-        tag           = "latest"
-
-        deploy_on_push {
-          enabled = true
-        }
+      github {
+        repo           = "bee-ci-system/bee-ci"
+        branch         = "master"
+        deploy_on_push = true
       }
+
+      source_dir      = "./backend"
+      dockerfile_path = "./backend/Dockerfile"
+
+      # image {
+      #   registry_type = "DOCR" # DigitalOcean Container Registry
+      #   repository    = "backend"
+      #   tag           = "latest"
+
+      #   deploy_on_push {
+      #     enabled = true
+      #   }
+      # }
 
       health_check {
         http_path             = "/"
@@ -194,13 +212,13 @@ resource "digitalocean_container_registry_docker_credentials" "default" {
 resource "digitalocean_volume" "influxdb_volume" {
   size                    = 1 # GB
   name                    = "influxdb-data"
-  region                  = "sfo2"
+  region                  = "sfo3"
   initial_filesystem_type = "ext4"
 }
 
 resource "digitalocean_droplet" "influxdb" {
   name   = "influxdb-server"
-  region = "sfo2"
+  region = "sfo3"
   size   = "s-1vcpu-512mb-10gb" # doctl compute size list
   image  = "ubuntu-24-04-x64"
 
@@ -271,3 +289,7 @@ resource "digitalocean_record" "backend" {
 }
 
 */
+
+resource "digitalocean_domain" "default" {
+  name = "bee-ci.karolak.cc"
+}
