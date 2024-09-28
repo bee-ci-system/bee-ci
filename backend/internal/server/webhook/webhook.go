@@ -17,14 +17,13 @@ import (
 	l "github.com/bee-ci/bee-ci-system/internal/common/logger"
 	"github.com/bee-ci/bee-ci-system/internal/common/middleware"
 	"github.com/bee-ci/bee-ci-system/internal/data"
-	"github.com/bee-ci/bee-ci-system/worker"
 )
 
 type WebhookHandler struct {
-	worker     *worker.Worker
 	httpClient *http.Client
 	userRepo   data.UserRepo
 	repoRepo   data.RepoRepo
+	buildRepo  data.BuildRepo
 
 	// The domain where the auth cookie will be placed. For example
 	// ".pacia.tech" or ".karolak.cc". Must be empty for localhost.
@@ -46,7 +45,7 @@ type WebhookHandler struct {
 func NewWebhookHandler(
 	userRepo data.UserRepo,
 	repoRepo data.RepoRepo,
-	w *worker.Worker,
+	buildRepo data.BuildRepo,
 	mainDomain string,
 	redirectURL string,
 	githubAppClientID string,
@@ -58,7 +57,7 @@ func NewWebhookHandler(
 		httpClient:             &http.Client{Timeout: 10 * time.Second},
 		userRepo:               userRepo,
 		repoRepo:               repoRepo,
-		worker:                 w,
+		buildRepo:              buildRepo,
 		mainDomain:             mainDomain,
 		redirectURL:            redirectURL,
 		githubAppClientID:      githubAppClientID,
@@ -305,14 +304,18 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			)
 
 			// TODO: Parse information from the BeeCI config file here (such as name)
-
-			// Create a build
-			h.worker.Add(data.NewBuild{
+			buildId, err := h.buildRepo.Create(r.Context(), data.NewBuild{
 				RepoID:         *event.Repo.ID,
 				CommitSHA:      headSHA,
 				CommitMsg:      message,
 				InstallationID: installationID,
 			})
+			if err != nil {
+				logger.Error("failed to create build", slog.Any("error", err))
+				// TODO: handle error in a better way – update status on GitHub
+				return
+			}
+			logger.Debug("build created", slog.Int64("build_id", buildId))
 		}
 
 	default:

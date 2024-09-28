@@ -13,7 +13,6 @@ RUN go mod download
 
 # Copy source files required for build
 COPY cmd/server/ ./cmd/server
-COPY worker/ ./worker
 COPY internal/ ./internal
 RUN go build -gcflags="all=-N -l" -o server ./cmd/server/main.go
 
