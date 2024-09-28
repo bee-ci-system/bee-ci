@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bee-ci/bee-ci-system/data"
-	"github.com/bee-ci/bee-ci-system/updater"
+	"github.com/bee-ci/bee-ci-system/internal/data"
+	"github.com/bee-ci/bee-ci-system/internal/updater"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"

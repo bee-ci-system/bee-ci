@@ -21,9 +21,10 @@ services:
     env_file:
       - backend/.env
     environment:
-      #SERVER_URL: "" # must be empty for localhost
-      REDIRECT_URL: http://localhost:8080/dashboard
+      SERVER_URL: localhost:8080
       PORT: 8080
+      MAIN_DOMAIN: "" # must be empty for localhost
+      REDIRECT_URL: http://localhost:8080/dashboard
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DB_USER: ${DB_USER}

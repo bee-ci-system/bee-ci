@@ -10,14 +10,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bee-ci/bee-ci-system/data"
-	"github.com/bee-ci/bee-ci-system/internal/middleware"
-	"github.com/bee-ci/bee-ci-system/server/api"
-	"github.com/bee-ci/bee-ci-system/server/webhook"
+	"github.com/bee-ci/bee-ci-system/internal/common/middleware"
+	"github.com/bee-ci/bee-ci-system/internal/data"
+	"github.com/bee-ci/bee-ci-system/internal/server/api"
+	"github.com/bee-ci/bee-ci-system/internal/server/webhook"
 	"github.com/bee-ci/bee-ci-system/worker"
-
 	"github.com/jmoiron/sqlx"
-
 	"github.com/lmittmann/tint"
 )
 
@@ -31,7 +29,7 @@ func main() {
 	serverURL := mustGetenv("SERVER_URL")
 	port := mustGetenv("PORT")
 
-	mainDomain := mustGetenv("MAIN_DOMAIN")
+	mainDomain := os.Getenv("MAIN_DOMAIN")
 	redirectURL := mustGetenv("REDIRECT_URL")
 
 	slog.Debug("server is starting", slog.String("server_url", serverURL), slog.String("port", port))

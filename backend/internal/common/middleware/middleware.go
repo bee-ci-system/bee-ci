@@ -13,12 +13,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bee-ci/bee-ci-system/internal/userid"
+	l "github.com/bee-ci/bee-ci-system/internal/common/logger"
+	"github.com/bee-ci/bee-ci-system/internal/common/userid"
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/felixge/httpsnoop"
-
-	l "github.com/bee-ci/bee-ci-system/internal/logger"
 )
 
 func WithTrailingSlashes(next http.Handler) http.Handler {

@@ -7,11 +7,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bee-ci/bee-ci-system/internal/middleware"
-	"github.com/bee-ci/bee-ci-system/internal/userid"
-
-	"github.com/bee-ci/bee-ci-system/data"
-	l "github.com/bee-ci/bee-ci-system/internal/logger"
+	l "github.com/bee-ci/bee-ci-system/internal/common/logger"
+	"github.com/bee-ci/bee-ci-system/internal/common/middleware"
+	"github.com/bee-ci/bee-ci-system/internal/common/userid"
+	"github.com/bee-ci/bee-ci-system/internal/data"
 )
 
 type App struct {

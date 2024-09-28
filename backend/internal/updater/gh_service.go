@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/bee-ci/bee-ci-system/internal/auth"
+	"github.com/bee-ci/bee-ci-system/internal/common/auth"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-github/v64/github"
 )

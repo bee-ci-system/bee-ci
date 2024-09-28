@@ -14,9 +14,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-github/v64/github"
 
-	"github.com/bee-ci/bee-ci-system/data"
-	l "github.com/bee-ci/bee-ci-system/internal/logger"
-	"github.com/bee-ci/bee-ci-system/internal/middleware"
+	l "github.com/bee-ci/bee-ci-system/internal/common/logger"
+	"github.com/bee-ci/bee-ci-system/internal/common/middleware"
+	"github.com/bee-ci/bee-ci-system/internal/data"
 	"github.com/bee-ci/bee-ci-system/worker"
 )
 

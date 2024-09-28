@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	l "github.com/bee-ci/bee-ci-system/internal/logger"
+	l "github.com/bee-ci/bee-ci-system/internal/common/logger"
 	"github.com/jmoiron/sqlx"
 )
 
