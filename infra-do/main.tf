@@ -28,7 +28,6 @@ resource "digitalocean_project" "project" {
     digitalocean_app.app.urn,
     digitalocean_database_cluster.main-db-cluster.urn,
     digitalocean_domain.default.urn,
-    # digitalocean_domain.main.urn,
   ]
 }
 
@@ -38,14 +37,6 @@ resource "digitalocean_app" "app" {
   spec {
     name   = "bee-ci-tf"
     region = "sfo"
-
-    /*
-    domain {
-      name = "backend.bee-ci.pacia.tech"
-      type = "PRIMARY"
-      zone = digitalocean_domain.main.name
-    }
-    */
 
     ingress {
       rule {
@@ -88,22 +79,12 @@ resource "digitalocean_app" "app" {
 
       github {
         repo           = "bee-ci-system/bee-ci"
-        branch         = "refactor/split_gh_updater"
+        branch         = "master"
         deploy_on_push = true
       }
 
       source_dir      = "./frontend"
       dockerfile_path = "./frontend/Dockerfile"
-
-      # image {
-      #   registry_type = "DOCR" # DigitalOcean Container Registry
-      #   repository    = "frontend"
-      #   tag           = "latest"
-
-      #   deploy_on_push {
-      #     enabled = true
-      #   }
-      # }
 
       health_check {
         http_path             = "/"
@@ -116,8 +97,7 @@ resource "digitalocean_app" "app" {
     }
 
     service {
-      name = "server"
-      # environment_slug   = "go" # See https://github.com/digitalocean/terraform-provider-digitalocean/discussions/1190
+      name               = "server"
       instance_count     = 3
       instance_size_slug = "apps-s-1vcpu-1gb" # doctl apps tier instance-size list
 
@@ -135,22 +115,12 @@ resource "digitalocean_app" "app" {
 
       github {
         repo           = "bee-ci-system/bee-ci"
-        branch         = "refactor/split_gh_updater"
+        branch         = "master"
         deploy_on_push = true
       }
 
       source_dir      = "./backend"
       dockerfile_path = "./backend/server.dockerfile"
-
-      # image {
-      #   registry_type = "DOCR" # DigitalOcean Container Registry
-      #   repository    = "backend"
-      #   tag           = "latest"
-
-      #   deploy_on_push {
-      #     enabled = true
-      #   }
-      # }
 
       health_check {
         http_path             = "/"
@@ -164,8 +134,7 @@ resource "digitalocean_app" "app" {
 
 
     worker {
-      name = "gh-updater"
-      # environment_slug   = "go" # See https://github.com/digitalocean/terraform-provider-digitalocean/discussions/1190
+      name               = "gh-updater"
       instance_count     = 1
       instance_size_slug = "apps-s-1vcpu-0.5gb" # doctl apps tier instance-size list
 
@@ -181,7 +150,7 @@ resource "digitalocean_app" "app" {
 
       github {
         repo           = "bee-ci-system/bee-ci"
-        branch         = "refactor/split_gh_updater"
+        branch         = "master"
         deploy_on_push = true
       }
 
@@ -232,37 +201,6 @@ resource "digitalocean_container_registry" "default" {
 resource "digitalocean_container_registry_docker_credentials" "default" {
   registry_name = "bee-ci-container-registry"
 }
-
-/*
-
-resource "digitalocean_domain" "main" {
-  name = "bee-ci.pacia.tech"
-}
-
-resource "digitalocean_record" "frontend" {
-  domain = digitalocean_domain.main.id
-  type   = "CNAME"
-  name   = "app"
-  value  = "cname.vercel-dns.com."
-  ttl    = 1800
-}
-
-
-resource "digitalocean_record" "backend" {
-  domain = digitalocean_domain.main.id
-  type   = "CNAME"
-  name   = "backend"
-  ttl    = 1800
-
-  # It's a bit hard to get the value we need
-  # value  = "bee-ci.pacia.tech."
-  value = format("%s.", split("://", digitalocean_app.app.default_ingress)[1])
-  # I also tried below, but it doesn't work. See also: https://github.com/digitalocean/terraform-provider-digitalocean/issues/1206
-  # value  = format("%s.", digitalocean_app.app.live_domain)
-  # value = format("%s.", digitalocean_app.app.live_domain)
-}
-
-*/
 
 resource "digitalocean_domain" "default" {
   name = "bee-ci.karolak.cc"
