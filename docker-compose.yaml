@@ -12,7 +12,7 @@ services:
     init: true
     ports:
       - "8080:8080"
-      - "40000:40000" # debugger port
+      # - "40000:40000" # debugger port
     depends_on:
       database-postgres:
         condition: service_healthy
@@ -38,7 +38,10 @@ services:
       dockerfile: gh-updater.dockerfile
     init: true
     depends_on:
-      - database-postgres
+      database-postgres:
+        condition: service_healthy
+      database-influx:
+        condition: service_healthy
     env_file:
       - backend/.env
     environment:
@@ -51,8 +54,9 @@ services:
 
   database-postgres:
     image: postgres:16.3-alpine3.20
-    ports:
-      - "5432:5432" # This is only used for connecting to the database during local development
+    ports: [
+        # "5432:5432" # only needed to connect to the database during local development
+      ]
     volumes:
       - bee-postgres-data:/var/lib/postgresql/data
       - ./backend/sql-scripts:/docker-entrypoint-initdb.d
@@ -82,8 +86,9 @@ services:
 
   database-influx:
     image: influxdb:2.7-alpine
-    ports:
-      - 8086:8086
+    ports: [
+        # "8086:8086" # only needed to connect to the database during local development
+      ]
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: beeci

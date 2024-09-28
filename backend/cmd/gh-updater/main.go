@@ -62,13 +62,12 @@ func main() {
 	maxReconnectInterval := time.Minute
 	dbListener := pq.NewListener(psqlInfo, minReconnectInterval, maxReconnectInterval, nil)
 	listen := updater.New(dbListener, repoRepo, userRepo, buildRepo, githubService)
-	go func() {
-		err := listen.Start(ctx)
-		if err != nil {
-			slog.Error("error while listetning", slog.Any("error", err))
-			panic(err)
-		}
-	}()
+
+	err = listen.Start(ctx)
+	if err != nil {
+		slog.Error("error while listening", slog.Any("error", err))
+		panic(err)
+	}
 }
 
 func setUpLogging() *slog.Logger {

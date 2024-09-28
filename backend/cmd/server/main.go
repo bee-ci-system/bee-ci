@@ -16,6 +16,7 @@ import (
 	"github.com/bee-ci/bee-ci-system/internal/server/webhook"
 	"github.com/bee-ci/bee-ci-system/worker"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"github.com/lmittmann/tint"
 )
 

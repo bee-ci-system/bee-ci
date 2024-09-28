@@ -24,6 +24,6 @@ COPY --from=builder /go/bin/dlv /
 
 RUN chmod -R 777 /usr/local/bin/gh-updater
 
-CMD [ "/dlv", "--listen=:40000", "--headless=true", "--continue", "--api-version=2", "--accept-multiclient", "exec", "/usr/local/bin/gh-updater" ]
+# CMD [ "/dlv", "--listen=:40000", "--headless=true", "--continue", "--api-version=2", "--accept-multiclient", "exec", "/usr/local/bin/gh-updater" ]
 
-# ENTRYPOINT [ "/usr/local/bin/gh-updater" ]
+ENTRYPOINT [ "/usr/local/bin/gh-updater" ]
