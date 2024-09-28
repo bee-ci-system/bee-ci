@@ -14,7 +14,6 @@ import (
 	"github.com/bee-ci/bee-ci-system/internal/data"
 	"github.com/bee-ci/bee-ci-system/internal/server/api"
 	"github.com/bee-ci/bee-ci-system/internal/server/webhook"
-	"github.com/bee-ci/bee-ci-system/worker"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/lmittmann/tint"
@@ -24,6 +23,7 @@ var jwtSecret = []byte("your-very-secret-key")
 
 func main() {
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
+	_ = ctx
 
 	slog.SetDefault(setUpLogging())
 
@@ -59,8 +59,7 @@ func main() {
 	repoRepo := data.NewPostgresRepoRepo(db)
 	logsRepo := data.NewInfluxLogsRepo()
 
-	w := worker.New(ctx, buildRepo)
-	webhooks := webhook.NewWebhookHandler(userRepo, repoRepo, w, mainDomain, redirectURL, githubAppClientID, githubAppClientSecret, githubAppWebhookSecret, jwtSecret)
+	webhooks := webhook.NewWebhookHandler(userRepo, repoRepo, buildRepo, mainDomain, redirectURL, githubAppClientID, githubAppClientSecret, githubAppWebhookSecret, jwtSecret)
 	app := api.NewApp(buildRepo, logsRepo, repoRepo, jwtSecret)
 
 	mux := http.NewServeMux()
