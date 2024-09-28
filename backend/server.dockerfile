@@ -12,7 +12,6 @@ COPY go.sum ./
 RUN go mod download
 
 # Copy source files required for build
-COPY *.go ./
 COPY cmd/server/ ./cmd/server
 COPY worker/ ./worker
 COPY internal/ ./internal

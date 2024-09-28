@@ -12,7 +12,6 @@ COPY go.sum ./
 RUN go mod download
 
 # Copy source files required for build
-COPY *.go ./
 COPY cmd/gh-updater/ ./cmd/gh-updater
 COPY internal/ ./internal
 RUN go build -gcflags="all=-N -l" -o gh-updater ./cmd/gh-updater/main.go
