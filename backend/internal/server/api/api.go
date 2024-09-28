@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -7,23 +7,25 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bee-ci/bee-ci-system/internal/userid"
-
-	"github.com/bee-ci/bee-ci-system/data"
-	l "github.com/bee-ci/bee-ci-system/internal/logger"
+	l "github.com/bee-ci/bee-ci-system/internal/common/logger"
+	"github.com/bee-ci/bee-ci-system/internal/common/middleware"
+	"github.com/bee-ci/bee-ci-system/internal/common/userid"
+	"github.com/bee-ci/bee-ci-system/internal/data"
 )
 
 type App struct {
 	BuildRepo data.BuildRepo
 	LogsRepo  data.LogsRepo
 	RepoRepo  data.RepoRepo
+	jwtSecret []byte
 }
 
-func NewApp(buildRepo data.BuildRepo, logsRepo data.LogsRepo, repoRepo data.RepoRepo) *App {
+func NewApp(buildRepo data.BuildRepo, logsRepo data.LogsRepo, repoRepo data.RepoRepo, jwtSecret []byte) *App {
 	return &App{
 		BuildRepo: buildRepo,
 		LogsRepo:  logsRepo,
 		RepoRepo:  repoRepo,
+		jwtSecret: jwtSecret,
 	}
 }
 
@@ -38,7 +40,7 @@ func (a *App) Mux() http.Handler {
 
 	mux.HandleFunc("GET /builds/{build_id}/logs", a.getBuildLogs)
 
-	authMux := WithJWT(mux)
+	authMux := middleware.WithJWT(mux, a.jwtSecret)
 	return authMux
 }
 

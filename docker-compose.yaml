@@ -5,21 +5,46 @@ services:
     ports:
       - "3000:3000"
 
-  backend:
-    build: backend
+  server:
+    build:
+      context: backend
+      dockerfile: server.dockerfile
     init: true
     ports:
       - "8080:8080"
-      - "40000:40000" # debugger port
+      # - "40000:40000" # debugger port
     depends_on:
-      database:
+      database-postgres:
+        condition: service_healthy
+      database-influx:
         condition: service_healthy
     env_file:
       - backend/.env
     environment:
-      #SERVER_URL: "" # must be empty for localhost
-      REDIRECT_URL: http://localhost:8080/dashboard
+      SERVER_URL: localhost:8080
       PORT: 8080
+      MAIN_DOMAIN: "" # must be empty for localhost
+      REDIRECT_URL: http://localhost:8080/dashboard
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_OPTS: sslmode=disable # sslmode=require for prod
+    
+  gh-updater:
+    build:
+      context: backend
+      dockerfile: gh-updater.dockerfile
+    init: true
+    depends_on:
+      database-postgres:
+        condition: service_healthy
+      database-influx:
+        condition: service_healthy
+    env_file:
+      - backend/.env
+    environment:
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DB_USER: ${DB_USER}
@@ -27,10 +52,11 @@ services:
       DB_NAME: ${DB_NAME}
       DB_OPTS: sslmode=disable # sslmode=require for prod
 
-  database:
+  database-postgres:
     image: postgres:16.3-alpine3.20
-    ports:
-      - "5432:5432" # This is only used for connecting to the database during local development
+    ports: [
+        # "5432:5432" # only needed to connect to the database during local development
+      ]
     volumes:
       - bee-postgres-data:/var/lib/postgresql/data
       - ./backend/sql-scripts:/docker-entrypoint-initdb.d
@@ -47,9 +73,9 @@ services:
     build: backend-executor
     init: true
     depends_on:
-      database:
+      database-postgres:
         condition: service_healthy
-      influxdb2:
+      database-influx:
         condition: service_healthy
     env_file:
       - .env
@@ -58,10 +84,11 @@ services:
         source: /var/run/docker.sock
         target: /var/run/docker.sock
 
-  influxdb2:
+  database-influx:
     image: influxdb:2.7-alpine
-    ports:
-      - 8086:8086
+    ports: [
+        # "8086:8086" # only needed to connect to the database during local development
+      ]
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: beeci
@@ -71,10 +98,10 @@ services:
       DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET}
     volumes:
       - type: volume
-        source: influxdb2-data
+        source: bee-influx-data
         target: /var/lib/influxdb2
       - type: volume
-        source: influxdb2-config
+        source: bee-influx-config
         target: /etc/influxdb2
     healthcheck:
       test: ["CMD-SHELL", "influx ping"]
@@ -83,6 +110,6 @@ services:
       retries: 3
 
 volumes:
-  influxdb2-data:
-  influxdb2-config:
+  bee-influx-data:
+  bee-influx-config:
   bee-postgres-data:

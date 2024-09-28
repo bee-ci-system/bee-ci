@@ -61,7 +61,7 @@ resource "digitalocean_app" "app" {
 
       rule {
         component {
-          name = "backend"
+          name = "server"
         }
         match {
           path {
@@ -82,13 +82,13 @@ resource "digitalocean_app" "app" {
       name = "frontend"
       # environment_slug   = "go" # See https://github.com/digitalocean/terraform-provider-digitalocean/discussions/1190
       instance_count     = 1
-      instance_size_slug = "apps-s-1vcpu-0.5gb"
+      instance_size_slug = "apps-s-1vcpu-0.5gb" # doctl apps tier instance-size list
 
       http_port = 3000
 
       github {
         repo           = "bee-ci-system/bee-ci"
-        branch         = "master"
+        branch         = "refactor/split_gh_updater"
         deploy_on_push = true
       }
 
@@ -116,10 +116,10 @@ resource "digitalocean_app" "app" {
     }
 
     service {
-      name = "backend"
+      name = "server"
       # environment_slug   = "go" # See https://github.com/digitalocean/terraform-provider-digitalocean/discussions/1190
-      instance_count     = 1
-      instance_size_slug = "apps-s-1vcpu-0.5gb"
+      instance_count     = 3
+      instance_size_slug = "apps-s-1vcpu-1gb" # doctl apps tier instance-size list
 
       dynamic "env" {
         for_each = local.env_vars
@@ -135,12 +135,12 @@ resource "digitalocean_app" "app" {
 
       github {
         repo           = "bee-ci-system/bee-ci"
-        branch         = "master"
+        branch         = "refactor/split_gh_updater"
         deploy_on_push = true
       }
 
       source_dir      = "./backend"
-      dockerfile_path = "./backend/Dockerfile"
+      dockerfile_path = "./backend/server.dockerfile"
 
       # image {
       #   registry_type = "DOCR" # DigitalOcean Container Registry
@@ -160,6 +160,33 @@ resource "digitalocean_app" "app" {
         success_threshold     = 3
         failure_threshold     = 3
       }
+    }
+
+
+    worker {
+      name = "gh-updater"
+      # environment_slug   = "go" # See https://github.com/digitalocean/terraform-provider-digitalocean/discussions/1190
+      instance_count     = 1
+      instance_size_slug = "apps-s-1vcpu-0.5gb" # doctl apps tier instance-size list
+
+      dynamic "env" {
+        for_each = local.env_vars
+        content {
+          key   = env.value.key
+          value = env.value.value
+          scope = env.value.scope
+          type  = lookup(env.value, "type", null)
+        }
+      }
+
+      github {
+        repo           = "bee-ci-system/bee-ci"
+        branch         = "refactor/split_gh_updater"
+        deploy_on_push = true
+      }
+
+      source_dir      = "./backend"
+      dockerfile_path = "./backend/gh-updater.dockerfile"
     }
   }
 }

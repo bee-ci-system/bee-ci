@@ -1,4 +1,4 @@
-package main
+package webhook
 
 import (
 	"bytes"
@@ -14,48 +14,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-github/v64/github"
 
-	"github.com/bee-ci/bee-ci-system/data"
-	l "github.com/bee-ci/bee-ci-system/internal/logger"
+	l "github.com/bee-ci/bee-ci-system/internal/common/logger"
+	"github.com/bee-ci/bee-ci-system/internal/common/middleware"
+	"github.com/bee-ci/bee-ci-system/internal/data"
 	"github.com/bee-ci/bee-ci-system/worker"
 )
-
-// Define your secret key (should be stored securely, e.g., in env variables)
-var jwtSecret = []byte("your-very-secret-key")
-
-// Function to create JWT tokens with claims
-func createToken(userID int64) (string, error) {
-	// Create a new JWT token with claims
-	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": strconv.FormatInt(userID, 10),
-		"iss": "bee-ci",
-		// "exp": time.Now().Add(time.Hour).Unix(), // Expiration time
-		"iat": time.Now().Unix(), // Issued at
-	})
-
-	tokenString, err := claims.SignedString(jwtSecret)
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
-}
-
-// Function to verify JWT tokens
-func verifyToken(tokenString string) (*jwt.Token, error) {
-	// Parse the token with the secret key
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("parsing JWT: %w", err)
-	}
-
-	if !token.Valid {
-		return nil, fmt.Errorf("invalid JWT")
-	}
-
-	return token, nil
-}
 
 type WebhookHandler struct {
 	worker     *worker.Worker
@@ -71,6 +34,13 @@ type WebhookHandler struct {
 	// "https://bee-ci.pacia.tech/dashboard" or
 	// "http://localhost:8080/dashboard".
 	redirectURL string
+
+	githubAppClientID      string
+	githubAppClientSecret  string
+	githubAppWebhookSecret string
+
+	// The secret key used to sign JWT tokens.
+	jwtSecret []byte
 }
 
 func NewWebhookHandler(
@@ -79,14 +49,22 @@ func NewWebhookHandler(
 	w *worker.Worker,
 	mainDomain string,
 	redirectURL string,
+	githubAppClientID string,
+	githubAppClientSecret string,
+	githubAppWebhookSecret string,
+	jwtSecret []byte,
 ) *WebhookHandler {
 	return &WebhookHandler{
-		httpClient:  &http.Client{Timeout: 10 * time.Second},
-		userRepo:    userRepo,
-		repoRepo:    repoRepo,
-		worker:      w,
-		mainDomain:  mainDomain,
-		redirectURL: redirectURL,
+		httpClient:             &http.Client{Timeout: 10 * time.Second},
+		userRepo:               userRepo,
+		repoRepo:               repoRepo,
+		worker:                 w,
+		mainDomain:             mainDomain,
+		redirectURL:            redirectURL,
+		githubAppClientID:      githubAppClientID,
+		githubAppClientSecret:  githubAppClientSecret,
+		githubAppWebhookSecret: githubAppWebhookSecret,
+		jwtSecret:              jwtSecret,
 	}
 }
 
@@ -96,8 +74,8 @@ func (h WebhookHandler) Mux() http.Handler {
 	mux.Handle("GET /github/callback/", http.HandlerFunc(h.handleAuthCallback))
 
 	mux.Handle("POST /{$}",
-		WithWebhookSecret(
-			http.HandlerFunc(h.handleWebhook),
+		middleware.WithWebhookSecret(
+			http.HandlerFunc(h.handleWebhook), h.githubAppWebhookSecret,
 		),
 	)
 
@@ -108,8 +86,8 @@ func (h WebhookHandler) exchangeCode(ctx context.Context, code string) (userAcce
 	const url = "https://github.com/login/oauth/access_token"
 
 	reqBody := map[string]interface{}{
-		"client_id":     githubAppClientID,
-		"client_secret": githubAppClientSecret,
+		"client_id":     h.githubAppClientID,
+		"client_secret": h.githubAppClientSecret,
 		"code":          code,
 	}
 	reqBodyBytes, err := json.Marshal(reqBody)
@@ -208,8 +186,7 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 
 	logger.Info("github user was created/updated", slog.Any("github_user", ghUser))
 
-	// Create JWT
-	token, err := createToken(*ghUser.ID)
+	token, err := h.createToken(*ghUser.ID)
 	if err != nil {
 		logger.Error("error creating token", slog.Any("error", err))
 		http.Error(w, "error creating token", http.StatusInternalServerError)
@@ -221,13 +198,13 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 	jwtTokenCookie := &http.Cookie{
 		Name:   "jwt",
 		Value:  token,
-		Domain: mainDomain,
+		Domain: h.mainDomain,
 		Path:   "/",
 	}
 
 	http.SetCookie(w, jwtTokenCookie)
 
-	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+	http.Redirect(w, r, h.redirectURL, http.StatusSeeOther)
 }
 
 func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
@@ -341,6 +318,24 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	default:
 		logger.Error("unknown event", slog.String("event", eventType))
 	}
+}
+
+// Function to create JWT tokens with claims
+func (h WebhookHandler) createToken(userID int64) (string, error) {
+	// Create a new JWT token with claims
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": strconv.FormatInt(userID, 10),
+		"iss": "bee-ci",
+		// "exp": time.Now().Add(time.Hour).Unix(), // Expiration time
+		"iat": time.Now().Unix(), // Issued at
+	})
+
+	tokenString, err := claims.SignedString(h.jwtSecret)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
 }
 
 func mapRepos(userID int64, repositories []*github.Repository) []data.Repo {
