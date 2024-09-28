@@ -2,6 +2,8 @@
 
 We try to keep them to a **reasonable** minimum.
 
+[Project layout](https://go.dev/doc/modules/layout)
+
 ## Auth
 
 [GitHub Apps have three methods of authentication][link_1]. We support:

@@ -1,4 +1,4 @@
-package main
+package middleware
 
 import (
 	"bytes"
@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/bee-ci/bee-ci-system/internal/userid"
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/felixge/httpsnoop"
 
@@ -55,7 +56,7 @@ func WithLogger(next http.Handler) http.Handler {
 	})
 }
 
-func WithWebhookSecret(next http.Handler) http.Handler {
+func WithWebhookSecret(next http.Handler, githubAppWebhookSecret string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Obtain the signature from the request
 		theirSignature := r.Header.Get("X-Hub-Signature-256")
@@ -93,7 +94,7 @@ func WithWebhookSecret(next http.Handler) http.Handler {
 	})
 }
 
-func WithJWT(next http.Handler) http.Handler {
+func WithJWT(next http.Handler, jwtSecret []byte) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// logger, _ := l.FromContext(r.Context())
 
@@ -104,7 +105,7 @@ func WithJWT(next http.Handler) http.Handler {
 		}
 
 		// Verify the token
-		token, err := verifyToken(tokenCookie.Value)
+		token, err := verifyToken(tokenCookie.Value, jwtSecret)
 		if err != nil {
 			http.Error(w, "JWT verification failed", http.StatusUnauthorized)
 			return
@@ -141,4 +142,20 @@ func makeRequestID() string {
 
 	strHash := fmt.Sprintf("%x", sha256.Sum256(randomData))
 	return strHash[:7]
+}
+
+func verifyToken(tokenString string, jwtSecret []byte) (*jwt.Token, error) {
+	// Parse the token with the secret key
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("parsing JWT: %w", err)
+	}
+
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid JWT")
+	}
+
+	return token, nil
 }

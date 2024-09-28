@@ -13,11 +13,13 @@ RUN go mod download
 
 # Copy source files required for build
 COPY *.go ./
+COPY cmd/server/ ./cmd/server
 COPY data/ ./data
 COPY worker/ ./worker
-COPY updater/ ./updater
+# COPY updater/ ./updater
+COPY server ./server
 COPY internal/ ./internal
-RUN go build -gcflags="all=-N -l" -o server .
+RUN go build -gcflags="all=-N -l" -o server ./cmd/server/main.go
 
 FROM alpine:3.20 AS runtime
 
