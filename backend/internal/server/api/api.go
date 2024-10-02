@@ -17,20 +17,24 @@ type App struct {
 	BuildRepo data.BuildRepo
 	LogsRepo  data.LogsRepo
 	RepoRepo  data.RepoRepo
+	UserRepo  data.UserRepo
 	jwtSecret []byte
 }
 
-func NewApp(buildRepo data.BuildRepo, logsRepo data.LogsRepo, repoRepo data.RepoRepo, jwtSecret []byte) *App {
+func NewApp(buildRepo data.BuildRepo, logsRepo data.LogsRepo, repoRepo data.RepoRepo, userRepo data.UserRepo, jwtSecret []byte) *App {
 	return &App{
 		BuildRepo: buildRepo,
 		LogsRepo:  logsRepo,
 		RepoRepo:  repoRepo,
+		UserRepo:  userRepo,
 		jwtSecret: jwtSecret,
 	}
 }
 
 func (a *App) Mux() http.Handler {
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /user", a.getUser)
 
 	mux.HandleFunc("GET /repos/", a.getRepos)
 
@@ -42,6 +46,47 @@ func (a *App) Mux() http.Handler {
 
 	authMux := middleware.WithJWT(mux, a.jwtSecret)
 	return authMux
+}
+
+type GetUserDTO struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
+	logger, _ := l.FromContext(r.Context())
+
+	userID, ok := userid.FromContext(r.Context())
+	if !ok {
+		msg := "invalid user ID"
+		logger.Debug(msg)
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	user, err := a.UserRepo.Get(r.Context(), userID)
+	if err != nil {
+		msg := fmt.Sprintf("failed to get user with id: %d", userID)
+		logger.Debug(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+
+	response := GetUserDTO{
+		ID:   user.ID,
+		Name: user.Username,
+	}
+
+	responseBodyBytes, err := json.Marshal(response)
+	if err != nil {
+		msg := "failed to marshal user ID into json"
+		logger.Error(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(responseBodyBytes)
 }
 
 func (a *App) getRepos(w http.ResponseWriter, r *http.Request) {

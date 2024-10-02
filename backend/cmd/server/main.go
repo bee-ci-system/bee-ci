@@ -60,7 +60,7 @@ func main() {
 	logsRepo := data.NewInfluxLogsRepo()
 
 	webhooks := webhook.NewWebhookHandler(userRepo, repoRepo, buildRepo, mainDomain, redirectURL, githubAppClientID, githubAppClientSecret, githubAppWebhookSecret, jwtSecret)
-	app := api.NewApp(buildRepo, logsRepo, repoRepo, jwtSecret)
+	app := api.NewApp(buildRepo, logsRepo, repoRepo, userRepo, jwtSecret)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
