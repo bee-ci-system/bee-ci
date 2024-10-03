@@ -35,6 +35,7 @@ func (a *App) Mux() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /user", a.getUser)
+	mux.HandleFunc("GET /my-repositories", a.getMyRepositories)
 
 	mux.HandleFunc("GET /repos/", a.getRepos)
 
@@ -87,6 +88,37 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(responseBodyBytes)
+}
+
+func (a *App) getMyRepositories(w http.ResponseWriter, r *http.Request) {
+	logger, _ := l.FromContext(r.Context())
+
+	userID, ok := userid.FromContext(r.Context())
+	if !ok {
+		msg := "invalid user ID"
+		logger.Debug(msg)
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	repos, err := a.RepoRepo.GetAll(r.Context(), userID)
+	if err != nil {
+		msg := "failed to get my repositories"
+		logger.Debug(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+
+	decoder := json.NewEncoder(w)
+	err = decoder.Encode(repos)
+	if err != nil {
+		msg := "failed to encode my repositories into json"
+		logger.Debug(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 }
 
 func (a *App) getRepos(w http.ResponseWriter, r *http.Request) {
