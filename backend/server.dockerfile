@@ -12,12 +12,9 @@ COPY go.sum ./
 RUN go mod download
 
 # Copy source files required for build
-COPY *.go ./
-COPY data/ ./data
-COPY worker/ ./worker
-COPY updater/ ./updater
+COPY cmd/server/ ./cmd/server
 COPY internal/ ./internal
-RUN go build -gcflags="all=-N -l" -o server .
+RUN go build -gcflags="all=-N -l" -o server ./cmd/server/main.go
 
 FROM alpine:3.20 AS runtime
 
@@ -26,6 +23,6 @@ COPY --from=builder /go/bin/dlv /
 
 RUN chmod -R 777 /usr/local/bin/server
 
-CMD [ "/dlv", "--listen=:40000", "--headless=true", "--continue", "--api-version=2", "--accept-multiclient", "exec", "/usr/local/bin/server" ]
+# CMD [ "/dlv", "--listen=:40000", "--headless=true", "--continue", "--api-version=2", "--accept-multiclient", "exec", "/usr/local/bin/server" ]
 
-# ENTRYPOINT [ "/usr/local/bin/server" ]
+ENTRYPOINT [ "/usr/local/bin/server" ]

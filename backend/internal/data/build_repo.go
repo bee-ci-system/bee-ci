@@ -2,11 +2,13 @@ package data
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
 
-	l "github.com/bee-ci/bee-ci-system/internal/logger"
+	l "github.com/bee-ci/bee-ci-system/internal/common/logger"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -62,7 +64,7 @@ var _ slog.LogValuer = Build{}
 
 // FatBuild represents a row in the "builds" table, merged with information from other tables:
 // - "repos" table, for repository information (repository name)
-// - "users" table, for owner information (userID and user name)
+// - "users" table, for owner information (userID and username)
 type FatBuild struct {
 	Build
 	RepoName string `db:"repo_name" json:"repo_name"`
@@ -83,14 +85,17 @@ type BuildRepo interface {
 	// SetCheckRunID sets the check_run_id of a build.
 	SetCheckRunID(ctx context.Context, buildID, checkRunID int64) (err error)
 
-	// Get returns a build by its ID.
-	Get(ctx context.Context, buildID int64) (build FatBuild, err error)
+	// Get return the build associated with the specified userID and buildID.
+	Get(ctx context.Context, userID, buildID int64) (build *FatBuild, err error)
 
 	// GetAllByUserID returns all builds for all repositories of userID.
 	GetAllByUserID(ctx context.Context, userID int64) (builds []FatBuild, err error)
 
 	// GetAllByRepoID returns all builds for the repository of repoID.
 	GetAllByRepoID(ctx context.Context, userID, repoID int64) (builds []FatBuild, err error)
+
+	// GetLatestByRepoID returns the most recent build for the specified repository and user.
+	GetLatestByRepoID(ctx context.Context, userID, repoID int64) (build *FatBuild, err error)
 }
 
 type PostgresBuildRepo struct {
@@ -174,22 +179,26 @@ func (p PostgresBuildRepo) SetCheckRunID(ctx context.Context, buildID, checkRunI
 
 // TODO: refactor to only get builds for a specific user
 
-func (p PostgresBuildRepo) Get(ctx context.Context, buildID int64) (build FatBuild, err error) {
+func (p PostgresBuildRepo) Get(ctx context.Context, userID, buildID int64) (*FatBuild, error) {
 	logger, _ := l.FromContext(ctx)
-	logger.Debug("BuildRepo.Get", slog.Any("buildID", buildID))
+	logger.Debug("BuildRepo.Get", slog.Any("userID", userID), slog.Any("buildID", buildID))
 
-	err = p.db.GetContext(ctx, &build, `
+	build := FatBuild{}
+	err := p.db.GetContext(ctx, &build, `
 		 		SELECT builds.*, repos.name AS repo_name, users.id AS user_id, users.username AS user_name
 		 		FROM bee_schema.builds builds
 		 		JOIN bee_schema.repos repos ON builds.repo_id = repos.id
 		 		JOIN bee_schema.users users ON repos.user_id = users.id
-		 		WHERE builds.id = $1
-		 	`, buildID)
+		 		WHERE users.id = $1 AND builds.id = $2
+		 	`, userID, buildID)
 	if err != nil {
-		return FatBuild{}, fmt.Errorf("executing SELECT query for buildID %d: %v", buildID, err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("executing SELECT query for buildID %d: %v", buildID, err)
 	}
 
-	return build, nil
+	return &build, nil
 }
 
 func (p PostgresBuildRepo) GetAllByUserID(ctx context.Context, userID int64) (builds []FatBuild, err error) {
@@ -228,6 +237,29 @@ func (p PostgresBuildRepo) GetAllByRepoID(ctx context.Context, userID, repoID in
 	}
 
 	return builds, nil
+}
+
+func (p PostgresBuildRepo) GetLatestByRepoID(ctx context.Context, userID, repoID int64) (*FatBuild, error) {
+	logger, _ := l.FromContext(ctx)
+	logger.Debug("BuildRepo.GetLatestByRepoID", slog.Any("userID", userID), slog.Any("repoID", repoID))
+
+	build := FatBuild{}
+	err := p.db.GetContext(ctx, &build, `
+				SELECT builds.*, repos.name AS repo_name, users.id AS user_id, users.username AS user_name
+				FROM bee_schema.builds builds
+				JOIN bee_schema.repos repos ON builds.repo_id = repos.id
+				JOIN bee_schema.users users ON repos.user_id = users.id
+				WHERE users.id = $1 AND repos.id = $2
+				LIMIT 1
+		`, userID, repoID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("executing SELECT query for userID %d and repo ID %d: %v", userID, repoID, err)
+	}
+
+	return &build, nil
 }
 
 var _ BuildRepo = &PostgresBuildRepo{}

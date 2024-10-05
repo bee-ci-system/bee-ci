@@ -11,10 +11,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bee-ci/bee-ci-system/internal/auth"
+	"github.com/bee-ci/bee-ci-system/internal/common/auth"
 	"github.com/google/go-github/v64/github"
 
-	"github.com/bee-ci/bee-ci-system/data"
+	"github.com/bee-ci/bee-ci-system/internal/data"
 
 	"github.com/lib/pq"
 )

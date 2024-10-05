@@ -31,7 +31,10 @@ INSERT INTO bee_schema.users (id, username, access_token, refresh_token)
 VALUES (-101, 'johnny', 'access_token', 'refresh_token');
 
 INSERT INTO bee_schema.repos (id, name, user_id)
-VALUES (-203, 'j_alpha', -101);
+VALUES (-203, 'j_alpha_repo', -101),
+       (-204, 'j_bravo_repo', -101);
 
+-- Insert a single build for each repo
 INSERT INTO bee_schema.builds (repo_id, commit_sha, commit_message, installation_id, status)
-VALUES (-203, '1234567890jkl', 'j_alpha commit 1', 1, 'queued');
+VALUES (-203, '1234567890jkl', 'j_alpha commit 1', 1, 'queued'),
+       (-204, '1234567890jkl', 'j_bravo commit 1', 1, 'queued');

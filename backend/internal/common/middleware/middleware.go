@@ -1,4 +1,4 @@
-package main
+package middleware
 
 import (
 	"bytes"
@@ -13,11 +13,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bee-ci/bee-ci-system/internal/userid"
+	l "github.com/bee-ci/bee-ci-system/internal/common/logger"
+	"github.com/bee-ci/bee-ci-system/internal/common/userid"
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/felixge/httpsnoop"
-
-	l "github.com/bee-ci/bee-ci-system/internal/logger"
 )
 
 func WithTrailingSlashes(next http.Handler) http.Handler {
@@ -55,7 +55,7 @@ func WithLogger(next http.Handler) http.Handler {
 	})
 }
 
-func WithWebhookSecret(next http.Handler) http.Handler {
+func WithWebhookSecret(next http.Handler, githubAppWebhookSecret string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Obtain the signature from the request
 		theirSignature := r.Header.Get("X-Hub-Signature-256")
@@ -93,9 +93,9 @@ func WithWebhookSecret(next http.Handler) http.Handler {
 	})
 }
 
-func WithJWT(next http.Handler) http.Handler {
+func WithJWT(next http.Handler, jwtSecret []byte) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// logger, _ := l.FromContext(r.Context())
+		logger, _ := l.FromContext(r.Context())
 
 		tokenCookie, err := r.Cookie("jwt")
 		if err != nil {
@@ -104,7 +104,7 @@ func WithJWT(next http.Handler) http.Handler {
 		}
 
 		// Verify the token
-		token, err := verifyToken(tokenCookie.Value)
+		token, err := verifyToken(tokenCookie.Value, jwtSecret)
 		if err != nil {
 			http.Error(w, "JWT verification failed", http.StatusUnauthorized)
 			return
@@ -123,7 +123,7 @@ func WithJWT(next http.Handler) http.Handler {
 		}
 
 		// Print information about the verified token
-		fmt.Printf("Token verified successfully. Claims: %+v\\n", token.Claims)
+		logger.Debug("JWT verified successfully", slog.Any("claims", token.Claims))
 
 		ctx := userid.WithUserID(r.Context(), userID)
 		r = r.Clone(ctx)
@@ -141,4 +141,20 @@ func makeRequestID() string {
 
 	strHash := fmt.Sprintf("%x", sha256.Sum256(randomData))
 	return strHash[:7]
+}
+
+func verifyToken(tokenString string, jwtSecret []byte) (*jwt.Token, error) {
+	// Parse the token with the secret key
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("parsing JWT: %w", err)
+	}
+
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid JWT")
+	}
+
+	return token, nil
 }

@@ -30,24 +30,14 @@ resource "digitalocean_project" "project" {
     digitalocean_domain.default.urn,
     digitalocean_droplet.influxdb.urn,
     digitalocean_volume.influxdb_volume.urn,
-    # digitalocean_domain.main.urn,
   ]
 }
 
 resource "digitalocean_app" "app" {
-  depends_on = [digitalocean_container_registry.default]
 
   spec {
     name   = "bee-ci-tf"
     region = "sfo"
-
-    /*
-    domain {
-      name = "backend.bee-ci.pacia.tech"
-      type = "PRIMARY"
-      zone = digitalocean_domain.main.name
-    }
-    */
 
     ingress {
       rule {
@@ -63,7 +53,7 @@ resource "digitalocean_app" "app" {
 
       rule {
         component {
-          name = "backend"
+          name = "server"
         }
         match {
           path {
@@ -81,10 +71,9 @@ resource "digitalocean_app" "app" {
     }
 
     service {
-      name = "frontend"
-      # environment_slug   = "go" # See https://github.com/digitalocean/terraform-provider-digitalocean/discussions/1190
+      name               = "frontend"
       instance_count     = 1
-      instance_size_slug = "apps-s-1vcpu-0.5gb"
+      instance_size_slug = "apps-s-1vcpu-0.5gb" # doctl apps tier instance-size list
 
       http_port = 3000
 
@@ -97,16 +86,6 @@ resource "digitalocean_app" "app" {
       source_dir      = "./frontend"
       dockerfile_path = "./frontend/Dockerfile"
 
-      # image {
-      #   registry_type = "DOCR" # DigitalOcean Container Registry
-      #   repository    = "frontend"
-      #   tag           = "latest"
-
-      #   deploy_on_push {
-      #     enabled = true
-      #   }
-      # }
-
       health_check {
         http_path             = "/"
         initial_delay_seconds = 10
@@ -118,10 +97,9 @@ resource "digitalocean_app" "app" {
     }
 
     service {
-      name = "backend"
-      # environment_slug   = "go" # See https://github.com/digitalocean/terraform-provider-digitalocean/discussions/1190
-      instance_count     = 1
-      instance_size_slug = "apps-s-1vcpu-0.5gb"
+      name               = "server"
+      instance_count     = 3
+      instance_size_slug = "apps-s-1vcpu-1gb" # doctl apps tier instance-size list
 
       dynamic "env" {
         for_each = local.env_vars
@@ -142,17 +120,7 @@ resource "digitalocean_app" "app" {
       }
 
       source_dir      = "./backend"
-      dockerfile_path = "./backend/Dockerfile"
-
-      # image {
-      #   registry_type = "DOCR" # DigitalOcean Container Registry
-      #   repository    = "backend"
-      #   tag           = "latest"
-
-      #   deploy_on_push {
-      #     enabled = true
-      #   }
-      # }
+      dockerfile_path = "./backend/server.dockerfile"
 
       health_check {
         http_path             = "/"
@@ -162,6 +130,32 @@ resource "digitalocean_app" "app" {
         success_threshold     = 3
         failure_threshold     = 3
       }
+    }
+
+
+    worker {
+      name               = "gh-updater"
+      instance_count     = 1
+      instance_size_slug = "apps-s-1vcpu-0.5gb" # doctl apps tier instance-size list
+
+      dynamic "env" {
+        for_each = local.env_vars
+        content {
+          key   = env.value.key
+          value = env.value.value
+          scope = env.value.scope
+          type  = lookup(env.value, "type", null)
+        }
+      }
+
+      github {
+        repo           = "bee-ci-system/bee-ci"
+        branch         = "master"
+        deploy_on_push = true
+      }
+
+      source_dir      = "./backend"
+      dockerfile_path = "./backend/gh-updater.dockerfile"
     }
   }
 }
