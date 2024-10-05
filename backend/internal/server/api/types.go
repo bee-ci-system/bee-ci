@@ -50,6 +50,25 @@ type pipelineDashboardData struct {
 	Status         string `json:"status"`
 }
 
+type getRepositoryDTO struct {
+	ID               string     `json:"id"`
+	Name             string     `json:"name"`
+	Description      string     `json:"description"`
+	URL              string     `json:"url"`
+	DateOfLastUpdate time.Time  `json:"dateOfLastUpdate"`
+	Pipelines        []pipeline `json:"pipelines"`
+}
+
+type pipeline struct {
+	ID             string     `json:"id"`
+	RepositoryName string     `json:"repositoryName"`
+	RepositoryID   string     `json:"repositoryId"`
+	CommitName     string     `json:"commitName"`
+	Status         string     `json:"status"`
+	StartDate      time.Time  `json:"startDate"`
+	EndDate        *time.Time `json:"endDate"`
+}
+
 func toRepositories(dbRepos []data.Repo) []repository {
 	var repos []repository
 	for _, repo := range dbRepos {

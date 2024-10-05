@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"time"
 
 	l "github.com/bee-ci/bee-ci-system/internal/common/logger"
 	"github.com/bee-ci/bee-ci-system/internal/common/middleware"
@@ -36,8 +37,9 @@ func (a *App) Mux() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /user/", a.getUser)
-	mux.HandleFunc("GET /my-repositories/", a.getMyRepositories)
 	mux.HandleFunc("GET /dashboard/", a.getDashboard)
+	mux.HandleFunc("GET /my-repositories/", a.getMyRepositories)
+	mux.HandleFunc("GET /repository/{id}", a.getRepository)
 
 	mux.HandleFunc("GET /repos/", a.getRepos)
 
@@ -150,6 +152,74 @@ func (a *App) getMyRepositories(w http.ResponseWriter, r *http.Request) {
 		logger.Debug(msg, slog.Any("error", err))
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
+	}
+}
+
+func (a *App) getRepository(w http.ResponseWriter, r *http.Request) {
+	logger, _ := l.FromContext(r.Context())
+
+	userID, ok := userid.FromContext(r.Context())
+	if !ok {
+		msg := "invalid user ID"
+		logger.Debug(msg)
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	repoID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		msg := fmt.Sprintf("invalid repository ID: %s", r.PathValue("id"))
+		logger.Debug(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	repo, err := a.RepoRepo.Get(r.Context(), repoID)
+	if err != nil {
+		msg := "failed to get repository"
+		logger.Debug(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+
+	builds, err := a.BuildRepo.GetAllByRepoID(r.Context(), userID, repoID)
+	if err != nil {
+		msg := "failed to get all builds for repository"
+		logger.Debug(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+
+	pipelines := make([]pipeline, 0)
+	for _, build := range builds {
+		pipeline := pipeline{
+			ID:             strconv.FormatInt(build.ID, 10),
+			RepositoryName: build.RepoName,
+			RepositoryID:   strconv.FormatInt(build.RepoID, 10),
+			CommitName:     build.CommitMsg,
+			Status:         build.Status,
+			StartDate:      build.CreatedAt,
+			EndDate:        &build.UpdatedAt,
+		}
+
+		pipelines = append(pipelines, pipeline)
+	}
+
+	response := getRepositoryDTO{
+		ID:               strconv.FormatInt(repo.ID, 10),
+		Name:             repo.Name,
+		Description:      "Description not available",
+		URL:              "URL not available",
+		DateOfLastUpdate: time.Time{},
+		Pipelines:        pipelines,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		msg := "failed to encode repositoryDTO into json"
+		logger.Debug(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusInternalServerError)
 	}
 }
 
