@@ -42,8 +42,6 @@ type statsDTO struct {
 	UnsuccessfulPipelines int `json:"unsuccessfulPipelines"`
 }
 
-// Get latest pipeline run for repository with ID
-
 type pipelineDashboardData struct {
 	ID             string `json:"id"`
 	RepositoryName string `json:"repositoryName"`

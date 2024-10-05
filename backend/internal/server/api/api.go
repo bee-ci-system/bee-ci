@@ -177,6 +177,11 @@ func (a *App) getDashboard(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			msg := "failed to get latest build for repo"
 			logger.Error(msg, slog.Any("error", err))
+			http.Error(w, msg, http.StatusInternalServerError)
+			return
+		}
+		if build == nil {
+			continue
 		}
 
 		pipeline := pipelineDashboardData{

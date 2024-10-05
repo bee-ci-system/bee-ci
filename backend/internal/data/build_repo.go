@@ -2,6 +2,8 @@ package data
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -83,7 +85,7 @@ type BuildRepo interface {
 	// SetCheckRunID sets the check_run_id of a build.
 	SetCheckRunID(ctx context.Context, buildID, checkRunID int64) (err error)
 
-	// Get return the FatBuild associated with the specified userID and buildID.
+	// Get return the build associated with the specified userID and buildID.
 	Get(ctx context.Context, userID, buildID int64) (build *FatBuild, err error)
 
 	// GetAllByUserID returns all builds for all repositories of userID.
@@ -177,11 +179,12 @@ func (p PostgresBuildRepo) SetCheckRunID(ctx context.Context, buildID, checkRunI
 
 // TODO: refactor to only get builds for a specific user
 
-func (p PostgresBuildRepo) Get(ctx context.Context, userID, buildID int64) (build *FatBuild, err error) {
+func (p PostgresBuildRepo) Get(ctx context.Context, userID, buildID int64) (*FatBuild, error) {
 	logger, _ := l.FromContext(ctx)
 	logger.Debug("BuildRepo.Get", slog.Any("userID", userID), slog.Any("buildID", buildID))
 
-	err = p.db.GetContext(ctx, &build, `
+	build := FatBuild{}
+	err := p.db.GetContext(ctx, &build, `
 		 		SELECT builds.*, repos.name AS repo_name, users.id AS user_id, users.username AS user_name
 		 		FROM bee_schema.builds builds
 		 		JOIN bee_schema.repos repos ON builds.repo_id = repos.id
@@ -189,10 +192,13 @@ func (p PostgresBuildRepo) Get(ctx context.Context, userID, buildID int64) (buil
 		 		WHERE users.id = $1 AND builds.id = $2
 		 	`, userID, buildID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("executing SELECT query for buildID %d: %v", buildID, err)
 	}
 
-	return build, nil
+	return &build, nil
 }
 
 func (p PostgresBuildRepo) GetAllByUserID(ctx context.Context, userID int64) (builds []FatBuild, err error) {
@@ -233,12 +239,13 @@ func (p PostgresBuildRepo) GetAllByRepoID(ctx context.Context, userID, repoID in
 	return builds, nil
 }
 
-func (p PostgresBuildRepo) GetLatestByRepoID(ctx context.Context, userID, repoID int64) (build *FatBuild, err error) {
+func (p PostgresBuildRepo) GetLatestByRepoID(ctx context.Context, userID, repoID int64) (*FatBuild, error) {
 	logger, _ := l.FromContext(ctx)
 	logger.Debug("BuildRepo.GetLatestByRepoID", slog.Any("userID", userID), slog.Any("repoID", repoID))
 
-	err = p.db.GetContext(ctx, &build, `
-				SELECT *
+	build := FatBuild{}
+	err := p.db.GetContext(ctx, &build, `
+				SELECT builds.*, repos.name AS repo_name, users.id AS user_id, users.username AS user_name
 				FROM bee_schema.builds builds
 				JOIN bee_schema.repos repos ON builds.repo_id = repos.id
 				JOIN bee_schema.users users ON repos.user_id = users.id
@@ -246,10 +253,13 @@ func (p PostgresBuildRepo) GetLatestByRepoID(ctx context.Context, userID, repoID
 				LIMIT 1
 		`, userID, repoID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("executing SELECT query for userID %d and repo ID %d: %v", userID, repoID, err)
 	}
 
-	return build, nil
+	return &build, nil
 }
 
 var _ BuildRepo = &PostgresBuildRepo{}
