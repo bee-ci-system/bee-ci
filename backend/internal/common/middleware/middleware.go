@@ -123,7 +123,7 @@ func WithJWT(next http.Handler, jwtSecret []byte) http.Handler {
 		}
 
 		// Print information about the verified token
-		logger.Debug("JWT verified successfully. Claims: %+v\\n", token.Claims)
+		logger.Debug("JWT verified successfully", slog.Any("claims", token.Claims))
 
 		ctx := userid.WithUserID(r.Context(), userID)
 		r = r.Clone(ctx)
