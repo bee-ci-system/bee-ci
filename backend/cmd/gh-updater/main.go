@@ -2,26 +2,19 @@ package main
 
 import (
 	"context"
-	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"time"
 
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-
-	"github.com/bee-ci/bee-ci-system/data"
-	"github.com/bee-ci/bee-ci-system/updater"
-	"github.com/bee-ci/bee-ci-system/worker"
+	"github.com/bee-ci/bee-ci-system/internal/data"
+	"github.com/bee-ci/bee-ci-system/internal/updater"
 
 	"github.com/jmoiron/sqlx"
 
-	"github.com/bee-ci/bee-ci-system/internal/data"
-	"github.com/bee-ci/bee-ci-system/internal/updater"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/lib/pq"
 	"github.com/lmittmann/tint"
@@ -52,32 +45,17 @@ func main() {
 	dbPassword := mustGetenv("DB_PASSWORD")
 	dbName := mustGetenv("DB_NAME")
 	dbOpts := mustGetenv("DB_OPTS")
-
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s %s", dbHost, dbPort, dbUser, dbPassword, dbName, dbOpts)
-	db, err = sqlx.Connect("postgres", psqlInfo)
+	db, err := sqlx.Connect("postgres", psqlInfo)
 	if err != nil {
 		slog.Error("error connecting to Postgres database", slog.Any("error", err))
 		os.Exit(1)
 	}
 	slog.Info("connected to Postgres database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
 
-	influxURL := mustGetenv("INFLUXDB_URL")
-	influxToken := mustGetenv("INFLUXDB_TOKEN")
-	influxBucket := mustGetenv("INFLUXDB_BUCKET")
-	influxOrg := mustGetenv("INFLUXDB_ORG")
-
-	influxClient := influxdb2.NewClient(influxURL, influxToken)
-	_, err = influxClient.Health(ctx)
-	if err != nil {
-		slog.Error("error connecting to Influx database", slog.Any("error", err))
-		os.Exit(1)
-	}
-	slog.Info("connected to Influx database", "url", influxURL)
-
 	buildRepo := data.NewPostgresBuildRepo(db)
 	userRepo := data.NewPostgresUserRepo(db)
 	repoRepo := data.NewPostgresRepoRepo(db)
-	logsRepo := data.NewInfluxLogsRepo()
 
 	githubService := updater.NewGithubService(githubAppID, rsaPrivateKey)
 

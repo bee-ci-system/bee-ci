@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"fmt"
+
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 
