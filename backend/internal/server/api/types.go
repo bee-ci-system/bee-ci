@@ -9,6 +9,7 @@ import (
 
 type getMyRepositoriesParams struct {
 	CurrentPage int    `json:"currentPage"`
+	PageSize    int    `json:"pageSize"`
 	Search      string `json:"search"`
 }
 

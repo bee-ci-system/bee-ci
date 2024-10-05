@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -89,11 +90,22 @@ func (a *App) getMyRepositories(w http.ResponseWriter, r *http.Request) {
 
 	currentPage, err := strconv.Atoi(r.URL.Query().Get("currentPage"))
 	if err != nil {
-		currentPage = 0
+		msg := "invalid current page"
+		logger.Warn(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+	pageSize, err := strconv.Atoi(r.URL.Query().Get("pageSize"))
+	if err != nil {
+		msg := "invalid page size"
+		logger.Warn(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusBadRequest)
+		return
 	}
 
 	params := getMyRepositoriesParams{
 		CurrentPage: currentPage,
+		PageSize:    pageSize,
 		Search:      r.URL.Query().Get("search"),
 	}
 
@@ -105,7 +117,7 @@ func (a *App) getMyRepositories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repos, err := a.RepoRepo.GetAll(r.Context(), params.Search, userID)
+	allRepos, err := a.RepoRepo.GetAll(r.Context(), params.Search, userID)
 	if err != nil {
 		msg := "failed to get my repositories"
 		logger.Debug(msg, slog.Any("error", err))
@@ -113,11 +125,22 @@ func (a *App) getMyRepositories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	totalPages := math.Ceil(float64(len(allRepos)) / float64(params.PageSize))
+
+	// Perform paging
+	// TODO: Paging should be done at database-level
+	startIndex := (params.CurrentPage) * params.PageSize
+	endIndex := startIndex + params.PageSize
+	repos := make([]data.Repo, 0)
+	for i := startIndex; i < len(allRepos) && i < endIndex; i++ {
+		repos = append(repos, allRepos[i])
+	}
+
 	response := getMyRepositoriesDTO{
 		Repositories:      toRepositories(repos),
-		TotalRepositories: len(repos),
-		TotalPages:        2137, // TODO: use correct values
-		CurrentPage:       69,
+		TotalRepositories: len(allRepos),
+		TotalPages:        int(totalPages),
+		CurrentPage:       params.CurrentPage,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
