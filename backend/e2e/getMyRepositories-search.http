@@ -1,0 +1,2 @@
+GET http://localhost:8080/api/my-repositories
+Cookie: jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MjgxMzczNTAsImlzcyI6ImJlZS1jaSIsInN1YiI6Ii0xMDAifQ.naAjenHOzuT9GcJODvR9N2sIaZAyUI2KSuDs0P7ZCRQ

@@ -192,7 +192,7 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	logger.Debug("JWT token created", slog.String("username", *ghUser.Name), slog.String("token", token))
+	logger.Debug("JWT token created", slog.String("username", *ghUser.Login), slog.String("token", token))
 
 	jwtTokenCookie := &http.Cookie{
 		Name:   "jwt",

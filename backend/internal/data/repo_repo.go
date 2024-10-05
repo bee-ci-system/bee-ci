@@ -26,7 +26,11 @@ type RepoRepo interface {
 	Create(ctx context.Context, repo []Repo) (err error)
 	Delete(ctx context.Context, id []int64) (err error)
 	Get(ctx context.Context, id int64) (repo *Repo, err error)
-	GetAll(ctx context.Context, userID int64) (repos []Repo, err error)
+
+	// GetAll retrieves all repositories for a given user and whose names are substrings of searchRepo.
+	//
+	// If searchRepo is empty, all repositories are considered.
+	GetAll(ctx context.Context, searchRepo string, userID int64) (repos []Repo, err error)
 }
 
 type PostgresRepoRepo struct {
@@ -87,16 +91,20 @@ func (p PostgresRepoRepo) Get(ctx context.Context, id int64) (repo *Repo, err er
 	return repo, nil
 }
 
-func (p PostgresRepoRepo) GetAll(ctx context.Context, userID int64) (repos []Repo, err error) {
-	err = p.db.SelectContext(ctx, &repos, `
+func (p PostgresRepoRepo) GetAll(ctx context.Context, searchRepo string, userID int64) (repos []Repo, err error) {
+	query := `
 		SELECT id, name, user_id
 		FROM bee_schema.repos
-		WHERE user_id = $1
-	`, userID)
+		WHERE user_id = $1`
+	args := []interface{}{userID}
+	if searchRepo != "" {
+		query += " AND name ILIKE $2"
+		args = append(args, "%"+searchRepo+"%")
+	}
+	err = p.db.SelectContext(ctx, &repos, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("selecting from repos: %v", err)
 	}
-
 	return repos, nil
 }
 

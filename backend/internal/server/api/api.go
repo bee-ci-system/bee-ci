@@ -34,8 +34,8 @@ func NewApp(buildRepo data.BuildRepo, logsRepo data.LogsRepo, repoRepo data.Repo
 func (a *App) Mux() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /user", a.getUser)
-	mux.HandleFunc("GET /my-repositories", a.getMyRepositories)
+	mux.HandleFunc("GET /user/", a.getUser)
+	mux.HandleFunc("GET /my-repositories/", a.getMyRepositories)
 
 	mux.HandleFunc("GET /repos/", a.getRepos)
 
@@ -47,11 +47,6 @@ func (a *App) Mux() http.Handler {
 
 	authMux := middleware.WithJWT(mux, a.jwtSecret)
 	return authMux
-}
-
-type GetUserDTO struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
 }
 
 func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +68,7 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := GetUserDTO{
+	response := getUserDTO{
 		ID:   user.ID,
 		Name: user.Username,
 	}
@@ -93,6 +88,16 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 func (a *App) getMyRepositories(w http.ResponseWriter, r *http.Request) {
 	logger, _ := l.FromContext(r.Context())
 
+	currentPage, err := strconv.Atoi(r.URL.Query().Get("currentPage"))
+	if err != nil {
+		currentPage = 0
+	}
+
+	params := getMyRepositoriesParams{
+		CurrentPage: currentPage,
+		Search:      r.URL.Query().Get("search"),
+	}
+
 	userID, ok := userid.FromContext(r.Context())
 	if !ok {
 		msg := "invalid user ID"
@@ -101,7 +106,7 @@ func (a *App) getMyRepositories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repos, err := a.RepoRepo.GetAll(r.Context(), userID)
+	repos, err := a.RepoRepo.GetAll(r.Context(), params.Search, userID)
 	if err != nil {
 		msg := "failed to get my repositories"
 		logger.Debug(msg, slog.Any("error", err))
@@ -109,16 +114,23 @@ func (a *App) getMyRepositories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	response := getMyRepositoriesDTO{
+		Repositories:      toRepositories(repos),
+		TotalRepositories: len(repos),
+		TotalPages:        2137, // TODO: use correct values
+		CurrentPage:       69,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
 	decoder := json.NewEncoder(w)
-	err = decoder.Encode(repos)
+	err = decoder.Encode(response)
 	if err != nil {
 		msg := "failed to encode my repositories into json"
 		logger.Debug(msg, slog.Any("error", err))
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
 }
 
 func (a *App) getRepos(w http.ResponseWriter, r *http.Request) {
@@ -132,7 +144,7 @@ func (a *App) getRepos(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repos, err := a.RepoRepo.GetAll(r.Context(), userID)
+	repos, err := a.RepoRepo.GetAll(r.Context(), "", userID)
 	if err != nil {
 		msg := "failed to get repositories"
 		logger.Debug(msg, slog.Any("error", err))

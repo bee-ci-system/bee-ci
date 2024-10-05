@@ -95,7 +95,7 @@ func WithWebhookSecret(next http.Handler, githubAppWebhookSecret string) http.Ha
 
 func WithJWT(next http.Handler, jwtSecret []byte) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// logger, _ := l.FromContext(r.Context())
+		logger, _ := l.FromContext(r.Context())
 
 		tokenCookie, err := r.Cookie("jwt")
 		if err != nil {
@@ -123,7 +123,7 @@ func WithJWT(next http.Handler, jwtSecret []byte) http.Handler {
 		}
 
 		// Print information about the verified token
-		fmt.Printf("Token verified successfully. Claims: %+v\\n", token.Claims)
+		logger.Debug("JWT verified successfully. Claims: %+v\\n", token.Claims)
 
 		ctx := userid.WithUserID(r.Context(), userID)
 		r = r.Clone(ctx)
