@@ -1,9 +1,10 @@
 package api
 
 import (
-	"github.com/bee-ci/bee-ci-system/internal/data"
 	"strconv"
 	"time"
+
+	"github.com/bee-ci/bee-ci-system/internal/data"
 )
 
 type getMyRepositoriesParams struct {
@@ -29,7 +30,7 @@ type repository struct {
 	DateOfLastUpdate time.Time `json:"dateOfLastUpdate"`
 }
 
-type getDashboardDataDto struct {
+type getDashboardDataDTO struct {
 	Stats        statsDTO                `json:"stats"`
 	Repositories []repository            `json:"repositories"`
 	Pipelines    []pipelineDashboardData `json:"pipelines"`
@@ -40,6 +41,8 @@ type statsDTO struct {
 	SuccessfulPipelines   int `json:"successfulPipelines"`
 	UnsuccessfulPipelines int `json:"unsuccessfulPipelines"`
 }
+
+// Get latest pipeline run for repository with ID
 
 type pipelineDashboardData struct {
 	ID             string `json:"id"`
@@ -54,7 +57,7 @@ func toRepositories(dbRepos []data.Repo) []repository {
 		repos = append(repos, repository{
 			ID:               strconv.FormatInt(repo.ID, 10),
 			Name:             repo.Name,
-			DateOfLastUpdate: time.Date(2005, 04, 02, 21, 37, 0, 0, time.Local),
+			DateOfLastUpdate: time.Date(2005, 0o4, 0o2, 21, 37, 0, 0, time.Local),
 		})
 	}
 	return repos

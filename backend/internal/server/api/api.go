@@ -36,6 +36,7 @@ func (a *App) Mux() http.Handler {
 
 	mux.HandleFunc("GET /user/", a.getUser)
 	mux.HandleFunc("GET /my-repositories/", a.getMyRepositories)
+	mux.HandleFunc("GET /dashboard/", a.getDashboard)
 
 	mux.HandleFunc("GET /repos/", a.getRepos)
 
@@ -73,16 +74,14 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 		Name: user.Username,
 	}
 
-	responseBodyBytes, err := json.Marshal(response)
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		msg := "failed to marshal user ID into json"
+		msg := "failed to encode user into json"
 		logger.Error(msg, slog.Any("error", err))
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(responseBodyBytes)
 }
 
 func (a *App) getMyRepositories(w http.ResponseWriter, r *http.Request) {
@@ -122,11 +121,83 @@ func (a *App) getMyRepositories(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-
-	decoder := json.NewEncoder(w)
-	err = decoder.Encode(response)
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		msg := "failed to encode my repositories into json"
+		logger.Debug(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+}
+
+func (a *App) getDashboard(w http.ResponseWriter, r *http.Request) {
+	logger, _ := l.FromContext(r.Context())
+
+	userID, ok := userid.FromContext(r.Context())
+
+	if !ok {
+		msg := "invalid user ID"
+		logger.Debug(msg)
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	builds, err := a.BuildRepo.GetAllByUserID(r.Context(), userID)
+	if err != nil {
+		msg := "failed to get all builds"
+		logger.Debug(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+	successfulBuilds := 0
+	for _, build := range builds {
+		if build.Status == "success" {
+			successfulBuilds++
+		}
+	}
+
+	stats := statsDTO{
+		TotalPipelines:        len(builds),
+		SuccessfulPipelines:   successfulBuilds,
+		UnsuccessfulPipelines: len(builds) - successfulBuilds,
+	}
+
+	repos, err := a.RepoRepo.GetAll(r.Context(), "", userID)
+	if err != nil {
+		msg := "failed to get my repositories"
+		logger.Debug(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+
+	pipelines := make([]pipelineDashboardData, 0)
+	// Get the latest build for every repo
+	for _, repo := range repos {
+		build, err := a.BuildRepo.GetLatestByRepoID(r.Context(), userID, repo.ID)
+		if err != nil {
+			msg := "failed to get latest build for repo"
+			logger.Error(msg, slog.Any("error", err))
+		}
+
+		pipeline := pipelineDashboardData{
+			ID:             strconv.FormatInt(build.ID, 10),
+			RepositoryName: repo.Name,
+			CommitName:     build.CommitMsg,
+			Status:         build.Status,
+		}
+		pipelines = append(pipelines, pipeline)
+	}
+
+	response := getDashboardDataDTO{
+		Stats:        stats,
+		Repositories: toRepositories(repos),
+		Pipelines:    pipelines,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		msg := "failed to encode dashboard data into json"
 		logger.Debug(msg, slog.Any("error", err))
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
@@ -152,16 +223,14 @@ func (a *App) getRepos(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	decoder := json.NewEncoder(w)
-	err = decoder.Encode(repos)
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(repos)
 	if err != nil {
 		msg := "failed to encode repositories into json"
 		logger.Debug(msg, slog.Any("error", err))
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
 }
 
 func (a *App) getBuilds(w http.ResponseWriter, r *http.Request) {
@@ -204,16 +273,14 @@ func (a *App) getBuilds(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	responseBodyBytes, err := json.Marshal(result)
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(result)
 	if err != nil {
-		msg := "failed to marshal builds"
+		msg := "failed to encode builds into json"
 		logger.Error(msg, slog.Any("error", err))
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(responseBodyBytes)
 }
 
 func (a *App) getBuild(w http.ResponseWriter, r *http.Request) {
@@ -235,7 +302,7 @@ func (a *App) getBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := a.BuildRepo.Get(r.Context(), userID)
+	result, err := a.BuildRepo.Get(r.Context(), userID, buildID)
 	if err != nil {
 		msg := fmt.Sprintf("failed to get build with id %d from repo", buildID)
 		logger.Debug(msg, slog.Any("error", err))
@@ -243,18 +310,14 @@ func (a *App) getBuild(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Authorization (check if buildID belongs to userID)
-
-	responseBodyBytes, err := json.Marshal(result)
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(result)
 	if err != nil {
-		msg := "failed to marshal build into json"
+		msg := "failed to encode build into json"
 		logger.Error(msg, slog.Any("error", err))
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(responseBodyBytes)
 }
 
 func (a *App) getBuildLogs(w http.ResponseWriter, r *http.Request) {
