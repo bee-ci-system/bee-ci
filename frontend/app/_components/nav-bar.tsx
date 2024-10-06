@@ -1,8 +1,9 @@
 'use client';
 
+import Cookies from 'js-cookie';
 import { FolderClosed, Home, Library, LogOut, PanelLeft } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '../_utils/cn';
 import { routes } from '../_utils/routes';
 import { Button } from './button';
@@ -29,6 +30,13 @@ const getNavLinkClassNames = (
 
 const NavBar = () => {
   const currentPathname = usePathname();
+  const router = useRouter();
+
+  const logOut = () => {
+    Cookies.remove('jwt');
+    router.push(routes.LANDING);
+  };
+
   return (
     <>
       <aside className='fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex'>
@@ -84,12 +92,10 @@ const NavBar = () => {
             <ThemeToggler />
             <Tooltip>
               <TooltipTrigger asChild>
-                <Link href={routes.LOGOUT} prefetch={false}>
-                  <Button variant='outline' size='icon'>
-                    <LogOut className='h-5 w-5' />
-                    <span className='sr-only'>Log out</span>
-                  </Button>
-                </Link>
+                <Button variant='outline' size='icon' onClick={() => logOut()}>
+                  <LogOut className='h-5 w-5' />
+                  <span className='sr-only'>Log out</span>
+                </Button>
               </TooltipTrigger>
               <TooltipContent side='right'>Log out</TooltipContent>
             </Tooltip>
@@ -142,12 +148,10 @@ const NavBar = () => {
 
           <div className='flex flex-row items-center gap-4 sm:hidden'>
             <ThemeToggler />
-            <Link href={routes.LOGOUT} prefetch={false}>
-              <Button variant='outline' size='icon'>
-                <LogOut className='h-5 w-5' />
-                <span className='sr-only'>Log out</span>
-              </Button>
-            </Link>
+            <Button variant='outline' size='icon' onClick={() => logOut()}>
+              <LogOut className='h-5 w-5' />
+              <span className='sr-only'>Log out</span>
+            </Button>
           </div>
         </header>
       </div>

@@ -3,7 +3,6 @@ export const routes = {
   DASHBOARD: '/dashboard',
   MY_REPOSITORIES: '/my-repositories',
   DOCUMENTATION: '/docs',
-  LOGOUT: '/log-out',
 
   documentationRoutes: [
     {

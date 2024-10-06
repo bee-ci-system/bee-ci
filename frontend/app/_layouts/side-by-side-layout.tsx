@@ -33,14 +33,11 @@ export const SideBySideLayout = ({ children }: { children: ReactNode }) => {
             efficient, user-friendly, and designed to make your development
             lifecycle buzz 🐝 with productivity.
           </p>
-          <Button className='mt-6 w-1/2 min-w-max bg-white py-4 hover:bg-white dark:bg-white'>
-            <a
-              href={authUrl}
-              className='text-black dark:text-primary-foreground'
-            >
+          <a href={authUrl} className='text-black dark:text-primary-foreground'>
+            <Button className='mt-6 w-1/2 min-w-max bg-white py-4 hover:bg-white dark:bg-white'>
               Sign in with GitHub
-            </a>
-          </Button>
+            </Button>
+          </a>
         </div>
         <div className='mb-4 flex w-full flex-col items-start text-sm lg:flex-row lg:gap-8'>
           <Link
