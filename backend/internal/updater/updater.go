@@ -54,7 +54,7 @@ func New(
 // Start starts the updater. It will listen for updates from the database and
 // create check runs on GitHub when the updates happen.
 //
-// To shutdown the updater, cancel the context.
+// To shut down the updater, cancel the context.
 func (u Updater) Start(ctx context.Context) error {
 	err := u.dbListener.Listen(channelName)
 	if err != nil {
@@ -100,7 +100,7 @@ func (u Updater) Start(ctx context.Context) error {
 					break
 				}
 			} else if updatedBuild.Status == "queued" && updatedBuild.CheckRunID != nil {
-				// Nothing to be done. Te check run on Gitub has been already created.
+				// Nothing to be done. The check run on GitHub has already been created.
 			} else {
 				if updatedBuild.CheckRunID == nil {
 					// This should never happen, but let's be extra safe.
