@@ -1,6 +1,5 @@
 'use client';
 
-import Cookies from 'js-cookie';
 import { FolderClosed, Home, Library, LogOut, PanelLeft } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -33,8 +32,7 @@ const NavBar = () => {
   const router = useRouter();
 
   const logOut = () => {
-    Cookies.remove('jwt');
-    router.push(routes.LANDING);
+    router.push(routes.LOG_OUT);
   };
 
   return (

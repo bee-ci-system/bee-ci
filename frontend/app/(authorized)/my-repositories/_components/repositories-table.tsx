@@ -22,7 +22,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { getMyRepositoriesData } from '../_api/server';
+import { getMyRepositoriesDataClient } from '../_api/client';
 import { Search } from './search';
 
 const RepositoriesTable = () => {
@@ -34,7 +34,7 @@ const RepositoriesTable = () => {
   const { data } = useQuery<GetMyRepositoriesDataDto>({
     queryKey: ['repositories', currentPage, search],
     queryFn: () =>
-      getMyRepositoriesData({
+      getMyRepositoriesDataClient({
         currentPage,
         search,
       }),
@@ -57,26 +57,34 @@ const RepositoriesTable = () => {
             setCurrentPage(1);
           }}
         />
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className='w-2/3'>Name</TableHead>
-              <TableHead>Last updated at</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data?.repositories.map((repository) => (
-              <TableRow
-                key={repository.id}
-                onClick={() => router.push(`/repository/${repository.id}`)}
-                className='cursor-pointer'
-              >
-                <TableCell className='font-medium'>{repository.name}</TableCell>
-                <TableCell>{repository.dateOfLastUpdate}</TableCell>
+        {data !== undefined && data?.repositories.length !== 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className='w-2/3'>Name</TableHead>
+                <TableHead>Last updated at</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {data?.repositories.map((repository) => (
+                <TableRow
+                  key={repository.id}
+                  onClick={() => router.push(`/repository/${repository.id}`)}
+                  className='cursor-pointer'
+                >
+                  <TableCell className='font-medium'>
+                    {repository.name}
+                  </TableCell>
+                  <TableCell>{repository.dateOfLastUpdate}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <p className='text-center text-sm text-muted-foreground'>
+            No repositories
+          </p>
+        )}
       </CardContent>
       {data && data.totalPages > 1 && (
         <CardFooter className='flex flex-grow flex-col gap-2'>

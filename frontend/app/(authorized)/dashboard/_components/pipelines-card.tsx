@@ -27,21 +27,27 @@ const PipelinesCard = ({
         <CardDescription>Your last pipelines and their status</CardDescription>
       </div>
     </CardHeader>
-    <CardContent>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className='w-[75%]'>Pipeline</TableHead>
-            <TableHead className='pl-0'>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {pipelines.map((pipeline) => (
-            <PipelineTableRow pipeline={pipeline} key={pipeline.id} />
-          ))}
-        </TableBody>
-      </Table>
-    </CardContent>
+    {pipelines.length === 0 ? (
+      <p className='mb-4 h-full text-center text-sm text-muted-foreground'>
+        No pipelines found
+      </p>
+    ) : (
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className='w-[75%]'>Pipeline</TableHead>
+              <TableHead className='pl-0'>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pipelines.map((pipeline) => (
+              <PipelineTableRow pipeline={pipeline} key={pipeline.id} />
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    )}
   </Card>
 );
 

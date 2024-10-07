@@ -5,6 +5,14 @@ import { documentationRoutes, routes } from './app/_utils/routes';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  if (pathname === routes.LOG_OUT) {
+    const response = NextResponse.redirect(
+      new URL(routes.LANDING, request.url),
+    );
+    response.cookies.set('jwt', '', { path: '/', expires: new Date(0) });
+    return response;
+  }
+
   if (pathname === '/log-out') {
     const response = NextResponse.redirect(new URL('/', request.url));
     response.cookies.set('jwt', '', { path: '/', expires: new Date(0) });

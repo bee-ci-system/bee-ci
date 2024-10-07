@@ -1,6 +1,6 @@
 import { getUserServer } from '@/app/_api/server';
 import { BadgeCheck, BadgeX, Computer } from 'lucide-react';
-import { getDashboardData } from './_api/server';
+import { getDashboardDataServer } from './_api/server';
 import { PipelinesCard } from './_components/pipelines-card';
 import { MyRepositoriesCard } from './_components/repositories-card';
 import { StatsCard } from './_components/stats-card';
@@ -9,7 +9,7 @@ import { calculatePercent } from './_utils/calculate-percent';
 const DashboardPage = async () => {
   const [userInfo, dashboardData] = await Promise.all([
     getUserServer(),
-    getDashboardData(),
+    getDashboardDataServer(),
   ]);
 
   return (
@@ -42,7 +42,9 @@ const DashboardPage = async () => {
           />
         </div>
         <div className='grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3'>
-          <MyRepositoriesCard repositories={dashboardData.repositories} />
+          <MyRepositoriesCard
+            repositories={dashboardData.repositories.slice(0, 4)}
+          />
           <PipelinesCard pipelines={dashboardData.pipelines} />
         </div>
       </main>

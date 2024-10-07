@@ -25,7 +25,7 @@ const StatsCard = ({
       </CardHeader>
       <CardContent>
         <div className='text-2xl font-bold'>{value}</div>
-        {percent && (
+        {percent !== undefined && percent !== 0 && (
           <p className='text-right text-xs text-muted-foreground'>{percent}%</p>
         )}
       </CardContent>
