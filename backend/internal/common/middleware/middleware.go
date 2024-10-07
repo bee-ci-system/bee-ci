@@ -51,7 +51,11 @@ func WithLogger(next http.Handler) http.Handler {
 		props = append(props, slog.Int("code", metrics.Code))
 		props = append(props, slog.String("duration", metrics.Duration.String()))
 
-		logger.Info("request completed", props...)
+		if metrics.Code < 200 || metrics.Code >= 300 {
+			logger.Warn("request failed", props...)
+		} else {
+			logger.Info("request completed", props...)
+		}
 	})
 }
 

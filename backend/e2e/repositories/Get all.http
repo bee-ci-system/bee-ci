@@ -1,1 +1,1 @@
-GET {{server.url}}/api/repositories/
+GET {{server.url}}/api/repositories

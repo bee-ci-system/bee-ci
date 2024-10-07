@@ -40,12 +40,12 @@ func (a *App) Mux() http.Handler {
 	mux.HandleFunc("GET /dashboard/", a.getDashboard)
 	mux.HandleFunc("GET /my-repositories/", a.getMyRepositories)
 
-	mux.HandleFunc("GET /repositories/{id}", a.getRepository)
+	mux.HandleFunc("GET /repositories/{id}/", a.getRepository)
 	mux.HandleFunc("GET /repositories/{$}", a.getRepositories)
 
 	mux.HandleFunc("GET /builds/", a.getBuilds)
 
-	mux.HandleFunc("GET /builds/{build_id}", a.getBuild)
+	mux.HandleFunc("GET /builds/{build_id}/", a.getBuild)
 
 	mux.HandleFunc("GET /builds/{build_id}/logs", a.getBuildLogs)
 
