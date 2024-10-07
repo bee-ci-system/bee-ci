@@ -75,7 +75,7 @@ func toRepositories(dbRepos []data.Repo) []repository {
 		repos = append(repos, repository{
 			ID:               strconv.FormatInt(repo.ID, 10),
 			Name:             repo.Name,
-			DateOfLastUpdate: time.Date(2005, 0o4, 0o2, 21, 37, 0, 0, time.Local),
+			DateOfLastUpdate: repo.LatestCommitPushedAt,
 		})
 	}
 	return repos

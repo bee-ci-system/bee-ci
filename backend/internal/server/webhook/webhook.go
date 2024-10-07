@@ -250,6 +250,12 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				slog.Int("repositories", len(repositories)),
 			)
 
+			// The webhook event doesn't contain all repository data we need:
+			//  - latest commit SHA
+			//  - datetime of the latest commit.
+			// Therefore, we need to request more data from the API.
+
+
 			repos := mapRepos(userID, repositories)
 			err = h.repoRepo.Create(r.Context(), repos)
 			if err != nil {
@@ -318,6 +324,12 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			}
 			logger.Debug("build created", slog.Int64("build_id", buildID))
 		}
+	case *github.PushEvent:
+		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#push
+		if *event.Action == "pushed" {
+			newLatestSHA := event.After
+			h.repoRepo.UpdateModificationTime
+		}
 
 	default:
 		logger.Error("unknown event", slog.String("event", eventType))
@@ -346,9 +358,11 @@ func mapRepos(userID int64, repositories []*github.Repository) []data.Repo {
 	repos := make([]data.Repo, 0, len(repositories))
 	for _, repo := range repositories {
 		repos = append(repos, data.Repo{
-			ID:     *repo.ID,
-			Name:   *repo.Name,
-			UserID: userID,
+			ID:                   *repo.ID,
+			Name:                 *repo.Name,
+			UserID:               userID,
+			LatestCommitSHA:      *repo.,
+			LatestCommitPushedAt: *repo.PushedAt.GetTime(),
 		})
 	}
 	return repos
