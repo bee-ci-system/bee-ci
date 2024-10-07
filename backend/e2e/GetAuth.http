@@ -1,0 +1,2 @@
+# @no-redirect
+GET {{server.url}}/webhook/github/callback?code=charlie
