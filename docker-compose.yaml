@@ -31,6 +31,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
       DB_OPTS: sslmode=disable # sslmode=require for prod
+      INFLUXDB_ENABLED: "true"
 
   gh-updater:
     build:

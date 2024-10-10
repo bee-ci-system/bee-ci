@@ -61,10 +61,15 @@ func main() {
 	influxClient := influxdb2.NewClient(influxURL, influxToken)
 	_, err = influxClient.Health(ctx)
 	if err != nil {
-		slog.Error("error connecting to Influx database", slog.Any("error", err))
-		os.Exit(1)
+		if os.Getenv("INFLUXDB_ENABLED") == "" {
+			slog.Warn("Connection to InfluxDB failed but it is disabled (INFLUXDB_ENABLED is empty), skipping connection check")
+		} else {
+			slog.Error("error connecting to Influx database", slog.Any("error", err))
+			os.Exit(1)
+		}
+	} else {
+		slog.Info("connected to Influx database", "url", influxURL)
 	}
-	slog.Info("connected to Influx database", "url", influxURL)
 
 	buildRepo := data.NewPostgresBuildRepo(db)
 	userRepo := data.NewPostgresUserRepo(db)
