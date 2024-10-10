@@ -30,7 +30,7 @@ export const serverFetch = async (
   });
 
   if (response.status === 401) {
-    return redirect(routes.LANDING);
+    return redirect(routes.LOG_OUT);
   }
 
   return response;
