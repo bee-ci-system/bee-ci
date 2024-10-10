@@ -38,6 +38,8 @@ resource "digitalocean_app" "app" {
     region = "sfo"
 
     ingress {
+
+      /*
       rule {
         component {
           name = "frontend"
@@ -48,6 +50,7 @@ resource "digitalocean_app" "app" {
           }
         }
       }
+       */
 
       rule {
         component {
@@ -68,6 +71,7 @@ resource "digitalocean_app" "app" {
       production   = true
     }
 
+    /*
     service {
       name               = "frontend"
       instance_count     = 1
@@ -93,6 +97,7 @@ resource "digitalocean_app" "app" {
         failure_threshold     = 3
       }
     }
+     */
 
     service {
       name               = "server"
