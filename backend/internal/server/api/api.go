@@ -3,6 +3,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math"
@@ -37,18 +38,17 @@ func NewApp(buildRepo data.BuildRepo, logsRepo data.LogsRepo, repoRepo data.Repo
 func (a *App) Mux() http.Handler {
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("GET /repositories/{$}", a.getRepositories)
+	mux.HandleFunc("GET /builds/", a.getBuilds)
+	mux.HandleFunc("GET /builds/{build_id}/", a.getBuild)
+	mux.HandleFunc("GET /builds/{build_id}/logs", a.getBuildLogs)
+
+	// Actually used by frontend
 	mux.HandleFunc("GET /user/", a.getUser)
 	mux.HandleFunc("GET /dashboard/", a.getDashboard)
 	mux.HandleFunc("GET /my-repositories/", a.getMyRepositories)
-
 	mux.HandleFunc("GET /repositories/{id}/", a.getRepository)
-	mux.HandleFunc("GET /repositories/{$}", a.getRepositories)
-
-	mux.HandleFunc("GET /builds/", a.getBuilds)
-
-	mux.HandleFunc("GET /builds/{build_id}/", a.getBuild)
-
-	mux.HandleFunc("GET /builds/{build_id}/logs", a.getBuildLogs)
+	mux.HandleFunc("GET /pipeline/{id}/", a.getPipeline)
 
 	authMux := middleware.WithJWT(mux, a.jwtSecret)
 	return authMux
@@ -269,13 +269,13 @@ func (a *App) getDashboard(w http.ResponseWriter, r *http.Request) {
 	for _, repo := range repos {
 		build, err := a.BuildRepo.GetLatestByRepoID(r.Context(), userID, repo.ID)
 		if err != nil {
+			if errors.Is(err, data.ErrNotFound) {
+				continue
+			}
 			msg := "failed to get latest build for repo"
 			logger.Error(msg, slog.Any("error", err))
 			http.Error(w, msg, http.StatusInternalServerError)
 			return
-		}
-		if build == nil {
-			continue
 		}
 
 		pipeline := pipelineDashboardData{
@@ -451,5 +451,58 @@ func (a *App) getBuildLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	for _, logLine := range logs {
 		_, _ = w.Write([]byte(logLine))
+	}
+}
+
+func (a *App) getPipeline(w http.ResponseWriter, r *http.Request) {
+	logger, _ := l.FromContext(r.Context())
+
+	userID, ok := userid.FromContext(r.Context())
+	if !ok {
+		msg := "invalid user ID"
+		logger.Debug(msg)
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	buildID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		msg := fmt.Sprintf("invalid build ID: %s", r.PathValue("id"))
+		logger.Debug(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+
+	fatBuild, err := a.BuildRepo.Get(r.Context(), userID, buildID)
+	if err != nil {
+		if errors.Is(err, data.ErrNotFound) {
+			msg := fmt.Sprintf("build with id %d not found", buildID)
+			http.Error(w, msg, http.StatusNotFound)
+			return
+		}
+
+		msg := fmt.Sprintf("failed to get build with id %d from repo", buildID)
+		logger.Debug(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+
+	ppln := pipeline{
+		ID:             strconv.FormatInt(fatBuild.ID, 10),
+		RepositoryName: fatBuild.RepoName,
+		RepositoryID:   strconv.FormatInt(fatBuild.RepoID, 10),
+		CommitName:     fatBuild.CommitMsg,
+		Status:         fatBuild.Status,
+		StartDate:      fatBuild.CreatedAt,
+		EndDate:        &fatBuild.UpdatedAt,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(ppln)
+	if err != nil {
+		msg := "failed to encode build into json"
+		logger.Error(msg, slog.Any("error", err))
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
 	}
 }

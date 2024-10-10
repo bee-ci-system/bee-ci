@@ -193,7 +193,7 @@ func (p PostgresBuildRepo) Get(ctx context.Context, userID, buildID int64) (*Fat
 		 	`, userID, buildID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
+			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("executing SELECT query for buildID %d: %v", buildID, err)
 	}
@@ -254,7 +254,7 @@ func (p PostgresBuildRepo) GetLatestByRepoID(ctx context.Context, userID, repoID
 		`, userID, repoID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
+			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("executing SELECT query for userID %d and repo ID %d: %v", userID, repoID, err)
 	}
