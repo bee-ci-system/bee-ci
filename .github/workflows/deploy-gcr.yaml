@@ -24,17 +24,17 @@ jobs:
       - name: Build and push server image
         run: |
             cd backend
-            docker build -t ghcr.io/${{ github.repository }}/backend:latest server.dockerfile
+            docker build -t ghcr.io/${{ github.repository }}/backend:latest -f server.dockerfile .
             docker push ghcr.io/${{ github.repository }}/backend:latest
 
       - name: Build and push gh-updater image
         run: |
             cd backend
-            docker build -t ghcr.io/${{ github.repository }}/gh-updater:latest gh-updater.dockerfile
+            docker build -t ghcr.io/${{ github.repository }}/gh-updater:latest -f gh-updater.dockerfile .
             docker push ghcr.io/${{ github.repository }}/gh-updater:latest
 
       - name: Build and push frontend image
         run: |
             cd frontend
-            docker build -t ghcr.io/${{ github.repository }}/frontend:latest .
+            docker build -t ghcr.io/${{ github.repository }}/frontend:latest -f Dockerfile .
             docker push ghcr.io/${{ github.repository }}/frontend:latest

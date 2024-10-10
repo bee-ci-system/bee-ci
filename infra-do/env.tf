@@ -86,6 +86,26 @@ locals {
       scope = "RUN_TIME"
     },
     {
+      key   = "INFLUXDB_URL"
+      value = "http://influxdb2:8086"
+      scope = "RUN_TIME"
+    },
+    {
+      key   = "INFLUXDB_TOKEN"
+      value = var.influxdb_token
+      scope = "RUN_TIME"
+    },
+    {
+      key   = "INFLUXDB_ORG"
+      value = var.influxdb_org
+      scope = "RUN_TIME"
+    },
+    {
+      key   = "INFLUXDB_BUCKET"
+      value = var.influxdb_bucket
+      scope = "RUN_TIME"
+    },
+    {
       key   = "INFLUXDB_ENABLED"
       value = ""
       scope = "RUN_TIME"
