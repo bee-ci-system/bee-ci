@@ -4,14 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
 
 type Repo struct {
-	ID     int64  `db:"id"`
-	Name   string `db:"name"`
-	UserID int64  `db:"user_id"`
+	ID                   int64     `db:"id"`
+	Name                 string    `db:"name"`
+	UserID               int64     `db:"user_id"`
+	LatestCommitSHA      string    `db:"latest_commit_sha"`
+	LatestCommitPushedAt time.Time `db:"latest_commit_pushed_at"`
 }
 
 func (r Repo) LogValue() slog.Value {
@@ -40,8 +43,8 @@ type PostgresRepoRepo struct {
 func (p PostgresRepoRepo) Create(ctx context.Context, repos []Repo) (err error) {
 	_, err = p.db.NamedExecContext(
 		ctx,
-		`INSERT INTO bee_schema.repos (id, name, user_id)
-		VALUES (:id, :name, :user_id)`,
+		`INSERT INTO bee_schema.repos (id, name, user_id, latest_commit_sha, latest_commit_pushed_at)
+		VALUES (:id, :name, :user_id, :latest_commit, :latest_commit_pushed_at)`,
 		repos,
 	)
 	if err != nil {
