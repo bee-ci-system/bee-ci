@@ -28,7 +28,7 @@ resource "digitalocean_project" "project" {
     digitalocean_app.app.urn,
     digitalocean_database_cluster.main-db-cluster.urn,
     digitalocean_domain.default.urn,
-    digitalocean_droplet.influxdb.urn,
+    # digitalocean_droplet.influxdb.urn,
     digitalocean_volume.influxdb_volume.urn,
     # digitalocean_domain.main.urn,
   ]
@@ -216,6 +216,7 @@ resource "digitalocean_volume" "influxdb_volume" {
   initial_filesystem_type = "ext4"
 }
 
+/*
 resource "digitalocean_droplet" "influxdb" {
   name   = "influxdb-server"
   region = "sfo3"
@@ -258,6 +259,7 @@ resource "digitalocean_droplet" "influxdb" {
       - sudo systemctl restart influxdb
   EOF
 }
+*/
 
 /*
 
