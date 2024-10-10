@@ -30,6 +30,7 @@ resource "digitalocean_project" "project" {
     digitalocean_domain.default.urn,
     digitalocean_droplet.influxdb.urn,
     digitalocean_volume.influxdb_volume.urn,
+    # digitalocean_domain.main.urn,
   ]
 }
 

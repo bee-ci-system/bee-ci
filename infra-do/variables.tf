@@ -48,6 +48,15 @@ variable "influxdb_token" {
   sensitive = true
 }
 
+# InfluxDB-specific variables
+
+variable "INFLUXDB_PASSWORD" {
+  description = "InfluxDB password"
+  type        = string
+}
+
+
+
 # Provider-specific variables
 
 variable "do_token" {
