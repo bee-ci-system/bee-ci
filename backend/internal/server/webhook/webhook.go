@@ -1,3 +1,4 @@
+// Package webhook implements handling of GitHub webhooks.
 package webhook
 
 import (
@@ -304,7 +305,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			)
 
 			// TODO: Parse information from the BeeCI config file here (such as name)
-			buildId, err := h.buildRepo.Create(r.Context(), data.NewBuild{
+			buildID, err := h.buildRepo.Create(r.Context(), data.NewBuild{
 				RepoID:         *event.Repo.ID,
 				CommitSHA:      headSHA,
 				CommitMsg:      message,
@@ -315,7 +316,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				// TODO: handle error in a better way – update status on GitHub
 				return
 			}
-			logger.Debug("build created", slog.Int64("build_id", buildId))
+			logger.Debug("build created", slog.Int64("build_id", buildID))
 		}
 
 	default:

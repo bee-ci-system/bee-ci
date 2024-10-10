@@ -1,3 +1,4 @@
+// Package logger implements a context-based logger.
 package logger
 
 // Inspired by https://go.dev/blog/context

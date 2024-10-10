@@ -1,3 +1,4 @@
+// Package userid provides a context-based user ID.
 package userid
 
 // Inspired by https://go.dev/blog/context
