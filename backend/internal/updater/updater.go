@@ -100,7 +100,7 @@ func (u Updater) Start(ctx context.Context) error {
 					break
 				}
 			} else if updatedBuild.Status == "queued" && updatedBuild.CheckRunID != nil {
-				// Nothing to be done. Te check run on Gitub has been already created.
+				// Nothing to be done. The check run on GitHub has already been created.
 			} else {
 				if updatedBuild.CheckRunID == nil {
 					// This should never happen, but let's be extra safe.

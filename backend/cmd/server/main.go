@@ -86,7 +86,8 @@ func main() {
 	mux.Handle("/webhook/", http.StripPrefix("/webhook", webhooks.Mux()))
 	mux.Handle("/api/", http.StripPrefix("/api", app.Mux()))
 
-	loggingMux := middleware.WithTrailingSlashes(middleware.WithLogger(mux))
+	corsMux := middleware.WithCORS(mux)
+	loggingMux := middleware.WithTrailingSlashes(middleware.WithLogger(corsMux))
 	addr := fmt.Sprint("0.0.0.0:", port)
 	slog.Info("server will listen and serve", "addr", addr)
 	err = http.ListenAndServe(addr, loggingMux)

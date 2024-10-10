@@ -30,6 +30,22 @@ func WithTrailingSlashes(next http.Handler) http.Handler {
 	})
 }
 
+func WithCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Allow requests from all origins
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Access-Control-Allow-Origin, Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func WithLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger := slog.With(slog.String("request_id", makeRequestID()))
@@ -51,7 +67,11 @@ func WithLogger(next http.Handler) http.Handler {
 		props = append(props, slog.Int("code", metrics.Code))
 		props = append(props, slog.String("duration", metrics.Duration.String()))
 
-		logger.Info("request completed", props...)
+		if metrics.Code < 200 || metrics.Code >= 300 {
+			logger.Warn("request failed", props...)
+		} else {
+			logger.Info("request completed", props...)
+		}
 	})
 }
 

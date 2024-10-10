@@ -39,13 +39,13 @@ func (a *App) Mux() http.Handler {
 	mux.HandleFunc("GET /user/", a.getUser)
 	mux.HandleFunc("GET /dashboard/", a.getDashboard)
 	mux.HandleFunc("GET /my-repositories/", a.getMyRepositories)
-	mux.HandleFunc("GET /repository/{id}", a.getRepository)
 
-	mux.HandleFunc("GET /repos/", a.getRepos)
+	mux.HandleFunc("GET /repositories/{id}/", a.getRepository)
+	mux.HandleFunc("GET /repositories/{$}", a.getRepositories)
 
 	mux.HandleFunc("GET /builds/", a.getBuilds)
 
-	mux.HandleFunc("GET /builds/{build_id}", a.getBuild)
+	mux.HandleFunc("GET /builds/{build_id}/", a.getBuild)
 
 	mux.HandleFunc("GET /builds/{build_id}/logs", a.getBuildLogs)
 
@@ -302,7 +302,7 @@ func (a *App) getDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) getRepos(w http.ResponseWriter, r *http.Request) {
+func (a *App) getRepositories(w http.ResponseWriter, r *http.Request) {
 	logger, _ := l.FromContext(r.Context())
 
 	userID, ok := userid.FromContext(r.Context())
