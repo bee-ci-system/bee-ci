@@ -84,6 +84,11 @@ locals {
       key   = "DB_OPTS"
       value = "sslmode=require"
       scope = "RUN_TIME"
-    }
+    },
+    {
+      key   = "INFLUXDB_ENABLED"
+      value = ""
+      scope = "RUN_TIME"
+    },
   ]
 }

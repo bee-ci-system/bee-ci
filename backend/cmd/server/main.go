@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"time"
+
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 
 	"github.com/bee-ci/bee-ci-system/internal/common/middleware"
 	"github.com/bee-ci/bee-ci-system/internal/data"
@@ -45,19 +46,35 @@ func main() {
 	dbPassword := mustGetenv("DB_PASSWORD")
 	dbName := mustGetenv("DB_NAME")
 	dbOpts := mustGetenv("DB_OPTS")
-
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s %s", dbHost, dbPort, dbUser, dbPassword, dbName, dbOpts)
 	db, err := sqlx.Connect("postgres", psqlInfo)
 	if err != nil {
 		slog.Error("error connecting to database", slog.Any("error", err))
 		os.Exit(1)
 	}
-	slog.Info("connected to database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
+	slog.Info("connected to Postgres database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
+
+	influxURL := mustGetenv("INFLUXDB_URL")
+	influxToken := mustGetenv("INFLUXDB_TOKEN")
+	influxBucket := mustGetenv("INFLUXDB_BUCKET")
+	influxOrg := mustGetenv("INFLUXDB_ORG")
+	influxClient := influxdb2.NewClient(influxURL, influxToken)
+	_, err = influxClient.Health(ctx)
+	if err != nil {
+		if os.Getenv("INFLUXDB_ENABLED") == "" {
+			slog.Warn("Connection to InfluxDB failed but it is disabled (INFLUXDB_ENABLED is empty), skipping connection check")
+		} else {
+			slog.Error("error connecting to Influx database", slog.Any("error", err))
+			os.Exit(1)
+		}
+	} else {
+		slog.Info("connected to Influx database", "url", influxURL)
+	}
 
 	buildRepo := data.NewPostgresBuildRepo(db)
 	userRepo := data.NewPostgresUserRepo(db)
 	repoRepo := data.NewPostgresRepoRepo(db)
-	logsRepo := data.NewInfluxLogsRepo()
+	logsRepo := data.NewInfluxLogsRepo(influxClient, influxOrg, influxBucket)
 
 	webhooks := webhook.NewWebhookHandler(userRepo, repoRepo, buildRepo, mainDomain, redirectURL, githubAppClientID, githubAppClientSecret, githubAppWebhookSecret, jwtSecret)
 	app := api.NewApp(buildRepo, logsRepo, repoRepo, userRepo, jwtSecret)
@@ -111,8 +128,8 @@ func setUpLogging() *slog.Logger {
 		return slog.New(gcpHandler)
 	}
 
-	flyioProd := os.Getenv("FLY_APP_NAME") != ""
-	if flyioProd {
+	flyProd := os.Getenv("FLY_APP_NAME") != ""
+	if flyProd {
 		// TODO: Remove time since it's provided by fly.io
 		//  https://github.com/lmittmann/tint/issues/73
 		opts := tint.Options{Level: logLevel, TimeFormat: time.TimeOnly, AddSource: true}
@@ -132,14 +149,4 @@ func mustGetenv(varname string) string {
 		os.Exit(1)
 	}
 	return value
-}
-
-func mustGetenvInt64(varname string) int64 {
-	value := mustGetenv(varname)
-	i, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		slog.Error(varname+" env var is not a valid int64", slog.Any("error", err))
-		os.Exit(1)
-	}
-	return i
 }

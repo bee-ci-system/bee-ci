@@ -12,8 +12,10 @@ import (
 
 	"github.com/bee-ci/bee-ci-system/internal/data"
 	"github.com/bee-ci/bee-ci-system/internal/updater"
-	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/jmoiron/sqlx"
+
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/lib/pq"
 	"github.com/lmittmann/tint"
 )
@@ -43,14 +45,13 @@ func main() {
 	dbPassword := mustGetenv("DB_PASSWORD")
 	dbName := mustGetenv("DB_NAME")
 	dbOpts := mustGetenv("DB_OPTS")
-
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s %s", dbHost, dbPort, dbUser, dbPassword, dbName, dbOpts)
 	db, err := sqlx.Connect("postgres", psqlInfo)
 	if err != nil {
-		slog.Error("error connecting to database", slog.Any("error", err))
+		slog.Error("error connecting to Postgres database", slog.Any("error", err))
 		os.Exit(1)
 	}
-	slog.Info("connected to database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
+	slog.Info("connected to Postgres database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
 
 	buildRepo := data.NewPostgresBuildRepo(db)
 	userRepo := data.NewPostgresUserRepo(db)
