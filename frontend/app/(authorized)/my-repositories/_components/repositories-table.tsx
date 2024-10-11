@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/app/_components/card';
+import { Loader } from '@/app/_components/loader';
 import {
   Table,
   TableBody,
@@ -19,6 +20,7 @@ import {
 } from '@/app/_components/table';
 import { GetMyRepositoriesDataDto } from '@/app/_types/my-repositories';
 import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -26,12 +28,12 @@ import { getMyRepositoriesDataClient } from '../_api/client';
 import { Search } from './search';
 
 const RepositoriesTable = () => {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0);
   const [search, setSearch] = useState('');
 
   const router = useRouter();
 
-  const { data } = useQuery<GetMyRepositoriesDataDto>({
+  const { data, isLoading } = useQuery<GetMyRepositoriesDataDto>({
     queryKey: ['repositories', currentPage, search],
     queryFn: () =>
       getMyRepositoriesDataClient({
@@ -75,15 +77,19 @@ const RepositoriesTable = () => {
                   <TableCell className='font-medium'>
                     {repository.name}
                   </TableCell>
-                  <TableCell>{repository.dateOfLastUpdate}</TableCell>
+                  <TableCell>
+                    {format(repository.dateOfLastUpdate, 'dd-MM-yyyy')}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        ) : (
+        ) : !isLoading ? (
           <p className='text-center text-sm text-muted-foreground'>
-            No repositories
+            No repositories found
           </p>
+        ) : (
+          <Loader />
         )}
       </CardContent>
       {data && data.totalPages > 1 && (
@@ -91,14 +97,14 @@ const RepositoriesTable = () => {
           <div className='flex gap-8'>
             <Button
               variant='outline'
-              disabled={currentPage === 1}
+              disabled={currentPage === 0}
               onClick={() => setCurrentPage((prev) => prev - 1)}
             >
               <ArrowLeftIcon />
             </Button>
             <Button
               variant='outline'
-              disabled={currentPage + 1 > data?.totalPages}
+              disabled={currentPage + 1 >= data?.totalPages}
               onClick={() => setCurrentPage((prev) => prev + 1)}
             >
               <ArrowRightIcon />

@@ -19,7 +19,7 @@ export const clientFetch = async (
   });
 
   if (token) {
-    headers.set('Cookie', `jwt=${token}`);
+    headers.set('Authorization', `bearer ${token}`);
   }
 
   const response = await fetch(`${baseUrl}${endpoint}`, {

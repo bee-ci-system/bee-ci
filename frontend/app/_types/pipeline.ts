@@ -2,6 +2,7 @@ export enum PipelineStatus {
   SUCCESS = 'success',
   FAILURE = 'failure',
   IN_PROGRESS = 'in progress',
+  QUEUED = 'queued',
 }
 
 export interface Pipeline {

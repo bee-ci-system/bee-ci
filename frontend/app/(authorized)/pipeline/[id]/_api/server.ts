@@ -1,17 +1,24 @@
-import { Pipeline, PipelineStatus } from '@/app/_types/pipeline';
+import { Pipeline } from '@/app/_types/pipeline';
+import { serverFetch } from '@/app/_utils/server-fetch';
 
 export const getPipelineInfoServer = async (
   pipelineId: string,
 ): Promise<Pipeline> => {
-  return {
-    id: pipelineId,
-    repositoryName: 'kacaleksandra/bee-ci',
-    repositoryId: '1',
-    commitName: 'feat/add-new-feature',
-    status: PipelineStatus.SUCCESS,
-    startDate: '2021-10-10T10:00:00Z',
-    endDate: '2021-10-10T10:10:00Z',
-  };
+  const res = await serverFetch('/pipeline/' + pipelineId);
+
+  if (!res) {
+    throw new Error('fetching failed on /pipeline/' + pipelineId);
+  }
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  const data = await res.json();
+
+  console.log(data);
+
+  return data as Pipeline;
 };
 
 export const getPipelineLogsServer = async (

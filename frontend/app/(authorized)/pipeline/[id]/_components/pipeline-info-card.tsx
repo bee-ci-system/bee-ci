@@ -67,7 +67,7 @@ const PipelineInfoCard = ({ pipeline }: { pipeline: Pipeline }) => (
           </span>
           <span className='block w-full text-right text-base'>
             {pipeline.endDate
-              ? formatDistance(pipeline.endDate, pipeline.startDate) + ' ago'
+              ? formatDistance(pipeline.endDate, pipeline.startDate)
               : '-'}
           </span>
         </p>

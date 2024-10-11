@@ -18,6 +18,15 @@ const PipelineStatusToIcon = (status: PipelineStatus) => {
           <LoaderCircle />
         </svg>
       );
+    case PipelineStatus.QUEUED:
+      return (
+        <svg
+          className='h-6 w-6 animate-pulse text-blue-500'
+          viewBox='0 0 24 24'
+        >
+          <LoaderCircle />
+        </svg>
+      );
   }
 };
 
