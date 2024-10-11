@@ -119,14 +119,28 @@ func WithJWT(next http.Handler, jwtSecret []byte) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger, _ := l.FromContext(r.Context())
 
+		var tokenString string
+
 		tokenCookie, err := r.Cookie("jwt")
-		if err != nil {
-			http.Error(w, "missing JWT token", http.StatusUnauthorized)
-			return
+		if err == nil {
+			tokenString = tokenCookie.Value
+		} else {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				http.Error(w, "missing JWT token", http.StatusUnauthorized)
+				return
+			}
+
+			parts := strings.Split(authHeader, " ")
+			if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+				http.Error(w, "invalid Authorization header format", http.StatusUnauthorized)
+				return
+			}
+
+			tokenString = parts[1]
 		}
 
-		// Verify the token
-		token, err := verifyToken(tokenCookie.Value, jwtSecret)
+		token, err := verifyToken(tokenString, jwtSecret)
 		if err != nil {
 			http.Error(w, "JWT verification failed", http.StatusUnauthorized)
 			return
@@ -144,7 +158,6 @@ func WithJWT(next http.Handler, jwtSecret []byte) http.Handler {
 			return
 		}
 
-		// Print information about the verified token
 		logger.Debug("JWT verified successfully", slog.Any("claims", token.Claims))
 
 		ctx := userid.WithUserID(r.Context(), userID)
@@ -153,6 +166,7 @@ func WithJWT(next http.Handler, jwtSecret []byte) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
 
 // MakeRequestID generates a short, random hash for use as a request ID.
 func makeRequestID() string {
