@@ -70,7 +70,7 @@ type pipeline struct {
 }
 
 func toRepositories(dbRepos []data.Repo) []repository {
-	var repos []repository
+	repos := make([]repository, 0)
 	for _, repo := range dbRepos {
 		repos = append(repos, repository{
 			ID:               strconv.FormatInt(repo.ID, 10),

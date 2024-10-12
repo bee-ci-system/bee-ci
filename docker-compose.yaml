@@ -12,7 +12,7 @@ services:
     init: true
     ports:
       - "8080:8080"
-      # - "40000:40000" # debugger port
+      - "40000:40000" # debugger port
     depends_on:
       database-postgres:
         condition: service_healthy

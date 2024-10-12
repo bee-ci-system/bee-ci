@@ -93,17 +93,11 @@ func (a *App) getMyRepositories(w http.ResponseWriter, r *http.Request) {
 
 	currentPage, err := strconv.Atoi(r.URL.Query().Get("currentPage"))
 	if err != nil {
-		msg := "invalid current page"
-		logger.Warn(msg, slog.Any("error", err))
-		http.Error(w, msg, http.StatusBadRequest)
-		return
+		currentPage = 0
 	}
 	pageSize, err := strconv.Atoi(r.URL.Query().Get("pageSize"))
 	if err != nil {
-		msg := "invalid page size"
-		logger.Warn(msg, slog.Any("error", err))
-		http.Error(w, msg, http.StatusBadRequest)
-		return
+		pageSize = 10
 	}
 
 	params := getMyRepositoriesParams{

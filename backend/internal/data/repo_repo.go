@@ -92,6 +92,8 @@ func (p PostgresRepoRepo) Get(ctx context.Context, id int64) (repo *Repo, err er
 }
 
 func (p PostgresRepoRepo) GetAll(ctx context.Context, searchRepo string, userID int64) (repos []Repo, err error) {
+	repos = make([]Repo, 0)
+
 	query := `
 		SELECT id, name, user_id
 		FROM bee_schema.repos
