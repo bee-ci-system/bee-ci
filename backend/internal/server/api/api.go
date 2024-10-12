@@ -49,6 +49,7 @@ func (a *App) Mux() http.Handler {
 	mux.HandleFunc("GET /my-repositories/", a.getMyRepositories)
 	mux.HandleFunc("GET /repositories/{id}/", a.getRepository)
 	mux.HandleFunc("GET /pipeline/{id}/", a.getPipeline)
+	mux.HandleFunc("GET /pipeline/{id}/logs/", a.getBuildLogs)
 
 	authMux := middleware.WithJWT(mux, a.jwtSecret)
 	return authMux
@@ -424,7 +425,7 @@ func (a *App) getBuildLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	buildID, err := strconv.ParseInt(r.URL.Query().Get("build_id"), 10, 64)
+	buildID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		msg := "invalid build ID"
 		logger.Debug(msg, slog.Any("error", err))
@@ -444,6 +445,7 @@ func (a *App) getBuildLogs(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	for _, logLine := range logs {
+		logLine += "\n"
 		_, _ = w.Write([]byte(logLine))
 	}
 }

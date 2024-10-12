@@ -1,0 +1,1 @@
+GET {{server.url}}/api/pipeline/6/logs
