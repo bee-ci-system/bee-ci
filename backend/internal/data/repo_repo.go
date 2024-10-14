@@ -15,6 +15,7 @@ type Repo struct {
 	UserID               int64     `db:"user_id"`
 	LatestCommitSHA      string    `db:"latest_commit_sha"`
 	LatestCommitPushedAt time.Time `db:"latest_commit_pushed_at"`
+	Description          string    `db:"description"`
 }
 
 func (r Repo) LogValue() slog.Value {
@@ -34,6 +35,10 @@ type RepoRepo interface {
 	//
 	// If searchRepo is empty, all repositories are considered.
 	GetAll(ctx context.Context, searchRepo string, userID int64) (repos []Repo, err error)
+
+	UpdateLatestCommit(id int64, sha string, pushedAt time.Time) (err error)
+
+	UpdateDescription(id int64, newDescription string) (err error)
 }
 
 type PostgresRepoRepo struct {
@@ -111,6 +116,41 @@ func (p PostgresRepoRepo) GetAll(ctx context.Context, searchRepo string, userID 
 		return nil, fmt.Errorf("selecting from repos: %v", err)
 	}
 	return repos, nil
+}
+
+func (p PostgresRepoRepo) UpdateLatestCommit(id int64, sha string, pushedAt time.Time) (err error) {
+	_, err = p.db.NamedExecContext(
+		context.Background(),
+		`UPDATE bee_schema.repos
+		SET latest_commit_sha = :latest_commit, latest_commit_pushed_at = :latest_commit_pushed_at
+		WHERE id = :id`,
+		map[string]interface{}{
+			"id":                      id,
+			"latest_commit":           sha,
+			"latest_commit_pushed_at": pushedAt,
+		})
+	if err != nil {
+		return fmt.Errorf("executing UPDATE query: %v", err)
+	}
+
+	return nil
+}
+
+func (p PostgresRepoRepo) UpdateDescription(id int64, newDescription string) (err error) {
+	_, err = p.db.NamedExecContext(
+		context.Background(),
+		`UPDATE bee_schema.repos
+		SET description = :description
+		WHERE id = :id`,
+		map[string]interface{}{
+			"id":          id,
+			"description": newDescription,
+		})
+	if err != nil {
+		return fmt.Errorf("executing UPDATE query: %v", err)
+	}
+
+	return nil
 }
 
 var _ RepoRepo = &PostgresRepoRepo{}
