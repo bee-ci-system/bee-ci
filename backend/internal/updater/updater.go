@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"time"
 
+	ghs "github.com/bee-ci/bee-ci-system/internal/common/gh_service"
+
 	"github.com/bee-ci/bee-ci-system/internal/common/auth"
 	"github.com/google/go-github/v64/github"
 
@@ -29,7 +31,7 @@ type Updater struct {
 	repoRepo      data.RepoRepo
 	userRepo      data.UserRepo
 	buildRepo     data.BuildRepo
-	githubService *GithubService
+	githubService *ghs.GithubService
 }
 
 func New(
@@ -37,7 +39,7 @@ func New(
 	repoRepo data.RepoRepo,
 	userRepo data.UserRepo,
 	buildRepo data.BuildRepo,
-	githubService *GithubService,
+	githubService *ghs.GithubService,
 ) *Updater {
 	return &Updater{
 		logger:        slog.Default(), // TODO: add some "subsystem name" to this logger

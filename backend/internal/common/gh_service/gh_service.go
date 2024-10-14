@@ -1,4 +1,4 @@
-package updater
+package gh_service
 
 import (
 	"context"
