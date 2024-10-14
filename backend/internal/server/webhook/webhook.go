@@ -240,21 +240,19 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		login := *installation.Account.Login
 		userID := *installation.Account.ID
 
-		// https://docs.github.com/en/webhooks/webhook-events-and-payloads?actionType=created#installation
+		logger.Debug("app installation created "+*event.Action,
+			slog.Any("id", installation.ID),
+			slog.String("login", login),
+		)
+
 		if *event.Action == "created" {
 			repositories := event.Repositories
 
-			logger.Debug("app installation created",
-				slog.Any("id", installation.ID),
-				slog.String("login", login),
-				slog.Int("repositories", len(repositories)),
-			)
-
 			// The webhook event doesn't contain all repository data we need:
+			//  - description
 			//  - latest commit SHA
 			//  - datetime of the latest commit.
 			// Therefore, we need to request more data from the API.
-
 
 			repos := mapRepos(userID, repositories)
 			err = h.repoRepo.Create(r.Context(), repos)
@@ -273,8 +271,12 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 	case *github.InstallationRepositoriesEvent:
 		userID := *event.Sender.ID
+		installationID := *event.Installation.ID
 
-		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories
+		logger.Debug("repositories "+*event.Action,
+			slog.Int64("installation_id", installationID),
+		)
+
 		switch *event.Action {
 		case "added":
 			addedRepositories := event.RepositoriesAdded
@@ -297,13 +299,14 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case *github.CheckSuiteEvent:
-		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#check_suite
+		// Create build
+
 		if *event.Action == "requested" || *event.Action == "rerequested" {
 			headSHA := *event.CheckSuite.HeadSHA
 			message := *event.CheckSuite.HeadCommit.Message
 			installationID := *event.Installation.ID
 
-			logger.Debug("check suite requested",
+			logger.Debug(fmt.Sprintf("check suite %s", *event.Action),
 				slog.String("owner", *event.Repo.Owner.Login),
 				slog.String("repo", *event.Repo.Name),
 				slog.Int64("installation_id", installationID),
@@ -325,10 +328,42 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			logger.Debug("build created", slog.Int64("build_id", buildID))
 		}
 	case *github.PushEvent:
-		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#push
+		// Update the repository's latest commit's SHA and datetime
+		repoID := *event.Repo.ID
+		installationID := *event.Installation.ID
+
+		if len(event.Commits) == 0 || event.After == nil {
+			return
+		}
+
+		newLatestSHA := *event.HeadCommit.SHA
+		newLatestPushedAt := *event.HeadCommit.Timestamp.GetTime()
+
+		logger.Debug("pushed commit",
+			slog.String("owner", *event.Repo.Owner.Login),
+			slog.String("name", *event.Repo.Name),
+			slog.String("commit.sha", newLatestSHA),
+			slog.String("commit.pushed_at", newLatestPushedAt.String()),
+			slog.Int64("installation_id", installationID),
+		)
+
 		if *event.Action == "pushed" {
-			newLatestSHA := event.After
-			h.repoRepo.UpdateModificationTime
+			err := h.repoRepo.UpdateLatestCommit(repoID, newLatestSHA, newLatestPushedAt)
+			if err != nil {
+				logger.Error("error updating repository's latest commit's SHA and datetime", slog.Any("error", err))
+				return
+			}
+		}
+	case *github.RepositoryEvent:
+		repoID := *event.Repo.ID
+
+		// Update the repository's description
+		if *event.Action == "edited" {
+			err := h.repoRepo.UpdateDescription(repoID, *event.Repo.Description)
+			if err != nil {
+				logger.Error("error updating repository description", slog.Any("error", err))
+				return
+			}
 		}
 
 	default:
@@ -361,8 +396,9 @@ func mapRepos(userID int64, repositories []*github.Repository) []data.Repo {
 			ID:                   *repo.ID,
 			Name:                 *repo.Name,
 			UserID:               userID,
-			LatestCommitSHA:      *repo.,
+			LatestCommitSHA:      "blah blah", // *repo.Head, // TODO: correct head sha
 			LatestCommitPushedAt: *repo.PushedAt.GetTime(),
+			Description:          *repo.Description,
 		})
 	}
 	return repos
