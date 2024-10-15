@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/bee-ci/bee-ci-system/internal/common/gh_service"
-	"github.com/golang-jwt/jwt/v5"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"time"
+
+	"github.com/bee-ci/bee-ci-system/internal/common/gh_service"
+	"github.com/golang-jwt/jwt/v5"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 

@@ -6,13 +6,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/bee-ci/bee-ci-system/internal/common/auth"
-	ghs "github.com/bee-ci/bee-ci-system/internal/common/gh_service"
 	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/bee-ci/bee-ci-system/internal/common/auth"
+	ghs "github.com/bee-ci/bee-ci-system/internal/common/gh_service"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-github/v64/github"
