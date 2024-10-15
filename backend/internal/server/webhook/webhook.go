@@ -420,7 +420,7 @@ func mapRepos(userID int64, repositories []*github.Repository) []data.Repo {
 			UserID:               userID,
 			LatestCommitSHA:      "latestCommitSHA", // *repo.Head, // TODO: correct head sha
 			LatestCommitPushedAt: *repo.PushedAt.GetTime(),
-			Description:          *repo.Description,
+			Description:          repo.GetDescription(),
 		})
 	}
 	return repos

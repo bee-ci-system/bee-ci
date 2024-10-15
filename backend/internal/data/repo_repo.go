@@ -48,8 +48,8 @@ type PostgresRepoRepo struct {
 func (p PostgresRepoRepo) Create(ctx context.Context, repos []Repo) (err error) {
 	_, err = p.db.NamedExecContext(
 		ctx,
-		`INSERT INTO bee_schema.repos (id, name, user_id, latest_commit_sha, latest_commit_pushed_at)
-		VALUES (:id, :name, :user_id, :latest_commit, :latest_commit_pushed_at)`,
+		`INSERT INTO bee_schema.repos (id, name, user_id, latest_commit_sha, latest_commit_pushed_at, description)
+		VALUES (:id, :name, :user_id, :latest_commit_sha, :latest_commit_pushed_at, :description)`,
 		repos,
 	)
 	if err != nil {
