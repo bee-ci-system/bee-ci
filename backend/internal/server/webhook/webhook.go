@@ -1,4 +1,4 @@
-// Package webhook implements handling of GitHub webhooks.
+// Package webhook implements the handling of GitHub webhooks.
 package webhook
 
 import (
@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/bee-ci/bee-ci-system/internal/common/auth"
+	ghs "github.com/bee-ci/bee-ci-system/internal/common/gh_service"
 	"io"
 	"log/slog"
 	"net/http"
@@ -21,10 +23,11 @@ import (
 )
 
 type WebhookHandler struct {
-	httpClient *http.Client
-	userRepo   data.UserRepo
-	repoRepo   data.RepoRepo
-	buildRepo  data.BuildRepo
+	httpClient    *http.Client
+	userRepo      data.UserRepo
+	repoRepo      data.RepoRepo
+	buildRepo     data.BuildRepo
+	githubService *ghs.GithubService
 
 	// The domain where the auth cookie will be placed. For example
 	// ".pacia.tech" or ".karolak.cc". Must be empty for localhost.
@@ -47,6 +50,7 @@ func NewWebhookHandler(
 	userRepo data.UserRepo,
 	repoRepo data.RepoRepo,
 	buildRepo data.BuildRepo,
+	githubService *ghs.GithubService,
 	mainDomain string,
 	redirectURL string,
 	githubAppClientID string,
@@ -58,6 +62,7 @@ func NewWebhookHandler(
 		httpClient:             &http.Client{Timeout: 10 * time.Second},
 		userRepo:               userRepo,
 		repoRepo:               repoRepo,
+		githubService:          githubService,
 		buildRepo:              buildRepo,
 		mainDomain:             mainDomain,
 		redirectURL:            redirectURL,
@@ -246,13 +251,31 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		)
 
 		if *event.Action == "created" {
-			repositories := event.Repositories
+			// Example response: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation/created.payload.json
+
+			installationAccessToken, err := h.githubService.GetInstallationAccessToken(r.Context(), *installation.ID)
+			if err != nil {
+				logger.Error("get installation access token", slog.Any("error", err))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			ghClient := github.NewClient(&http.Client{
+				Transport: &auth.BearerTransport{Token: installationAccessToken},
+			})
 
 			// The webhook event doesn't contain all repository data we need:
 			//  - description
 			//  - latest commit SHA
 			//  - datetime of the latest commit.
 			// Therefore, we need to request more data from the API.
+			opts := &github.RepositoryListByUserOptions{}
+			repositories, _, err := ghClient.Repositories.ListByUser(r.Context(), login, opts)
+			if err != nil {
+				logger.Error("error getting repositories", slog.Any("error", err))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 
 			repos := mapRepos(userID, repositories)
 			err = h.repoRepo.Create(r.Context(), repos)
@@ -356,7 +379,6 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 	case *github.RepositoryEvent:
 		repoID := *event.Repo.ID
-
 		// Update the repository's description
 		if *event.Action == "edited" {
 			err := h.repoRepo.UpdateDescription(repoID, *event.Repo.Description)
@@ -396,7 +418,7 @@ func mapRepos(userID int64, repositories []*github.Repository) []data.Repo {
 			ID:                   *repo.ID,
 			Name:                 *repo.Name,
 			UserID:               userID,
-			LatestCommitSHA:      "blah blah", // *repo.Head, // TODO: correct head sha
+			LatestCommitSHA:      "latestCommitSHA", // *repo.Head, // TODO: correct head sha
 			LatestCommitPushedAt: *repo.PushedAt.GetTime(),
 			Description:          *repo.Description,
 		})

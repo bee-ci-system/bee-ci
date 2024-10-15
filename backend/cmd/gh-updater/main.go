@@ -64,9 +64,9 @@ func main() {
 	minReconnectInterval := 10 * time.Second
 	maxReconnectInterval := time.Minute
 	dbListener := pq.NewListener(psqlInfo, minReconnectInterval, maxReconnectInterval, nil)
-	listen := updater.New(dbListener, repoRepo, userRepo, buildRepo, githubService)
+	ghUpdater := updater.New(dbListener, repoRepo, userRepo, buildRepo, githubService)
 
-	err = listen.Start(ctx)
+	err = ghUpdater.Start(ctx)
 	if err != nil {
 		slog.Error("error while listening", slog.Any("error", err))
 		panic(err)

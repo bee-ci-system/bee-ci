@@ -1,3 +1,4 @@
+// Package gh_service exposes a simple service that makes it easy to get app installation tokens.
 package gh_service
 
 import (
