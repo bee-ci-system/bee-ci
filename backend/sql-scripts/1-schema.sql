@@ -19,7 +19,6 @@ CREATE TABLE bee_schema.repos
     user_id                 BIGINT                   NOT NULL,
     latest_commit_sha       VARCHAR(40)              NOT NULL,
     latest_commit_pushed_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    description             VARCHAR(2048)            NOT NULL,
     FOREIGN KEY (user_id) REFERENCES bee_schema.users (id) ON DELETE CASCADE
 );
 
