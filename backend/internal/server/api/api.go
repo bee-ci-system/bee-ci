@@ -134,8 +134,35 @@ func (a *App) getMyRepositories(w http.ResponseWriter, r *http.Request) {
 		repos = append(repos, allRepos[i])
 	}
 
+	repositories := make([]repository, 0)
+	for _, repo := range repos {
+		wasFound := true
+		latestBuild, err := a.BuildRepo.GetLatestByRepoID(r.Context(), userID, repo.ID)
+		if err != nil {
+			if errors.Is(err, data.ErrNotFound) {
+				wasFound = false
+			} else {
+				msg := "failed to get latest build for repo"
+				logger.Error(msg, slog.Any("error", err))
+				http.Error(w, msg, http.StatusInternalServerError)
+				return
+			}
+		}
+
+		var dateOfLastUpdate *time.Time = nil
+		if wasFound {
+			dateOfLastUpdate = &latestBuild.UpdatedAt
+		}
+
+		repositories = append(repositories, repository{
+			ID:               strconv.FormatInt(repo.ID, 10),
+			Name:             repo.Name,
+			DateOfLastUpdate: dateOfLastUpdate,
+		})
+	}
+
 	response := getMyRepositoriesDTO{
-		Repositories:      toRepositories(repos),
+		Repositories:      repositories,
 		TotalRepositories: len(allRepos),
 		TotalPages:        int(totalPages),
 		CurrentPage:       params.CurrentPage,
@@ -282,9 +309,36 @@ func (a *App) getDashboard(w http.ResponseWriter, r *http.Request) {
 		pipelines = append(pipelines, pipeline)
 	}
 
+	repositories := make([]repository, 0)
+	for _, repo := range repos {
+		wasFound := true
+		latestBuild, err := a.BuildRepo.GetLatestByRepoID(r.Context(), userID, repo.ID)
+		if err != nil {
+			if errors.Is(err, data.ErrNotFound) {
+				wasFound = false
+			} else {
+				msg := "failed to get latest build for repo"
+				logger.Error(msg, slog.Any("error", err))
+				http.Error(w, msg, http.StatusInternalServerError)
+				return
+			}
+		}
+
+		var dateOfLastUpdate *time.Time = nil
+		if wasFound {
+			dateOfLastUpdate = &latestBuild.UpdatedAt
+		}
+
+		repositories = append(repositories, repository{
+			ID:               strconv.FormatInt(repo.ID, 10),
+			Name:             repo.Name,
+			DateOfLastUpdate: dateOfLastUpdate,
+		})
+	}
+
 	response := getDashboardDataDTO{
 		Stats:        stats,
-		Repositories: toRepositories(repos),
+		Repositories: repositories,
 		Pipelines:    pipelines,
 	}
 

@@ -1,10 +1,7 @@
 package api
 
 import (
-	"strconv"
 	"time"
-
-	"github.com/bee-ci/bee-ci-system/internal/data"
 )
 
 type getMyRepositoriesParams struct {
@@ -26,9 +23,9 @@ type getMyRepositoriesDTO struct {
 }
 
 type repository struct {
-	ID               string    `json:"id"`
-	Name             string    `json:"name"`
-	DateOfLastUpdate time.Time `json:"dateOfLastUpdate"`
+	ID               string     `json:"id"`
+	Name             string     `json:"name"`
+	DateOfLastUpdate *time.Time `json:"dateOfLastUpdate"`
 }
 
 type getDashboardDataDTO struct {
@@ -67,16 +64,4 @@ type pipeline struct {
 	Status         string     `json:"status"`
 	StartDate      time.Time  `json:"startDate"`
 	EndDate        *time.Time `json:"endDate"`
-}
-
-func toRepositories(dbRepos []data.Repo) []repository {
-	repos := make([]repository, 0)
-	for _, repo := range dbRepos {
-		repos = append(repos, repository{
-			ID:               strconv.FormatInt(repo.ID, 10),
-			Name:             repo.Name,
-			DateOfLastUpdate: repo.LatestCommitPushedAt,
-		})
-	}
-	return repos
 }

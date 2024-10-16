@@ -3,8 +3,9 @@ package data
 import (
 	"context"
 	"fmt"
-	"github.com/jmoiron/sqlx"
 	"log/slog"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type Repo struct {
