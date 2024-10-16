@@ -1,4 +1,4 @@
-// Package webhook implements handling of GitHub webhooks.
+// Package webhook implements the handling of GitHub webhooks.
 package webhook
 
 import (
@@ -232,6 +232,8 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	switch event := event.(type) {
 	case *github.GitHubAppAuthorizationEvent:
+		// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/github_app_authorization/revoked.payload.json
+
 		// TODO: What to do when user revokes their authorization?
 		//  Idea 1: delete their all data. Problem: installation still exists?
 		//  Idea 2: kill their all JWTs and require reauthorization on next dashboard visit? Also stop running all their flows.
@@ -240,17 +242,14 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		login := *installation.Account.Login
 		userID := *installation.Account.ID
 
-		// https://docs.github.com/en/webhooks/webhook-events-and-payloads?actionType=created#installation
+		logger.Debug("app installation created "+*event.Action,
+			slog.Any("id", installation.ID),
+			slog.String("login", login),
+		)
+
 		if *event.Action == "created" {
-			repositories := event.Repositories
-
-			logger.Debug("app installation created",
-				slog.Any("id", installation.ID),
-				slog.String("login", login),
-				slog.Int("repositories", len(repositories)),
-			)
-
-			repos := mapRepos(userID, repositories)
+			// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation/created.payload.json
+			repos := mapRepos(userID, event.Repositories)
 			err = h.repoRepo.Create(r.Context(), repos)
 			if err != nil {
 				logger.Error("error creating repositories", slog.Any("error", err))
@@ -258,6 +257,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		} else if *event.Action == "deleted" {
+			// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation/deleted.payload.json
 			logger.Debug("app installation deleted",
 				slog.Any("id", installation.ID),
 				slog.String("login", login),
@@ -267,10 +267,15 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 	case *github.InstallationRepositoriesEvent:
 		userID := *event.Sender.ID
+		installationID := *event.Installation.ID
 
-		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#installation_repositories
+		logger.Debug("repositories "+*event.Action,
+			slog.Int64("installation_id", installationID),
+		)
+
 		switch *event.Action {
 		case "added":
+			// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation_repositories/added.payload.json
 			addedRepositories := event.RepositoriesAdded
 			repos := mapRepos(userID, addedRepositories)
 			err = h.repoRepo.Create(r.Context(), repos)
@@ -278,11 +283,12 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				logger.Error("error creating repositories", slog.Any("error", err))
 			}
 		case "removed":
+			// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation_repositories/removed.payload.json
 			removedRepositories := event.RepositoriesRemoved
-			repos := mapRepos(userID, removedRepositories)
-			repoIDs := make([]int64, 0, len(repos))
-			for _, repo := range repos {
-				repoIDs = append(repoIDs, repo.ID)
+
+			repoIDs := make([]int64, 0, len(removedRepositories))
+			for _, removedRepository := range removedRepositories {
+				repoIDs = append(repoIDs, *removedRepository.ID)
 			}
 
 			err = h.repoRepo.Delete(r.Context(), repoIDs)
@@ -291,15 +297,18 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case *github.CheckSuiteEvent:
-		// https://docs.github.com/en/webhooks/webhook-events-and-payloads#check_suite
+		// Create build
+
 		if *event.Action == "requested" || *event.Action == "rerequested" {
+			// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/check_suite/requested.payload.json
+
 			headSHA := *event.CheckSuite.HeadSHA
 			message := *event.CheckSuite.HeadCommit.Message
 			installationID := *event.Installation.ID
 
-			logger.Debug("check suite requested",
+			logger.Debug(fmt.Sprintf("check suite %s", *event.Action),
 				slog.String("owner", *event.Repo.Owner.Login),
-				slog.String("repo", *event.Repo.Name),
+				slog.String("removedRepository", *event.Repo.Name),
 				slog.Int64("installation_id", installationID),
 				slog.String("head_sha", headSHA),
 			)

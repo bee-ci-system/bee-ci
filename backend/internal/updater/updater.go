@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bee-ci/bee-ci-system/internal/common/auth"
+	ghs "github.com/bee-ci/bee-ci-system/internal/common/ghservice"
 	"github.com/google/go-github/v64/github"
 
 	"github.com/bee-ci/bee-ci-system/internal/data"
@@ -29,7 +29,7 @@ type Updater struct {
 	repoRepo      data.RepoRepo
 	userRepo      data.UserRepo
 	buildRepo     data.BuildRepo
-	githubService *GithubService
+	githubService *ghs.GithubService
 }
 
 func New(
@@ -37,7 +37,7 @@ func New(
 	repoRepo data.RepoRepo,
 	userRepo data.UserRepo,
 	buildRepo data.BuildRepo,
-	githubService *GithubService,
+	githubService *ghs.GithubService,
 ) *Updater {
 	return &Updater{
 		logger:        slog.Default(), // TODO: add some "subsystem name" to this logger
@@ -128,14 +128,10 @@ func (u Updater) createCheckRun(ctx context.Context, build data.Build) (checkRun
 		return 0, fmt.Errorf("get user: %w", err)
 	}
 
-	installationAccessToken, err := u.githubService.GetInstallationAccessToken(ctx, build.InstallationID)
+	ghClient, err := u.githubService.GetClientForInstallation(ctx, build.InstallationID)
 	if err != nil {
-		return 0, fmt.Errorf("get installation access token: %w", err)
+		return 0, fmt.Errorf("get client for installation: %w", err)
 	}
-
-	ghClient := github.NewClient(&http.Client{
-		Transport: &auth.BearerTransport{Token: installationAccessToken},
-	})
 
 	createCheckRunOptions := github.CreateCheckRunOptions{
 		// TODO: Get name from the BeeCI config file?
@@ -183,14 +179,10 @@ func (u Updater) updateCheckRun(ctx context.Context, checkRunID int64, build dat
 		return fmt.Errorf("get user: %w", err)
 	}
 
-	installationAccessToken, err := u.githubService.GetInstallationAccessToken(ctx, build.InstallationID)
+	ghClient, err := u.githubService.GetClientForInstallation(ctx, build.InstallationID)
 	if err != nil {
-		return fmt.Errorf("get installation access token: %w", err)
+		return fmt.Errorf("get client for installation: %w", err)
 	}
-
-	ghClient := github.NewClient(&http.Client{
-		Transport: &auth.BearerTransport{Token: installationAccessToken},
-	})
 
 	// TODO: Do I need to set these options again, or if I set them to null they will be removed?
 	checkRunUpdateOptions := github.UpdateCheckRunOptions{
