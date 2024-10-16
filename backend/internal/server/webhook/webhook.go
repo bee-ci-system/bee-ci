@@ -12,8 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bee-ci/bee-ci-system/internal/common/auth"
-	ghs "github.com/bee-ci/bee-ci-system/internal/common/gh_service"
+	ghs "github.com/bee-ci/bee-ci-system/internal/common/ghservice"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-github/v64/github"
@@ -254,16 +253,12 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		if *event.Action == "created" {
 			// Example response: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation/created.payload.json
 
-			installationAccessToken, err := h.githubService.GetInstallationAccessToken(r.Context(), *installation.ID)
+			ghClient, err := h.githubService.GetClientForInstallation(r.Context(), *installation.ID)
 			if err != nil {
-				logger.Error("get installation access token", slog.Any("error", err))
+				logger.Error("get client for installation", slog.Any("error", err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-
-			ghClient := github.NewClient(&http.Client{
-				Transport: &auth.BearerTransport{Token: installationAccessToken},
-			})
 
 			// The webhook event doesn't contain all repository data we need:
 			//  - description
@@ -311,10 +306,10 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			}
 		case "removed":
 			removedRepositories := event.RepositoriesRemoved
-			repos := mapRepos(userID, removedRepositories)
-			repoIDs := make([]int64, 0, len(repos))
-			for _, repo := range repos {
-				repoIDs = append(repoIDs, repo.ID)
+
+			repoIDs := make([]int64, 0, len(removedRepositories))
+			for _, removedRepository := range removedRepositories {
+				repoIDs = append(repoIDs, *removedRepository.ID)
 			}
 
 			err = h.repoRepo.Delete(r.Context(), repoIDs)
@@ -332,7 +327,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 			logger.Debug(fmt.Sprintf("check suite %s", *event.Action),
 				slog.String("owner", *event.Repo.Owner.Login),
-				slog.String("repo", *event.Repo.Name),
+				slog.String("removedRepository", *event.Repo.Name),
 				slog.Int64("installation_id", installationID),
 				slog.String("head_sha", headSHA),
 			)

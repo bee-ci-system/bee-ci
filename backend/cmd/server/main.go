@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bee-ci/bee-ci-system/internal/common/gh_service"
+	"github.com/bee-ci/bee-ci-system/internal/common/ghservice"
 	"github.com/golang-jwt/jwt/v5"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
@@ -94,7 +94,7 @@ func main() {
 	repoRepo := data.NewPostgresRepoRepo(db)
 	logsRepo := data.NewInfluxLogsRepo(influxClient, influxOrg, influxBucket)
 
-	githubService := gh_service.NewGithubService(githubAppID, rsaPrivateKey)
+	githubService := ghservice.NewGithubService(githubAppID, rsaPrivateKey)
 	webhooks := webhook.NewWebhookHandler(userRepo, repoRepo, buildRepo, githubService, mainDomain, redirectURL, githubAppClientID, githubAppClientSecret, githubAppWebhookSecret, jwtSecret)
 	app := api.NewApp(buildRepo, logsRepo, repoRepo, userRepo, jwtSecret)
 

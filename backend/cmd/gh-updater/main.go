@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bee-ci/bee-ci-system/internal/common/gh_service"
+	"github.com/bee-ci/bee-ci-system/internal/common/ghservice"
 
 	"github.com/bee-ci/bee-ci-system/internal/data"
 	"github.com/bee-ci/bee-ci-system/internal/updater"
@@ -59,7 +59,7 @@ func main() {
 	userRepo := data.NewPostgresUserRepo(db)
 	repoRepo := data.NewPostgresRepoRepo(db)
 
-	githubService := gh_service.NewGithubService(githubAppID, rsaPrivateKey)
+	githubService := ghservice.NewGithubService(githubAppID, rsaPrivateKey)
 
 	minReconnectInterval := 10 * time.Second
 	maxReconnectInterval := time.Minute
