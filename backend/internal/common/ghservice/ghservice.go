@@ -4,10 +4,14 @@ package ghservice
 import (
 	"context"
 	"crypto/rsa"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-github/v64/github"
@@ -16,25 +20,42 @@ import (
 type GithubService struct {
 	logger        *slog.Logger
 	httpClient    *http.Client
+	redisDB       *redis.Client
 	githubAppID   int64
 	rsaPrivateKey *rsa.PrivateKey
 }
 
-func NewGithubService(githubAppID int64, rsaPrivateKey *rsa.PrivateKey) *GithubService {
+func NewGithubService(githubAppID int64, rsaPrivateKey *rsa.PrivateKey, redisDB *redis.Client) *GithubService {
 	return &GithubService{
 		logger:        slog.Default(), // TODO: add some "subsystem name" to this logger
 		httpClient:    &http.Client{Timeout: 10 * time.Second},
+		redisDB:       redisDB,
 		githubAppID:   githubAppID,
 		rsaPrivateKey: rsaPrivateKey,
 	}
 }
 
 func (g GithubService) GetClientForInstallation(ctx context.Context, installationID int64) (*github.Client, error) {
-	// token, err := getFromRedis // TODO: Get from Redis
-
-	token, err := g.getInstallationAccessToken(ctx, installationID)
+	token, err := g.redisDB.Get(ctx, strconv.FormatInt(installationID, 10)).Result()
 	if err != nil {
-		return nil, fmt.Errorf("get installation access token: %w", err)
+		if !errors.Is(err, redis.Nil) {
+			return nil, fmt.Errorf("get from redis: %w", err)
+		}
+	}
+
+	if token == "" {
+		g.logger.Debug("installation token not found in redis", slog.String("installationID", strconv.FormatInt(installationID, 10)))
+
+		token, err = g.getInstallationAccessToken(ctx, installationID)
+		if err != nil {
+			return nil, fmt.Errorf("get installation access token: %w", err)
+		}
+
+		err = g.redisDB.Set(ctx, strconv.FormatInt(installationID, 10), token, 59*time.Minute).Err()
+		if err != nil {
+			return nil, fmt.Errorf("set in redis: %w", err)
+		}
+		g.logger.Debug("persisted installation token in redis", slog.String("installationID", strconv.FormatInt(installationID, 10)))
 	}
 
 	client := github.NewClient(&http.Client{
@@ -44,14 +65,11 @@ func (g GithubService) GetClientForInstallation(ctx context.Context, installatio
 	return client, nil
 }
 
-// TODO: Cache the token in some KV store, for example Redis. Before returning
-// it, always check if 1 hour has passed.
-
 // getInstallationAccessToken returns the installation access token for the [installationID].
 //
 // The token returned is short-lived – per GitHub docs, it expires after 1 hour.
 func (g GithubService) getInstallationAccessToken(ctx context.Context, installationID int64) (string, error) {
-	jwtString, err := g.generateSignedJWT(g.githubAppID, g.rsaPrivateKey)
+	jwtString, err := generateSignedJWT(g.githubAppID, g.rsaPrivateKey)
 	if err != nil {
 		return "", fmt.Errorf("generate signed jwt: %w", err)
 	}
@@ -66,7 +84,7 @@ func (g GithubService) getInstallationAccessToken(ctx context.Context, installat
 	return *res.Token, nil
 }
 
-func (g GithubService) generateSignedJWT(githubAppID int64, rsaPrivateKey *rsa.PrivateKey) (string, error) {
+func generateSignedJWT(githubAppID int64, rsaPrivateKey *rsa.PrivateKey) (string, error) {
 	claims := jwt.MapClaims{
 		"iat": time.Now().Unix(),
 		"exp": time.Now().Add(10 * time.Minute).Unix(),
