@@ -2,17 +2,12 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"time"
-
-	"github.com/bee-ci/bee-ci-system/internal/common/ghservice"
-	"github.com/golang-jwt/jwt/v5"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 
@@ -44,19 +39,6 @@ func main() {
 	githubAppClientID := mustGetenv("GITHUB_APP_CLIENT_ID")
 	githubAppWebhookSecret := mustGetenv("GITHUB_APP_WEBHOOK_SECRET")
 	githubAppClientSecret := mustGetenv("GITHUB_APP_CLIENT_SECRET")
-
-	githubAppID := mustGetenvInt64("GITHUB_APP_ID")
-	privateKeyBase64 := mustGetenv("GITHUB_APP_PRIVATE_KEY_BASE64")
-	privateKey, err := base64.StdEncoding.DecodeString(privateKeyBase64)
-	if err != nil {
-		slog.Error("error decoding GitHub App private key from base64", slog.Any("error", err))
-		os.Exit(1)
-	}
-
-	rsaPrivateKey, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
-	if err != nil {
-		slog.Error("error parsing GitHub App RSA private key from PEM", slog.Any("error", err))
-	}
 
 	dbHost := mustGetenv("DB_HOST")
 	dbPort := mustGetenv("DB_PORT")
@@ -94,8 +76,7 @@ func main() {
 	repoRepo := data.NewPostgresRepoRepo(db)
 	logsRepo := data.NewInfluxLogsRepo(influxClient, influxOrg, influxBucket)
 
-	githubService := ghservice.NewGithubService(githubAppID, rsaPrivateKey)
-	webhooks := webhook.NewWebhookHandler(userRepo, repoRepo, buildRepo, githubService, mainDomain, redirectURL, githubAppClientID, githubAppClientSecret, githubAppWebhookSecret, jwtSecret)
+	webhooks := webhook.NewWebhookHandler(userRepo, repoRepo, buildRepo, mainDomain, redirectURL, githubAppClientID, githubAppClientSecret, githubAppWebhookSecret, jwtSecret)
 	app := api.NewApp(buildRepo, logsRepo, repoRepo, userRepo, jwtSecret)
 
 	mux := http.NewServeMux()
@@ -168,14 +149,4 @@ func mustGetenv(varname string) string {
 		os.Exit(1)
 	}
 	return value
-}
-
-func mustGetenvInt64(varname string) int64 {
-	value := mustGetenv(varname)
-	i, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		slog.Error(varname+" env var is not a valid int64", slog.Any("error", err))
-		os.Exit(1)
-	}
-	return i
 }

@@ -3,19 +3,14 @@ package data
 import (
 	"context"
 	"fmt"
-	"log/slog"
-	"time"
-
 	"github.com/jmoiron/sqlx"
+	"log/slog"
 )
 
 type Repo struct {
-	ID                   int64     `db:"id"`
-	Name                 string    `db:"name"`
-	UserID               int64     `db:"user_id"`
-	LatestCommitSHA      string    `db:"latest_commit_sha"`
-	LatestCommitPushedAt time.Time `db:"latest_commit_pushed_at"`
-	Description          string    `db:"description"`
+	ID     int64  `db:"id"`
+	Name   string `db:"name"`
+	UserID int64  `db:"user_id"`
 }
 
 func (r Repo) LogValue() slog.Value {
@@ -35,10 +30,6 @@ type RepoRepo interface {
 	//
 	// If searchRepo is empty, all repositories are considered.
 	GetAll(ctx context.Context, searchRepo string, userID int64) (repos []Repo, err error)
-
-	UpdateLatestCommit(id int64, sha string, pushedAt time.Time) (err error)
-
-	UpdateDescription(id int64, newDescription string) (err error)
 }
 
 type PostgresRepoRepo struct {
@@ -48,8 +39,8 @@ type PostgresRepoRepo struct {
 func (p PostgresRepoRepo) Create(ctx context.Context, repos []Repo) (err error) {
 	_, err = p.db.NamedExecContext(
 		ctx,
-		`INSERT INTO bee_schema.repos (id, name, user_id, latest_commit_sha, latest_commit_pushed_at, description)
-		VALUES (:id, :name, :user_id, :latest_commit_sha, :latest_commit_pushed_at, :description)`,
+		`INSERT INTO bee_schema.repos (id, name, user_id)
+		VALUES (:id, :name, :user_id)`,
 		repos,
 	)
 	if err != nil {
@@ -116,41 +107,6 @@ func (p PostgresRepoRepo) GetAll(ctx context.Context, searchRepo string, userID 
 		return nil, fmt.Errorf("selecting from repos: %v", err)
 	}
 	return repos, nil
-}
-
-func (p PostgresRepoRepo) UpdateLatestCommit(id int64, sha string, pushedAt time.Time) (err error) {
-	_, err = p.db.NamedExecContext(
-		context.Background(),
-		`UPDATE bee_schema.repos
-		SET latest_commit_sha = :latest_commit, latest_commit_pushed_at = :latest_commit_pushed_at
-		WHERE id = :id`,
-		map[string]interface{}{
-			"id":                      id,
-			"latest_commit":           sha,
-			"latest_commit_pushed_at": pushedAt,
-		})
-	if err != nil {
-		return fmt.Errorf("executing UPDATE query: %v", err)
-	}
-
-	return nil
-}
-
-func (p PostgresRepoRepo) UpdateDescription(id int64, newDescription string) (err error) {
-	_, err = p.db.NamedExecContext(
-		context.Background(),
-		`UPDATE bee_schema.repos
-		SET description = :description
-		WHERE id = :id`,
-		map[string]interface{}{
-			"id":          id,
-			"description": newDescription,
-		})
-	if err != nil {
-		return fmt.Errorf("executing UPDATE query: %v", err)
-	}
-
-	return nil
 }
 
 var _ RepoRepo = &PostgresRepoRepo{}

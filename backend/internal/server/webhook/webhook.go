@@ -12,8 +12,6 @@ import (
 	"strconv"
 	"time"
 
-	ghs "github.com/bee-ci/bee-ci-system/internal/common/ghservice"
-
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-github/v64/github"
 
@@ -23,11 +21,10 @@ import (
 )
 
 type WebhookHandler struct {
-	httpClient    *http.Client
-	userRepo      data.UserRepo
-	repoRepo      data.RepoRepo
-	buildRepo     data.BuildRepo
-	githubService *ghs.GithubService
+	httpClient *http.Client
+	userRepo   data.UserRepo
+	repoRepo   data.RepoRepo
+	buildRepo  data.BuildRepo
 
 	// The domain where the auth cookie will be placed. For example
 	// ".pacia.tech" or ".karolak.cc". Must be empty for localhost.
@@ -50,7 +47,6 @@ func NewWebhookHandler(
 	userRepo data.UserRepo,
 	repoRepo data.RepoRepo,
 	buildRepo data.BuildRepo,
-	githubService *ghs.GithubService,
 	mainDomain string,
 	redirectURL string,
 	githubAppClientID string,
@@ -62,7 +58,6 @@ func NewWebhookHandler(
 		httpClient:             &http.Client{Timeout: 10 * time.Second},
 		userRepo:               userRepo,
 		repoRepo:               repoRepo,
-		githubService:          githubService,
 		buildRepo:              buildRepo,
 		mainDomain:             mainDomain,
 		redirectURL:            redirectURL,
@@ -254,28 +249,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 		if *event.Action == "created" {
 			// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation/created.payload.json
-
-			ghClient, err := h.githubService.GetClientForInstallation(r.Context(), *installation.ID)
-			if err != nil {
-				logger.Error("get client for installation", slog.Any("error", err))
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			// The webhook event doesn't contain all repository data we need:
-			//  - description
-			//  - latest commit SHA
-			//  - datetime of the latest commit.
-			// Therefore, we need to request more data from the API.
-			opts := &github.RepositoryListByUserOptions{}
-			repositories, _, err := ghClient.Repositories.ListByUser(r.Context(), login, opts)
-			if err != nil {
-				logger.Error("error getting repositories", slog.Any("error", err))
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			repos := mapRepos(userID, repositories)
+			repos := mapRepos(userID, event.Repositories)
 			err = h.repoRepo.Create(r.Context(), repos)
 			if err != nil {
 				logger.Error("error creating repositories", slog.Any("error", err))
@@ -353,47 +327,6 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			}
 			logger.Debug("build created", slog.Int64("build_id", buildID))
 		}
-	case *github.PushEvent:
-		// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/push/with-no-username-committer.payload.json
-
-		// Update the repository's latest commit's SHA and datetime
-		repoID := *event.Repo.ID
-		installationID := *event.Installation.ID
-
-		if len(event.Commits) == 0 || event.After == nil {
-			return
-		}
-
-		newLatestSHA := *event.HeadCommit.SHA
-		newLatestPushedAt := *event.HeadCommit.Timestamp.GetTime()
-
-		logger.Debug("pushed commit",
-			slog.String("owner", *event.Repo.Owner.Login),
-			slog.String("name", *event.Repo.Name),
-			slog.String("commit.sha", newLatestSHA),
-			slog.String("commit.pushed_at", newLatestPushedAt.String()),
-			slog.Int64("installation_id", installationID),
-		)
-
-		if *event.Action == "pushed" {
-			err := h.repoRepo.UpdateLatestCommit(repoID, newLatestSHA, newLatestPushedAt)
-			if err != nil {
-				logger.Error("error updating repository's latest commit's SHA and datetime", slog.Any("error", err))
-				return
-			}
-		}
-	case *github.RepositoryEvent:
-		// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/repository/edited.payload.json
-
-		repoID := *event.Repo.ID
-		// Update the repository's description
-		if *event.Action == "edited" {
-			err := h.repoRepo.UpdateDescription(repoID, *event.Repo.Description)
-			if err != nil {
-				logger.Error("error updating repository description", slog.Any("error", err))
-				return
-			}
-		}
 
 	default:
 		logger.Error("unknown event", slog.String("event", eventType))
@@ -422,12 +355,9 @@ func mapRepos(userID int64, repositories []*github.Repository) []data.Repo {
 	repos := make([]data.Repo, 0, len(repositories))
 	for _, repo := range repositories {
 		repos = append(repos, data.Repo{
-			ID:                   *repo.ID,
-			Name:                 *repo.Name,
-			UserID:               userID,
-			LatestCommitSHA:      "latestCommitSHA", // *repo.Head, // TODO: correct head sha
-			LatestCommitPushedAt: *repo.PushedAt.GetTime(),
-			Description:          repo.GetDescription(),
+			ID:     *repo.ID,
+			Name:   *repo.Name,
+			UserID: userID,
 		})
 	}
 	return repos
