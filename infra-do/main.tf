@@ -41,6 +41,16 @@ resource "digitalocean_app" "app" {
     name   = "bee-ci-tf"
     region = "sfo"
 
+    # domain {
+    #   # name = "beeci-backend.ondigitalocean.app"
+    #   type = "DEFAULT"
+    # }
+
+    domain {
+      name = "beeci-backend.karolak.cc"
+      type = "PRIMARY"
+    }
+
     ingress {
 
       /*
@@ -274,4 +284,8 @@ resource "digitalocean_record" "backend" {
 
 resource "digitalocean_domain" "default" {
   name = "bee-ci.karolak.cc"
+}
+
+resource "digitalocean_domain" "default2" {
+  name = "beeci-backend.karolak.cc"
 }

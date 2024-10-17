@@ -81,7 +81,8 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintln(w, "hello world\n\nthis is bee-ci backend server\n\nhehe!")
+		_, _ = fmt.Fprintf(w, "hello world\n\nthis is bee-ci backend server!\n\n")
+		_, _ = fmt.Fprintf(w, "SERVER_URL: %s\nMAIN_DOMAIN: %s\nREDIRECT_URL: %s\n", serverURL, mainDomain, redirectURL)
 	})
 	mux.Handle("/webhook/", http.StripPrefix("/webhook", webhooks.Mux()))
 	mux.Handle("/api/", http.StripPrefix("/api", app.Mux()))
