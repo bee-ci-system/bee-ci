@@ -78,7 +78,9 @@ const RepositoriesTable = () => {
                     {repository.name}
                   </TableCell>
                   <TableCell>
-                    {format(repository.dateOfLastUpdate, 'dd-MM-yyyy')}
+                    {repository.dateOfLastUpdate !== null
+                      ? format(repository.dateOfLastUpdate, 'dd-MM-yyyy')
+                      : 'not known'}
                   </TableCell>
                 </TableRow>
               ))}
