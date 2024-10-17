@@ -4,6 +4,8 @@ resource "digitalocean_droplet" "executor" {
   size = "s-1vcpu-2gb" # doctl compute size list
   image  = "ubuntu-24-04-x64"
 
+  ssh_keys = [digitalocean_ssh_key.default.fingerprint]
+
   volume_ids = []
 
   vpc_uuid = digitalocean_vpc.default.id
@@ -36,7 +38,7 @@ resource "digitalocean_droplet" "executor" {
       - echo "DB_NAME=${digitalocean_database_cluster.postgres.name}" >> .executor.env
 
       # Influx config
-      - echo "INFLUXDB_URL=TODO" >> .executor.env
+      - echo "INFLUXDB_URL=http://${digitalocean_droplet.influxdb.ipv4_address_private}:8086" >> .executor.env
       - echo "INFLUXDB_ORG=${var.influxdb_org}" >> .executor.env
       - echo "INFLUXDB_BUCKET=${var.influxdb_bucket}" >> .executor.env
       - echo "INFLUXDB_TOKEN=${var.influxdb_token}" >> .executor.env
@@ -44,3 +46,6 @@ resource "digitalocean_droplet" "executor" {
       - docker run --env-file .executor.env bee-ci-backend-executor:latest
   EOF
 }
+
+# To check if cloud-init completed successfully, see:
+# https://www.digitalocean.com/community/questions/how-to-make-sure-that-cloud-init-finished-running

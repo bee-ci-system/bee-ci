@@ -26,10 +26,3 @@ output "live_domain" {
 output "volume_id" {
   value = digitalocean_volume.influxdb_volume.id
 }
-
-output "influx_droplet_ip" {
-  value = digitalocean_droplet.influxdb.private_networking
-}
-output "droplet_1_private_ip" {
-  value = digitalocean_droplet.executor.private_networking
-}

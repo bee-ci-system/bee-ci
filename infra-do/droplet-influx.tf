@@ -4,6 +4,8 @@ resource "digitalocean_droplet" "influxdb" {
   size = "s-1vcpu-512mb-10gb" # doctl compute size list
   image  = "ubuntu-24-04-x64"
 
+  ssh_keys = [digitalocean_ssh_key.default.fingerprint]
+
   volume_ids = [digitalocean_volume.influxdb_volume.id]
 
   vpc_uuid = digitalocean_vpc.default.id
@@ -15,6 +17,7 @@ resource "digitalocean_droplet" "influxdb" {
     packages:
       - curl
 
+     # From: https://docs.influxdata.com/influxdb/v2/install/?t=Linux
      runcmd:
       - curl -sL https://repos.influxdata.com/influxdb.key | sudo apt-key add -
       - echo "deb https://repos.influxdata.com/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
@@ -49,3 +52,6 @@ resource "digitalocean_volume" "influxdb_volume" {
   region                  = "sfo3"
   initial_filesystem_type = "ext4"
 }
+
+# To check if cloud-init completed successfully, see:
+# https://www.digitalocean.com/community/questions/how-to-make-sure-that-cloud-init-finished-running
