@@ -1,6 +1,6 @@
 output "db_uri" {
   description = "The full URI for connecting to the database cluster"
-  value       = digitalocean_database_cluster.main-db-cluster.uri
+  value       = digitalocean_database_cluster.postgres.uri
   sensitive   = true
 }
 

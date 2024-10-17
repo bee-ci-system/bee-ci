@@ -20,6 +20,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/lib/pq"
 	"github.com/lmittmann/tint"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -48,18 +49,26 @@ func main() {
 	dbName := mustGetenv("DB_NAME")
 	dbOpts := mustGetenv("DB_OPTS")
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s %s", dbHost, dbPort, dbUser, dbPassword, dbName, dbOpts)
-	db, err := sqlx.Connect("postgres", psqlInfo)
+	postgresDB, err := sqlx.Connect("postgres", psqlInfo)
 	if err != nil {
 		slog.Error("error connecting to Postgres database", slog.Any("error", err))
 		os.Exit(1)
 	}
 	slog.Info("connected to Postgres database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
 
-	buildRepo := data.NewPostgresBuildRepo(db)
-	userRepo := data.NewPostgresUserRepo(db)
-	repoRepo := data.NewPostgresRepoRepo(db)
+	redisAddr := mustGetenv("REDIS_ADDRESS")
+	redisPassword := mustGetenv("REDIS_PASSWORD")
+	redisDB := redis.NewClient(&redis.Options{
+		Addr:     redisAddr,
+		Password: redisPassword,
+		DB:       0, // use default DB
+	})
 
-	githubService := ghservice.NewGithubService(githubAppID, rsaPrivateKey)
+	buildRepo := data.NewPostgresBuildRepo(postgresDB)
+	userRepo := data.NewPostgresUserRepo(postgresDB)
+	repoRepo := data.NewPostgresRepoRepo(postgresDB)
+
+	githubService := ghservice.NewGithubService(githubAppID, rsaPrivateKey, redisDB)
 
 	minReconnectInterval := 10 * time.Second
 	maxReconnectInterval := time.Minute

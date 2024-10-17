@@ -56,28 +56,28 @@ locals {
     },
     {
       key   = "DB_HOST"
-      value = digitalocean_database_cluster.main-db-cluster.host
+      value = digitalocean_database_cluster.postgres.host
       scope = "RUN_TIME"
-    }
-    , {
+    },
+    {
       key   = "DB_PORT"
-      value = digitalocean_database_cluster.main-db-cluster.port
+      value = digitalocean_database_cluster.postgres.port
       scope = "RUN_TIME"
     },
     {
       key   = "DB_USER"
-      value = digitalocean_database_cluster.main-db-cluster.user
+      value = digitalocean_database_cluster.postgres.user
       scope = "RUN_TIME"
     },
     {
       key   = "DB_PASSWORD"
-      value = digitalocean_database_cluster.main-db-cluster.password
+      value = digitalocean_database_cluster.postgres.password
       scope = "RUN_TIME"
       type  = "SECRET"
     },
     {
       key   = "DB_NAME"
-      value = digitalocean_database_db.main-db.name
+      value = digitalocean_database_db.postgres.name
       scope = "RUN_TIME"
     },
     {
@@ -108,6 +108,16 @@ locals {
     {
       key   = "INFLUXDB_ENABLED"
       value = ""
+      scope = "RUN_TIME"
+    },
+    {
+      key   = "REDIS_ADDRESS"
+      value = format("%s:%s", digitalocean_database_cluster.redis.host, digitalocean_database_cluster.redis.port)
+      scope = "RUN_TIME"
+    },
+    {
+      key   = "REDIS_PASSWORD"
+      value = digitalocean_database_cluster.redis.password
       scope = "RUN_TIME"
     },
   ]

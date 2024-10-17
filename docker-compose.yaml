@@ -19,7 +19,7 @@ services:
       database-influx:
         condition: service_healthy
     env_file:
-      - backend/.env
+      - .env
     environment:
       SERVER_URL: localhost:8080
       PORT: 8080
@@ -48,7 +48,7 @@ services:
       database-influx:
         condition: service_healthy
     env_file:
-      - backend/.env
+      - .env
     environment:
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
@@ -56,6 +56,20 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
       DB_OPTS: sslmode=disable # sslmode=require for prod
+      REDIS_ADDRESS: ${REDIS_ADDRESS}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+  database-redis:
+    image: redis:7.4-alpine3.20
+    volumes:
+      - bee-redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli","ping" ]
+      interval: 3s
+      timeout: 3s
+      retries: 3
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
 
   database-postgres:
     image: postgres:17.0-alpine3.20
@@ -66,8 +80,8 @@ services:
       - ./backend/sql-scripts:/docker-entrypoint-initdb.d
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 2s
-      timeout: 2s
+      interval: 3s
+      timeout: 3s
       retries: 3
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -116,3 +130,4 @@ volumes:
   bee-influx-data:
   bee-influx-config:
   bee-postgres-data:
+  bee-redis-data:

@@ -26,7 +26,8 @@ resource "digitalocean_project" "project" {
   environment = "Development"
   resources = [
     digitalocean_app.app.urn,
-    digitalocean_database_cluster.main-db-cluster.urn,
+    digitalocean_database_cluster.postgres.urn,
+    digitalocean_database_cluster.redis.urn,
     digitalocean_domain.default.urn,
     # digitalocean_droplet.influxdb.urn,
     digitalocean_volume.influxdb_volume.urn,
@@ -67,12 +68,23 @@ resource "digitalocean_app" "app" {
       }
     }
 
+    /*
     database {
-      name         = digitalocean_database_db.main-db.name
-      db_name      = digitalocean_database_db.main-db.name
-      cluster_name = digitalocean_database_cluster.main-db-cluster.name
+      engine       = "PG"
+      name         = digitalocean_database_db.postgres.name
+      db_name      = digitalocean_database_db.postgres.name
+      cluster_name = digitalocean_database_cluster.postgres.name
       production   = true
     }
+
+    database {
+      engine       = "REDIS"
+      name         = digitalocean_database_db.redis.name
+      db_name      = digitalocean_database_db.postgres.name
+      cluster_name = digitalocean_database_cluster.postgres.name
+      production   = true
+    }
+     */
 
     /*
     service {
@@ -100,7 +112,7 @@ resource "digitalocean_app" "app" {
         failure_threshold     = 3
       }
     }
-     */
+    */
 
     service {
       name               = "server"
@@ -113,7 +125,7 @@ resource "digitalocean_app" "app" {
           key   = env.value.key
           value = env.value.value
           scope = env.value.scope
-          type  = lookup(env.value, "type", null)
+          type = lookup(env.value, "type", null)
         }
       }
 
@@ -150,7 +162,7 @@ resource "digitalocean_app" "app" {
           key   = env.value.key
           value = env.value.value
           scope = env.value.scope
-          type  = lookup(env.value, "type", null)
+          type = lookup(env.value, "type", null)
         }
       }
 
@@ -166,42 +178,11 @@ resource "digitalocean_app" "app" {
   }
 }
 
-resource "digitalocean_database_db" "main-db" {
-  cluster_id = digitalocean_database_cluster.main-db-cluster.id
-  name       = "bee"
-
-  provisioner "local-exec" {
-    command = <<EOF
-      psql -f ../backend/sql-scripts/1-schema.sql
-      psql -f ../backend/sql-scripts/2-triggers.sql
-      psql -f ../backend/sql-scripts/3-views.sql
-      psql -f ../backend/sql-scripts/100-seed.sql
-    EOF
-
-    environment = {
-      "PGUSER"     = digitalocean_database_cluster.main-db-cluster.user # -U
-      "PGHOST"     = digitalocean_database_cluster.main-db-cluster.host # -h
-      "PGPORT"     = digitalocean_database_cluster.main-db-cluster.port # -p
-      "PGDATABASE" = digitalocean_database_db.main-db.name              # -d
-      "PGSSLMODE"  = "require"                                          # -c sslmode=require
-      "PGPASSWORD" = digitalocean_database_cluster.main-db-cluster.password
-    }
-  }
-}
-
-resource "digitalocean_database_cluster" "main-db-cluster" {
-  name       = "bee-postgres-cluster"
-  engine     = "pg"
-  version    = "16"
-  size       = "db-s-1vcpu-1gb"
-  region     = "sfo2"
-  node_count = 1
-}
 
 resource "digitalocean_container_registry" "default" {
-  name                   = "bee-ci-container-registry"
+  name   = "bee-ci-container-registry"
   subscription_tier_slug = "basic" # $5/month
-  region                 = "sfo2"
+  region = "sfo2"
 }
 
 resource "digitalocean_container_registry_docker_credentials" "default" {
@@ -210,7 +191,7 @@ resource "digitalocean_container_registry_docker_credentials" "default" {
 
 
 resource "digitalocean_volume" "influxdb_volume" {
-  size                    = 1 # GB
+  size = 1 # GB
   name                    = "influxdb-data"
   region                  = "sfo3"
   initial_filesystem_type = "ext4"
@@ -274,7 +255,6 @@ resource "digitalocean_record" "frontend" {
   value  = "cname.vercel-dns.com."
   ttl    = 1800
 }
-
 
 resource "digitalocean_record" "backend" {
   domain = digitalocean_domain.main.id
