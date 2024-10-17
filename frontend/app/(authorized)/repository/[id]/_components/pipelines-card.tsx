@@ -10,13 +10,13 @@ const PipelinesCard = ({ pipelines }: { pipelines: Pipeline[] }) => (
   <Card className='flex w-full flex-col rounded-none rounded-l-lg'>
     <CardHeader>
       <h2 className='text-beeci-yellow-500 dark:text-beeci-yellow-400'>
-        Pipelines
+        Builds
       </h2>
     </CardHeader>
     <CardContent>
       {pipelines.length === 0 ? (
         <div className='flex h-[420px] items-center justify-center md:h-[80vh]'>
-          <p className='text-muted-foreground'>You don't have pipelines yet.</p>
+          <p className='text-muted-foreground'>You don't have builds yet.</p>
         </div>
       ) : (
         <ScrollArea className='h-[420px] md:h-[80vh]'>

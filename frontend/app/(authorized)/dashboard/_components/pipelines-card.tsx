@@ -23,20 +23,20 @@ const PipelinesCard = ({
   <Card className='border-beeci-yellow-600 xl:col-span-2'>
     <CardHeader>
       <div className='grid gap-2'>
-        <CardTitle>Pipelines</CardTitle>
-        <CardDescription>Your last pipelines and their status</CardDescription>
+        <CardTitle>Builds</CardTitle>
+        <CardDescription>Your last builds and their status</CardDescription>
       </div>
     </CardHeader>
     {pipelines.length === 0 ? (
       <p className='mb-4 h-full text-center text-sm text-muted-foreground'>
-        No pipelines found
+        No builds found
       </p>
     ) : (
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className='w-[75%]'>Pipeline</TableHead>
+              <TableHead className='w-[75%]'>Build</TableHead>
               <TableHead className='pl-0'>Status</TableHead>
             </TableRow>
           </TableHeader>

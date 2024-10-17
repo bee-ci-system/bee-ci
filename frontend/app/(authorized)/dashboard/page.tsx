@@ -18,12 +18,12 @@ const DashboardPage = async () => {
         <h1 className='prose-2xl ml-4'>Hello {userInfo.name}!</h1>
         <div className='grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3'>
           <StatsCard
-            title='Total pipelines'
+            title='Total builds'
             value={dashboardData.stats.totalPipelines}
             icon={<Computer className='h-4 w-4 text-muted-foreground' />}
           />
           <StatsCard
-            title='Successful pipelines'
+            title='Successful builds'
             value={dashboardData.stats.successfulPipelines}
             icon={<BadgeCheck className='h-4 w-4 text-muted-foreground' />}
             percent={calculatePercent(
@@ -32,7 +32,7 @@ const DashboardPage = async () => {
             )}
           />
           <StatsCard
-            title='Unsuccessful pipelines'
+            title='Unsuccessful builds'
             value={dashboardData.stats.unsuccessfulPipelines}
             icon={<BadgeX className='h-4 w-4 text-muted-foreground' />}
             percent={calculatePercent(
