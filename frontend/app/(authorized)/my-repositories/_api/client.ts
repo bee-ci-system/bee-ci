@@ -22,7 +22,7 @@ export const getMyRepositoriesDataClient = async (
       repositories: [],
       totalRepositories: 0,
       totalPages: 1,
-      currentPage: 1,
+      currentPage: 0,
     };
 
   return (await res.json()) as GetMyRepositoriesDataDto;

@@ -56,7 +56,7 @@ const RepositoriesTable = () => {
           searchValue={search}
           handleSearchChange={(value) => {
             setSearch(value);
-            setCurrentPage(1);
+            setCurrentPage(0);
           }}
         />
         {data !== undefined && data?.repositories.length !== 0 ? (
