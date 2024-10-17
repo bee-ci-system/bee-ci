@@ -4,9 +4,12 @@ package webhook
 import (
 	"bytes"
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
+	"log"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -19,6 +22,9 @@ import (
 	"github.com/bee-ci/bee-ci-system/internal/common/middleware"
 	"github.com/bee-ci/bee-ci-system/internal/data"
 )
+
+//go:embed redirect.html
+var redirectHTMLPage embed.FS
 
 type WebhookHandler struct {
 	httpClient *http.Client
@@ -201,10 +207,26 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		Domain: h.mainDomain,
 		Path:   "/",
 	}
+	logger.Debug("setting jwt cookie", slog.Any("cookie", jwtTokenCookie))
 
 	http.SetCookie(w, jwtTokenCookie)
 
-	http.Redirect(w, r, h.redirectURL, http.StatusSeeOther)
+	tmpl, err := template.ParseFS(redirectHTMLPage, "redirect.html")
+	if err != nil {
+		log.Fatalf("Error parsing template: %v", err)
+	}
+
+	tmplData := struct {
+		DashboardURL string
+	}{
+		DashboardURL: h.redirectURL,
+	}
+
+	err = tmpl.Execute(w, tmplData)
+	if err != nil {
+		http.Error(w, "failed to render template", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
