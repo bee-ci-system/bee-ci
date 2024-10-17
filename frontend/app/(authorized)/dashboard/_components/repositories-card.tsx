@@ -38,12 +38,12 @@ const MyRepositoriesCard = ({
       {repositories.map((repository) => (
         <div className='flex items-center gap-4' key={repository.id}>
           <div className='flex w-full justify-between'>
-            <div className='grid gap-1'>
+            <div className='flex flex-col gap-1'>
               <p className='text-sm font-medium leading-none'>
                 {repository.name}
               </p>
               <p className='text-sm text-muted-foreground'>
-                {repository.dateOfLastUpdate}
+                {repository.dateOfLastUpdate || 'no updates'}
               </p>
             </div>
             <Link
