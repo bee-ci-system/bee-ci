@@ -36,6 +36,12 @@ jobs:
             docker build -t ghcr.io/${{ github.repository }}/gh-updater:latest -f gh-updater.dockerfile .
             docker push ghcr.io/${{ github.repository }}/gh-updater:latest
 
+      - name: Build and push gh-updater image
+        run: |
+          cd backend-executor
+          docker build -t ghcr.io/${{ github.repository }}/executor:latest -f Dockerfile .
+          docker push ghcr.io/${{ github.repository }}/executor:latest
+
       - name: Build and push frontend image
         run: |
             cd frontend
