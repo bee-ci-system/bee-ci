@@ -1,14 +1,12 @@
 resource "digitalocean_droplet" "executor" {
-  name   = "vm-executor"
-  region = "sfo3"
+  name     = "vm-executor"
+  region   = "sfo3"
+  image    = "ubuntu-24-04-x64"
   size = "s-1vcpu-2gb" # doctl compute size list
-  image  = "ubuntu-24-04-x64"
-
-  ssh_keys = [digitalocean_ssh_key.default.fingerprint]
-
   volume_ids = []
-
+  tags = []
   vpc_uuid = digitalocean_vpc.default.id
+  ssh_keys = [digitalocean_ssh_key.default.fingerprint]
 
   user_data = <<-EOF
     #cloud-config
