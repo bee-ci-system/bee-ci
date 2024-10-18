@@ -1,4 +1,9 @@
-# BeeCI 🐝
+# BeeCI frontend
+
+Required env vars:
+
+- `NEXT_PUBLIC_API_URL` - URL of the API server (for example `https://bee-ci.karolak.cc/backend/api`)
+- `NEXT_PUBLIC_GITHUB_APP_CLIENT_ID` - GitHub App client ID (needed to redirect to GitHub for OAuth authentication)
 
 ## Overview
 
