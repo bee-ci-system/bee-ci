@@ -17,6 +17,7 @@ resource "digitalocean_droplet" "executor" {
 
      # From: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-22-04
      runcmd:
+      - echo "hello from cloud-init!" >> ~/hello.txt
       - sudo apt-get update
       - sudo apt-get install apt-transport-https ca-certificates curl software-properties-common
       - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg

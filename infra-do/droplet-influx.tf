@@ -17,6 +17,7 @@ resource "digitalocean_droplet" "influxdb" {
 
      # From: https://docs.influxdata.com/influxdb/v2/install/?t=Linux
      runcmd:
+      - echo "hello from cloud-init!" >> ~/hello.txt
       - curl -sL https://repos.influxdata.com/influxdb.key | sudo apt-key add -
       - echo "deb https://repos.influxdata.com/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
       - sudo apt-get update && sudo apt-get install -y influxdb2
