@@ -26,3 +26,11 @@ output "live_domain" {
 output "volume_id" {
   value = digitalocean_volume.influxdb_volume.id
 }
+
+output "droplet_executor_ip" {
+  value = digitalocean_droplet.executor.ipv4_address
+}
+
+output "droplet_influxdb_ip" {
+  value = digitalocean_droplet.influxdb.ipv4_address
+}
