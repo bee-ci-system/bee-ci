@@ -1,15 +1,10 @@
 import Cookies from 'js-cookie';
+import { apiBaseUrl } from '../_utils/constants';
 
 export const clientFetch = async (
   endpoint: string,
   options: RequestInit = {},
 ) => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-  if (!baseUrl) {
-    throw new Error('Base url is not established');
-  }
-
   const token = Cookies.get('jwt');
 
   const headers: HeadersInit = new Headers({
@@ -22,7 +17,7 @@ export const clientFetch = async (
     headers.set('Authorization', `bearer ${token}`);
   }
 
-  const response = await fetch(`${baseUrl}${endpoint}`, {
+  const response = await fetch(`${apiBaseUrl}${endpoint}`, {
     ...options,
     headers,
     cache: 'no-store',
