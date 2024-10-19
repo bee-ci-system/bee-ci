@@ -179,18 +179,19 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		err = h.userRepo.Upsert(ctx, data.NewUser{
+		newUser := data.NewUser{
 			ID:       *ghUser.ID,
 			Username: *ghUser.Login,
-		})
+		}
+		err = h.userRepo.Upsert(ctx, newUser)
 		if err != nil {
 			logger.Error("error upserting ghUser to database", slog.Any("error", err))
 			http.Error(w, "error upserting ghUser to database", http.StatusInternalServerError)
 			return
 		}
-	}
 
-	logger.Info("github user was created/updated", slog.Any("github_user", ghUser))
+		logger.Info("github user was created (or updated)", slog.Any("user", newUser))
+	}
 
 	token, err := h.createToken(*ghUser.ID)
 	if err != nil {
@@ -198,8 +199,6 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "error creating token", http.StatusInternalServerError)
 		return
 	}
-
-	logger.Debug("JWT token created", slog.String("username", *ghUser.Login), slog.String("token", token))
 
 	jwtTokenCookie := &http.Cookie{
 		Name:   "jwt",
