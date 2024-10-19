@@ -266,7 +266,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		login := *installation.Account.Login
 		userID := *installation.Account.ID
 
-		logger.Debug("app installation created "+*event.Action,
+		logger.Debug("app installation "+*event.Action,
 			slog.Any("id", installation.ID),
 			slog.String("login", login),
 		)
