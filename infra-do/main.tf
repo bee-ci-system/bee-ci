@@ -28,14 +28,23 @@ resource "digitalocean_project" "project" {
     digitalocean_app.app.urn,
     digitalocean_database_cluster.postgres.urn,
     digitalocean_database_cluster.redis.urn,
-    digitalocean_domain.old.urn,
-    digitalocean_domain.new.urn,
     digitalocean_droplet.executor.urn,
     digitalocean_droplet.influxdb.urn,
     digitalocean_volume.influxdb_volume.urn,
-    # digitalocean_domain.main.urn,
   ]
 }
+
+// General:
+//
+// CNAME bee-ci.pacia.tech      bee-ci-tf-rqd3k.ondigitalocean.app
+//
+// For Vercel:
+//
+// CNAME app.bee-ci.pacia.tech  cname.vercel-dns.com
+// TXT   _vercel.pacia.tech        vc-domain-verify=app.bee-ci.pacia.tech,9f0455b9ebb2cffa2f86
+//
+// Ideally, we can get rid of Vercel, but it's blocked by:
+// https://stackoverflow.com/questions/79029275/digital-ocean-app-platform-nextresponse-redirect-doesnt-work-status-code-2
 
 resource "digitalocean_app" "app" {
 
@@ -43,13 +52,11 @@ resource "digitalocean_app" "app" {
     name   = "bee-ci-tf"
     region = "sfo"
 
-    # domain {
-    #   # name = "beeci-backend.ondigitalocean.app"
-    #   type = "DEFAULT"
-    # }
-
+    // Requires the following record to be set on domain "pacia.tech"
+    // Type  | Hostname          | Value
+    // CNAME | bee-ci.pacia.tech | bee-ci-tf-rqd3k.ondigitalocean.app (or whatever DO generated)
     domain {
-      name = "beeci-backend.karolak.cc"
+      name = "bee-ci.pacia.tech"
       type = "PRIMARY"
     }
 
@@ -202,7 +209,6 @@ resource "digitalocean_container_registry_docker_credentials" "default" {
 }
 
 /*
-
 resource "digitalocean_domain" "main" {
   name = "bee-ci.pacia.tech"
 }
@@ -228,13 +234,4 @@ resource "digitalocean_record" "backend" {
   # value  = format("%s.", digitalocean_app.app.live_domain)
   # value = format("%s.", digitalocean_app.app.live_domain)
 }
-
 */
-
-resource "digitalocean_domain" "old" {
-  name = "bee-ci.karolak.cc"
-}
-
-resource "digitalocean_domain" "new" {
-  name = "beeci-backend.karolak.cc"
-}

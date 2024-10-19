@@ -10,12 +10,12 @@ locals {
     },
     {
       key   = "MAIN_DOMAIN",
-      value = ".karolak.cc",
+      value = ".pacia.tech",
       scope = "RUN_TIME",
     },
     {
       key   = "REDIRECT_URL",
-      value = "https://beeci.karolak.cc/dashboard",
+      value = "https://app.bee-ci.pacia.tech/dashboard",
       scope = "RUN_TIME"
     },
     /*

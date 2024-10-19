@@ -33,7 +33,9 @@ type WebhookHandler struct {
 	buildRepo  data.BuildRepo
 
 	// The domain where the auth cookie will be placed. For example
-	// ".pacia.tech" or ".karolak.cc". Must be empty for localhost.
+	// ".pacia.tech" or ".karolak.cc".
+	//
+	// Must be empty for localhost.
 	mainDomain string
 
 	// The URL the user will be redirected to after successful auth. For example
