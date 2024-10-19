@@ -25,5 +25,9 @@ export const clientFetch = async (
     cache: 'no-store',
   });
 
+  console.log(
+    `clientFetch: did fetch from: ${url}, status: ${response.status}`,
+  );
+
   return response;
 };

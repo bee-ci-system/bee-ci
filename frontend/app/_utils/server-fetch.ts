@@ -27,6 +27,10 @@ export const serverFetch = async (
     cache: 'no-store',
   });
 
+  console.log(
+    `serverFetch: did fetch from: ${url}, status: ${response.status}`,
+  );
+
   if (response.status === 401) {
     return redirect(routes.LOG_OUT);
   }
