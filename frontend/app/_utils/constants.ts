@@ -16,3 +16,6 @@ function loadGithubAppClientId(): string {
 
 export const apiBaseUrl = loadApiBaseUrl();
 export const authUrl = `https://github.com/login/oauth/authorize?client_id=${loadGithubAppClientId()}`;
+
+// Alternative URL that handles both auth+install:
+// https://github.com/apps/bee-ci-system/installations/new
