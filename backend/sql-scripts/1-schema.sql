@@ -5,18 +5,15 @@ SET search_path TO bee_schema, public;
 
 CREATE TABLE bee_schema.users
 (
-    id            BIGINT PRIMARY KEY,           -- GitHub user id
-    username      VARCHAR(255) UNIQUE NOT NULL, -- username on GitHub (yes it can change, no we don't care)
-    --installation_token VARCHAR(40) NOT NULL,
-    access_token  VARCHAR(40)         NOT NULL,
-    refresh_token VARCHAR(40)         NOT NULL
+    id       BIGINT PRIMARY KEY,          -- GitHub user id
+    username VARCHAR(255) UNIQUE NOT NULL -- username on GitHub (yes, it can change, no, we don't care)
 );
 
 CREATE TABLE bee_schema.repos
 (
-    id                      BIGINT PRIMARY KEY,                -- GitHub repo id
-    name                    VARCHAR(256)             NOT NULL, -- name on GitHub (yes, it can change, no we don't care)
-    user_id                 BIGINT                   NOT NULL,
+    id      BIGINT PRIMARY KEY,    -- GitHub repo id
+    name    VARCHAR(256) NOT NULL, -- name on GitHub (yes, it can change, no, we don't care)
+    user_id BIGINT       NOT NULL,
     FOREIGN KEY (user_id) REFERENCES bee_schema.users (id) ON DELETE CASCADE
 );
 

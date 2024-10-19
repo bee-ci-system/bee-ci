@@ -180,10 +180,8 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 		}
 
 		err = h.userRepo.Upsert(ctx, data.NewUser{
-			ID:           *ghUser.ID,
-			Username:     *ghUser.Login,
-			AccessToken:  accessToken,
-			RefreshToken: "", // GitHub doesn't provide refresh tokens for OAuth Apps
+			ID:       *ghUser.ID,
+			Username: *ghUser.Login,
 		})
 		if err != nil {
 			logger.Error("error upserting ghUser to database", slog.Any("error", err))

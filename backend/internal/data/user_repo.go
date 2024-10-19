@@ -9,24 +9,19 @@ import (
 )
 
 type NewUser struct {
-	ID           int64
-	Username     string
-	AccessToken  string
-	RefreshToken string
+	ID       int64
+	Username string
 }
 
 type User struct {
-	ID           int64  `db:"id"`
-	Username     string `db:"username"`
-	AccessToken  string `db:"access_token"`
-	RefreshToken string `db:"refresh_token"`
+	ID       int64  `db:"id"`
+	Username string `db:"username"`
 }
 
 func (u User) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.Int64("id", u.ID),
 		slog.String("username", u.Username),
-		slog.String("access_token[:5]", u.AccessToken[:5]),
 	)
 }
 
@@ -42,18 +37,16 @@ type PostgresUserRepo struct {
 
 func (p PostgresUserRepo) Upsert(ctx context.Context, user NewUser) (err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
-		INSERT INTO bee_schema.users (id, username, access_token, refresh_token)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO bee_schema.users (id, username)
+		VALUES ($1, $2)
 		ON CONFLICT (id) DO UPDATE
-		SET username = EXCLUDED.username,
-			access_token = EXCLUDED.access_token,
-			refresh_token = EXCLUDED.refresh_token
+		SET username = EXCLUDED.username
 	`)
 	if err != nil {
 		return fmt.Errorf("preparing query: %v", err)
 	}
 
-	_, err = stmt.ExecContext(ctx, user.ID, user.Username, user.AccessToken, user.RefreshToken)
+	_, err = stmt.ExecContext(ctx, user.ID, user.Username)
 	if err != nil {
 		return fmt.Errorf("executing INSERT query: %v", err)
 	}
@@ -63,7 +56,7 @@ func (p PostgresUserRepo) Upsert(ctx context.Context, user NewUser) (err error) 
 
 func (p PostgresUserRepo) Get(ctx context.Context, id int64) (user User, err error) {
 	stmt, err := p.db.PreparexContext(ctx, `
-		SELECT id, username, access_token, refresh_token
+		SELECT id, username
 		FROM bee_schema.users
 		WHERE id = $1
 	`)

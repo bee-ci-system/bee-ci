@@ -6,8 +6,8 @@ SET search_path TO bee_schema, public;
 
 -- user charlie
 
-INSERT INTO bee_schema.users (id, username, access_token, refresh_token)
-VALUES (-100, 'bee-ci-system', 'access_token', 'refresh_token');
+INSERT INTO bee_schema.users (id, username)
+VALUES (-100, 'bee-ci-system');
 
 INSERT INTO bee_schema.repos (id, name, user_id)
 VALUES (-200, 'example-using-beeci', -100),
@@ -27,8 +27,8 @@ VALUES (-201, '0262a10fb0590f29471feed5ecf53b418b5b0d67', 'c_bravo commit 2', 0,
 
 -- user johnny
 
-INSERT INTO bee_schema.users (id, username, access_token, refresh_token)
-VALUES (-101, 'johnny', 'access_token', 'refresh_token');
+INSERT INTO bee_schema.users (id, username)
+VALUES (-101, 'johnny');
 
 INSERT INTO bee_schema.repos (id, name, user_id)
 VALUES (-203, 'j_alpha_repo', -101),
