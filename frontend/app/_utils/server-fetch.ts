@@ -1,12 +1,22 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { apiBaseUrl } from '../_utils/constants';
 import { routes } from './routes';
 
 export const serverFetch = async (
   endpoint: string,
   options: RequestInit = {},
 ) => {
+  let apiBaseUrl = process.env.API_URL_SERVER_OVERRIDE;
+  if (!apiBaseUrl) {
+    apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+
+  if (!apiBaseUrl) {
+    throw new Error(
+      'Neither NEXT_PUBLIC_API_BASE_URL nor API_URL_SERVER_OVERRIDE is set',
+    );
+  }
+
   const token = cookies().get('jwt');
 
   const headers: HeadersInit = new Headers({
