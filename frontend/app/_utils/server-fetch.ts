@@ -1,16 +1,12 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { apiBaseUrl } from '../_utils/constants';
 import { routes } from './routes';
 
 export const serverFetch = async (
   endpoint: string,
   options: RequestInit = {},
 ) => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-  if (!baseUrl) {
-    throw new Error('Base url is not established');
-  }
   const token = cookies().get('jwt');
 
   const headers: HeadersInit = new Headers({
@@ -23,7 +19,7 @@ export const serverFetch = async (
     headers.set('Cookie', `jwt=${token.value}`);
   }
 
-  const url = `${baseUrl}${endpoint}`;
+  const url = `${apiBaseUrl}${endpoint}`;
   console.log(`serverFetch: will fetch from: ${url}`);
   const response = await fetch(url, {
     ...options,

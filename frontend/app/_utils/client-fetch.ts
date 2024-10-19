@@ -17,7 +17,9 @@ export const clientFetch = async (
     headers.set('Authorization', `bearer ${token}`);
   }
 
-  const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+  const url = `${apiBaseUrl}${endpoint}`;
+  console.log(`clientFetch: will fetch from: ${url}`);
+  const response = await fetch(url, {
     ...options,
     headers,
     cache: 'no-store',
