@@ -4,6 +4,11 @@ services:
     init: true
     ports:
       - "3000:3000"
+    environment:
+      # Reason for override:
+      #  * Requests from server cannot access host "localhost"
+      #  * Requests from user agent cannot access host "server"
+      API_URL_SERVER_OVERRIDE: http://server:8080/api
 
   server:
     build:
