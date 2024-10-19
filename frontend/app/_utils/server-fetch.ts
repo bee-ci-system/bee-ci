@@ -23,7 +23,9 @@ export const serverFetch = async (
     headers.set('Cookie', `jwt=${token.value}`);
   }
 
-  const response = await fetch(`${baseUrl}${endpoint}`, {
+  const url = `${baseUrl}${endpoint}`;
+  console.log(`serverFetch: will fetch from: ${url}`);
+  const response = await fetch(url, {
     ...options,
     headers,
     cache: 'no-store',
