@@ -120,5 +120,10 @@ locals {
       value = digitalocean_database_cluster.redis.password
       scope = "RUN_TIME"
     },
+    {
+      key   = "REDIS_USE_TLS",
+      value = "true"
+      scope = "RUN_TIME"
+    }
   ]
 }

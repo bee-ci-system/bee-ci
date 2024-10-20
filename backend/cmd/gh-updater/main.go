@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"log/slog"
@@ -58,10 +59,17 @@ func main() {
 
 	redisAddr := mustGetenv("REDIS_ADDRESS")
 	redisPassword := mustGetenv("REDIS_PASSWORD")
+
+	var tlsConfig *tls.Config
+	if mustGetenv("REDIS_USE_TLS") == "true" {
+		tlsConfig = &tls.Config{}
+	}
+
 	redisDB := redis.NewClient(&redis.Options{
-		Addr:     redisAddr,
-		Password: redisPassword,
-		DB:       0, // use default DB
+		Addr:      redisAddr,
+		Password:  redisPassword,
+		TLSConfig: tlsConfig,
+		DB:        0, // use default DB
 	})
 
 	err = redisDB.Ping(ctx).Err()

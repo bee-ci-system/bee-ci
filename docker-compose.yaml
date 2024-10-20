@@ -63,13 +63,14 @@ services:
       DB_OPTS: sslmode=disable # sslmode=require for prod
       REDIS_ADDRESS: ${REDIS_ADDRESS}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_USE_TLS: false
 
   database-redis:
     image: redis:7.4-alpine3.20
     volumes:
       - bee-redis-data:/data
     healthcheck:
-      test: [ "CMD", "redis-cli","ping" ]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 3s
       timeout: 3s
       retries: 3

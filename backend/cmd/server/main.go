@@ -49,7 +49,7 @@ func main() {
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s %s", dbHost, dbPort, dbUser, dbPassword, dbName, dbOpts)
 	db, err := sqlx.Connect("postgres", psqlInfo)
 	if err != nil {
-		slog.Error("error connecting to database", slog.Any("error", err))
+		slog.Error("error connecting to Postgres database", slog.Any("error", err))
 		os.Exit(1)
 	}
 	slog.Info("connected to Postgres database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
