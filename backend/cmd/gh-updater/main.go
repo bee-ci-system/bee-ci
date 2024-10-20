@@ -64,6 +64,13 @@ func main() {
 		DB:       0, // use default DB
 	})
 
+	err = redisDB.Ping(ctx).Err()
+	if err != nil {
+		slog.Error("error connecting to Redis database", slog.Any("error", err))
+		os.Exit(1)
+	}
+	slog.Info("connected to Redis database", "address", redisAddr)
+
 	buildRepo := data.NewPostgresBuildRepo(postgresDB)
 	userRepo := data.NewPostgresUserRepo(postgresDB)
 	repoRepo := data.NewPostgresRepoRepo(postgresDB)
