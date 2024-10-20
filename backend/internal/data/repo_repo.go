@@ -61,15 +61,10 @@ func (p PostgresRepoRepo) Delete(ctx context.Context, ids []int64) (err error) {
 		})
 	}
 
-	stmt, err := p.db.PrepareNamedContext(ctx, `
+	_, err = p.db.NamedExecContext(ctx, `
 		DELETE FROM bee_schema.repos
 		WHERE id = :id
-	`)
-	if err != nil {
-		return fmt.Errorf("preparing query: %v", err)
-	}
-
-	_, err = stmt.ExecContext(ctx, idsInStruct)
+	`, idsInStruct)
 	if err != nil {
 		return fmt.Errorf("executing DELETE query: %v", err)
 	}

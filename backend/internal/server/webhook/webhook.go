@@ -274,7 +274,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			err = h.repoRepo.Create(r.Context(), repos)
 			if err != nil {
 				logger.Error("error creating repositories", slog.Any("error", err))
-				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "error creating repositories", http.StatusInternalServerError)
 				break
 			}
 		} else if *event.Action == "deleted" {
@@ -302,7 +302,10 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			err = h.repoRepo.Create(r.Context(), repos)
 			if err != nil {
 				logger.Error("error creating repositories", slog.Any("error", err))
+				http.Error(w, "error creating repositories", http.StatusInternalServerError)
+				break
 			}
+			_, _ = w.Write([]byte(fmt.Sprintf("added %d repositories", len(repos))))
 		case "removed":
 			// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation_repositories/removed.payload.json
 			removedRepositories := event.RepositoriesRemoved
@@ -315,7 +318,10 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			err = h.repoRepo.Delete(r.Context(), repoIDs)
 			if err != nil {
 				logger.Error("error deleting repositories", slog.Any("error", err))
+				http.Error(w, "error deleting repositories", http.StatusInternalServerError)
+				break
 			}
+			_, _ = w.Write([]byte(fmt.Sprintf("removed %d repositories\n", len(removedRepositories))))
 		}
 	case *github.CheckSuiteEvent:
 		// Create build
@@ -344,9 +350,11 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				logger.Error("failed to create build", slog.Any("error", err))
 				// TODO: handle error in a better way – update status on GitHub
+				http.Error(w, fmt.Sprintf("failed to create build: %v", err), http.StatusInternalServerError)
 				return
 			}
 			logger.Debug("build created", slog.Int64("build_id", buildID))
+			_, _ = w.Write([]byte("build created, ID: " + strconv.FormatInt(buildID, 10)))
 		}
 
 	default:
