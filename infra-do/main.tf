@@ -21,7 +21,7 @@ provider "digitalocean" {
 }
 
 resource "digitalocean_project" "project" {
-  name        = "bee-ci-proj-tf"
+  name        = "bee-ci-project"
   description = "A simple container-based CI system"
   environment = "Development"
   resources = [
@@ -49,7 +49,7 @@ resource "digitalocean_project" "project" {
 resource "digitalocean_app" "app" {
 
   spec {
-    name   = "bee-ci-tf"
+    name   = "bee-ci-app"
     region = "sfo"
 
     // Requires the following record to be set on domain "pacia.tech"
@@ -197,7 +197,8 @@ resource "digitalocean_app" "app" {
   }
 }
 
-
+/*
+Disabled: we deploy directly from GitHub
 resource "digitalocean_container_registry" "default" {
   name   = "bee-ci-container-registry"
   subscription_tier_slug = "basic" # $5/month
@@ -207,6 +208,7 @@ resource "digitalocean_container_registry" "default" {
 resource "digitalocean_container_registry_docker_credentials" "default" {
   registry_name = "bee-ci-container-registry"
 }
+ */
 
 /*
 resource "digitalocean_domain" "main" {

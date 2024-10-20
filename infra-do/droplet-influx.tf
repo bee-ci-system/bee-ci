@@ -1,12 +1,13 @@
 resource "digitalocean_droplet" "influxdb" {
-  name     = "vm-influx"
-  region   = "sfo3"
-  image    = "ubuntu-24-04-x64"
+  name          = "vm-influx"
+  region        = "sfo3"
+  image         = "ubuntu-24-04-x64"
   size = "s-1vcpu-512mb-10gb" # doctl compute size list
   volume_ids = [digitalocean_volume.influxdb_volume.id]
   tags = []
-  vpc_uuid = digitalocean_vpc.default.id
+  vpc_uuid      = digitalocean_vpc.default.id
   ssh_keys = [digitalocean_ssh_key.default.fingerprint]
+  droplet_agent = true
 
   user_data = <<-EOF
     #cloud-config
@@ -14,12 +15,26 @@ resource "digitalocean_droplet" "influxdb" {
     package_upgrade: true
     packages:
       - curl
+      - micro
+      - bat
 
-     # From: https://docs.influxdata.com/influxdb/v2/install/?t=Linux
-     runcmd:
-      - echo "hello from cloud-init!" >> ~/hello.txt
-      - curl -sL https://repos.influxdata.com/influxdb.key | sudo apt-key add -
-      - echo "deb https://repos.influxdata.com/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
+# Ubuntu and Debian
+  # Add the InfluxData key to verify downloads and add the repository
+
+
+
+
+    # Install influxdb
+
+
+
+    # From: https://docs.influxdata.com/influxdb/v2/install
+    runcmd:
+      - echo "hello from cloud-init! started! pwd is: $(pwd)" >> /root/hello.txt
+
+      # Install InfluxDB
+      - curl --silent --location -O https://repos.influxdata.com/influxdata-archive.key
+      - echo "943666881a1b8d9b849b74caebf02d3465d6beb716510d86a39f6c8e8dac7515 influxdata-archive.key" | sha256sum --check - && cat influxdata-archive.key | gpg --dearmor | tee /etc/apt/trusted.gpg.d/influxdata-archive.gpg > /dev/null && echo 'deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive.gpg] https://repos.influxdata.com/debian stable main' | tee /etc/apt/sources.list.d/influxdata.list
       - sudo apt-get update && sudo apt-get install -y influxdb2
 
       # Mount the volume to /var/lib/influxdb2
@@ -42,7 +57,8 @@ resource "digitalocean_droplet" "influxdb" {
       # Restart InfluxDB to apply storage and initialization changes
       - sudo systemctl enable influxdb
       - sudo systemctl restart influxdb
-  EOF
+      - echo "hello from cloud-init! done!" >> /root/hello.txt
+    EOF
 }
 
 resource "digitalocean_volume" "influxdb_volume" {
