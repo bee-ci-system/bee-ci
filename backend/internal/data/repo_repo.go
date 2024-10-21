@@ -23,7 +23,7 @@ func (r Repo) LogValue() slog.Value {
 }
 
 type RepoRepo interface {
-	Create(ctx context.Context, repo []Repo) (err error)
+	Upsert(ctx context.Context, repo []Repo) (err error)
 	Delete(ctx context.Context, id []int64) (err error)
 	Get(ctx context.Context, id int64) (repo *Repo, err error)
 
@@ -37,11 +37,15 @@ type PostgresRepoRepo struct {
 	db *sqlx.DB
 }
 
-func (p PostgresRepoRepo) Create(ctx context.Context, repos []Repo) (err error) {
+func (p PostgresRepoRepo) Upsert(ctx context.Context, repos []Repo) (err error) {
 	_, err = p.db.NamedExecContext(
 		ctx,
 		`INSERT INTO bee_schema.repos (id, name, user_id)
-		VALUES (:id, :name, :user_id)`,
+		VALUES (:id, :name, :user_id)
+		ON CONFLICT (id) DO UPDATE SET
+		name = EXCLUDED.name,
+		user_id = EXCLUDED.user_id
+		`,
 		repos,
 	)
 	if err != nil {
