@@ -34,7 +34,7 @@ func main() {
 	mainDomain := os.Getenv("MAIN_DOMAIN")
 	redirectURL := mustGetenv("REDIRECT_URL")
 
-	slog.Debug("server is starting", slog.String("server_url", serverURL), slog.String("port", port))
+	slog.Debug("server is starting...")
 
 	githubAppClientID := mustGetenv("GITHUB_APP_CLIENT_ID")
 	githubAppWebhookSecret := mustGetenv("GITHUB_APP_WEBHOOK_SECRET")
