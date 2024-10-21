@@ -255,6 +255,14 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	case *github.GitHubAppAuthorizationEvent:
 		// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/github_app_authorization/revoked.payload.json
 
+		installation := event.Installation
+
+		logger.Debug("new webhook event",
+			slog.String("event", eventType),
+			slog.String("action", *event.Action),
+			slog.Any("installation.id", installation.ID),
+		)
+
 		// TODO: What to do when user revokes their authorization?
 		//  Idea 1: delete their all data. Problem: installation still exists?
 		//  Idea 2: kill their all JWTs and require reauthorization on next dashboard visit? Also stop running all their flows.
@@ -263,9 +271,12 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		login := *installation.Account.Login
 		userID := *installation.Account.ID
 
-		logger.Debug("app installation "+*event.Action,
-			slog.Any("id", installation.ID),
-			slog.String("login", login),
+		logger.Debug("new webhook event",
+			slog.String("event", eventType),
+			slog.String("action", *event.Action),
+			slog.Any("installation.id", installation.ID),
+			slog.String("user.name", login),
+			slog.Int64("user.id", userID),
 		)
 
 		if *event.Action == "created" {
@@ -287,11 +298,14 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			// TODO: Delete all repos for this user
 		}
 	case *github.InstallationRepositoriesEvent:
+		installation := *event.Installation
 		userID := *event.Sender.ID
-		installationID := *event.Installation.ID
 
-		logger.Debug("repositories "+*event.Action,
-			slog.Int64("installation_id", installationID),
+		logger.Debug("new webhook event",
+			slog.String("event", eventType),
+			slog.String("action", *event.Action),
+			slog.Any("installation.id", installation.ID),
+			slog.Int64("sender.id", userID),
 		)
 
 		switch *event.Action {
@@ -324,8 +338,17 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			_, _ = w.Write([]byte(fmt.Sprintf("removed %d repositories\n", len(removedRepositories))))
 		}
 	case *github.CheckSuiteEvent:
-		// Create build
+		installation := *event.Installation
+		userID := *event.Sender.ID
 
+		logger.Debug("new webhook event",
+			slog.String("event", eventType),
+			slog.String("action", *event.Action),
+			slog.Any("installation.id", installation.ID),
+			slog.Int64("sender.id", userID),
+		)
+
+		// Create build
 		if *event.Action == "requested" || *event.Action == "rerequested" {
 			// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/check_suite/requested.payload.json
 

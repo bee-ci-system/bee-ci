@@ -52,23 +52,20 @@ func (p PostgresRepoRepo) Create(ctx context.Context, repos []Repo) (err error) 
 }
 
 func (p PostgresRepoRepo) Delete(ctx context.Context, ids []int64) (err error) {
-	idsInStruct := make([]interface{}, 0, len(ids))
-	for _, i := range ids {
-		idsInStruct = append(idsInStruct, struct {
-			ID int64 `db:"id"`
-		}{
-			ID: i,
-		})
+	query, args, err := sqlx.In(`
+		DELETE FROM bee_schema.repos
+       	WHERE id IN (?)
+	`, ids)
+	if err != nil {
+		return fmt.Errorf("preparing query with IN clause: %v", err)
 	}
 
-	_, err = p.db.NamedExecContext(ctx, `
-		DELETE FROM bee_schema.repos
-		WHERE id = :id
-	`, idsInStruct)
+	query = p.db.Rebind(query)
+
+	_, err = p.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return fmt.Errorf("executing DELETE query: %v", err)
 	}
-
 	return nil
 }
 

@@ -50,24 +50,31 @@ func WithCORS(next http.Handler) http.Handler {
 
 func WithLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ipAddr := r.Header.Get("X-Real-Ip")
+		if ipAddr == "" {
+			ipAddr = r.Header.Get("X-Forwarded-For")
+		}
+		if ipAddr == "" {
+			ipAddr = r.RemoteAddr
+		}
+
 		logger := slog.With(slog.String("request_id", makeRequestID()))
 
-		props := []any{
+		logger.Debug("new request",
+			slog.String("from", ipAddr),
 			slog.String("method", r.Method),
 			slog.String("path", r.URL.Path),
-		}
-		if r.Header.Get("X-GitHub-Event") != "" {
-			props = append(props, slog.String("event", r.Header.Get("X-GitHub-Event")))
-		}
-		logger.Debug("new request", props...)
+		)
 
 		ctx := r.Context()
 		ctx = l.WithLogger(ctx, logger)
 		r = r.Clone(ctx)
 
 		metrics := httpsnoop.CaptureMetrics(next, w, r) // this calls next.ServeHTTP
-		props = append(props, slog.Int("code", metrics.Code))
-		props = append(props, slog.String("duration", metrics.Duration.String()))
+		props := []any{
+			slog.Int("code", metrics.Code),
+			slog.String("duration", metrics.Duration.String()),
+		}
 
 		if metrics.Code < 200 || metrics.Code >= 300 {
 			logger.Warn("request failed", props...)
