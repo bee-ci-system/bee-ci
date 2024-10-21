@@ -24,7 +24,6 @@ var jwtSecret = []byte("your-very-secret-key")
 
 func main() {
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-	_ = ctx
 
 	slog.SetDefault(setUpLogging())
 

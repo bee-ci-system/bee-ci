@@ -18,16 +18,6 @@ resource "digitalocean_droplet" "influxdb" {
       - micro
       - bat
 
-# Ubuntu and Debian
-  # Add the InfluxData key to verify downloads and add the repository
-
-
-
-
-    # Install influxdb
-
-
-
     # From: https://docs.influxdata.com/influxdb/v2/install
     runcmd:
       - echo "hello from cloud-init! started! pwd is: $(pwd)" >> /root/hello.txt
