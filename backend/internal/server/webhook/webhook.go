@@ -283,7 +283,6 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		)
 
 		if *event.Action == "created" {
-			// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation/created.payload.json
 			repos := mapRepos(userID, event.Repositories)
 			err = h.repoRepo.Upsert(r.Context(), repos)
 			if err != nil {
@@ -292,12 +291,20 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		} else if *event.Action == "deleted" {
-			logger.Debug("app installation deleted",
-				slog.Int64("installation.id", *installation.ID),
-				slog.String("login", login),
-			)
+			removedRepositories := event.Repositories
 
-			// TODO: Delete all repos for this user
+			repoIDs := make([]int64, 0, len(removedRepositories))
+			for _, removedRepository := range removedRepositories {
+				repoIDs = append(repoIDs, *removedRepository.ID)
+			}
+
+			err = h.repoRepo.Delete(r.Context(), repoIDs)
+			if err != nil {
+				logger.Error("error deleting repositories", slog.Any("error", err))
+				http.Error(w, "error deleting repositories", http.StatusInternalServerError)
+				break
+			}
+			_, _ = w.Write([]byte(fmt.Sprintf("removed %d repositories\n", len(removedRepositories))))
 		}
 	case *github.InstallationRepositoriesEvent:
 		// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation_repositories/added.payload.json
