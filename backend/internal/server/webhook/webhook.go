@@ -260,13 +260,16 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		logger.Debug("new webhook event",
 			slog.String("event", eventType),
 			slog.String("action", *event.Action),
-			slog.Any("installation.id", installation.ID),
+			slog.Int64("installation.id", *installation.ID),
 		)
 
 		// TODO: What to do when user revokes their authorization?
 		//  Idea 1: delete their all data. Problem: installation still exists?
 		//  Idea 2: kill their all JWTs and require reauthorization on next dashboard visit? Also stop running all their flows.
 	case *github.InstallationEvent:
+		// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation/created.payload.json
+		// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation/deleted.payload.json
+
 		installation := event.Installation
 		login := *installation.Account.Login
 		userID := *installation.Account.ID
@@ -274,7 +277,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		logger.Debug("new webhook event",
 			slog.String("event", eventType),
 			slog.String("action", *event.Action),
-			slog.Any("installation.id", installation.ID),
+			slog.Int64("installation.id", *installation.ID),
 			slog.String("user.name", login),
 			slog.Int64("user.id", userID),
 		)
@@ -282,38 +285,39 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		if *event.Action == "created" {
 			// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation/created.payload.json
 			repos := mapRepos(userID, event.Repositories)
-			err = h.repoRepo.Create(r.Context(), repos)
+			err = h.repoRepo.Upsert(r.Context(), repos)
 			if err != nil {
 				logger.Error("error creating repositories", slog.Any("error", err))
 				http.Error(w, "error creating repositories", http.StatusInternalServerError)
 				break
 			}
 		} else if *event.Action == "deleted" {
-			// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation/deleted.payload.json
 			logger.Debug("app installation deleted",
-				slog.Any("id", installation.ID),
+				slog.Int64("installation.id", *installation.ID),
 				slog.String("login", login),
 			)
 
 			// TODO: Delete all repos for this user
 		}
 	case *github.InstallationRepositoriesEvent:
+		// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation_repositories/added.payload.json
+		// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation_repositories/removed.payload.json
+
 		installation := *event.Installation
 		userID := *event.Sender.ID
 
 		logger.Debug("new webhook event",
 			slog.String("event", eventType),
 			slog.String("action", *event.Action),
-			slog.Any("installation.id", installation.ID),
+			slog.Int64("installation.id", *installation.ID),
 			slog.Int64("sender.id", userID),
 		)
 
 		switch *event.Action {
 		case "added":
-			// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation_repositories/added.payload.json
 			addedRepositories := event.RepositoriesAdded
 			repos := mapRepos(userID, addedRepositories)
-			err = h.repoRepo.Create(r.Context(), repos)
+			err = h.repoRepo.Upsert(r.Context(), repos)
 			if err != nil {
 				logger.Error("error creating repositories", slog.Any("error", err))
 				http.Error(w, "error creating repositories", http.StatusInternalServerError)
@@ -321,7 +325,6 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			}
 			_, _ = w.Write([]byte(fmt.Sprintf("added %d repositories", len(repos))))
 		case "removed":
-			// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/installation_repositories/removed.payload.json
 			removedRepositories := event.RepositoriesRemoved
 
 			repoIDs := make([]int64, 0, len(removedRepositories))
@@ -338,20 +341,20 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			_, _ = w.Write([]byte(fmt.Sprintf("removed %d repositories\n", len(removedRepositories))))
 		}
 	case *github.CheckSuiteEvent:
+		// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/check_suite/requested.payload.json
+
 		installation := *event.Installation
 		userID := *event.Sender.ID
 
 		logger.Debug("new webhook event",
 			slog.String("event", eventType),
 			slog.String("action", *event.Action),
-			slog.Any("installation.id", installation.ID),
+			slog.Int64("installation.id", *installation.ID),
 			slog.Int64("sender.id", userID),
 		)
 
 		// Create build
 		if *event.Action == "requested" || *event.Action == "rerequested" {
-			// Payload: https://github.com/octokit/webhooks/blob/main/payload-examples/api.github.com/check_suite/requested.payload.json
-
 			headSHA := *event.CheckSuite.HeadSHA
 			message := *event.CheckSuite.HeadCommit.Message
 			installationID := *event.Installation.ID
