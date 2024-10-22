@@ -30,6 +30,7 @@ type Updater struct {
 	userRepo      data.UserRepo
 	buildRepo     data.BuildRepo
 	githubService *ghs.GithubService
+	dashboardURL  string
 }
 
 func New(
@@ -38,6 +39,7 @@ func New(
 	userRepo data.UserRepo,
 	buildRepo data.BuildRepo,
 	githubService *ghs.GithubService,
+	dashboardURL string,
 ) *Updater {
 	return &Updater{
 		logger:        slog.Default(), // TODO: add some "subsystem name" to this logger
@@ -48,6 +50,7 @@ func New(
 		userRepo:      userRepo,
 		buildRepo:     buildRepo,
 		githubService: githubService,
+		dashboardURL:  dashboardURL,
 	}
 }
 
@@ -120,7 +123,7 @@ func (u Updater) Start(ctx context.Context) error {
 func (u Updater) createCheckRun(ctx context.Context, build data.Build) (checkRunID int64, err error) {
 	repo, err := u.repoRepo.Get(ctx, build.RepoID)
 	if err != nil {
-		return 0, fmt.Errorf("ger repo: %w", err)
+		return 0, fmt.Errorf("get repo: %w", err)
 	}
 
 	user, err := u.userRepo.Get(ctx, repo.UserID)
@@ -137,7 +140,7 @@ func (u Updater) createCheckRun(ctx context.Context, build data.Build) (checkRun
 		// TODO: Get name from the BeeCI config file?
 		Name:        build.CommitMsg + ", started at: " + fmt.Sprint(time.Now().Format(time.RFC822Z)),
 		HeadSHA:     build.CommitSHA,
-		DetailsURL:  github.String("https://bee-ci.vercel.app/dashboad/"), // TODO: Use actual URL of the backend
+		DetailsURL:  github.String(fmt.Sprintf("%s/pipeline/%d", u.dashboardURL, build.ID)),
 		ExternalID:  github.String(strconv.FormatInt(build.ID, 10)),
 		Status:      github.String(build.Status),
 		Conclusion:  nil,

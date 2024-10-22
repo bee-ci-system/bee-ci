@@ -30,6 +30,8 @@ func main() {
 	slog.SetDefault(setUpLogging())
 	slog.Debug("gh-updater is starting")
 
+	dashboardURL := mustGetenv("REDIRECT_URL")
+
 	githubAppID := mustGetenvInt64("GITHUB_APP_ID")
 	privateKeyBase64 := mustGetenv("GITHUB_APP_PRIVATE_KEY_BASE64")
 	privateKey, err := base64.StdEncoding.DecodeString(privateKeyBase64)
@@ -88,7 +90,7 @@ func main() {
 	minReconnectInterval := 10 * time.Second
 	maxReconnectInterval := time.Minute
 	dbListener := pq.NewListener(psqlInfo, minReconnectInterval, maxReconnectInterval, nil)
-	ghUpdater := updater.New(dbListener, repoRepo, userRepo, buildRepo, githubService)
+	ghUpdater := updater.New(dbListener, repoRepo, userRepo, buildRepo, githubService, dashboardURL)
 
 	err = ghUpdater.Start(ctx)
 	if err != nil {
