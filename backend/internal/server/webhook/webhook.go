@@ -364,12 +364,11 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		if *event.Action == "requested" || *event.Action == "rerequested" {
 			headSHA := *event.CheckSuite.HeadSHA
 			message := *event.CheckSuite.HeadCommit.Message
-			installationID := *event.Installation.ID
 
 			logger.Debug(fmt.Sprintf("check suite %s", *event.Action),
 				slog.String("owner", *event.Repo.Owner.Login),
 				slog.String("removedRepository", *event.Repo.Name),
-				slog.Int64("installation_id", installationID),
+				slog.Int64("installation_id", *installation.ID),
 				slog.String("head_sha", headSHA),
 			)
 
@@ -378,7 +377,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				RepoID:         *event.Repo.ID,
 				CommitSHA:      headSHA,
 				CommitMsg:      message,
-				InstallationID: installationID,
+				InstallationID: *installation.ID,
 			})
 			if err != nil {
 				logger.Error("failed to create build", slog.Any("error", err))
