@@ -20,7 +20,8 @@ RUN echo "NEXT_PUBLIC_GITHUB_APP_CLIENT_ID=Iv23liiZSvMGEpgOlexa" >> .env.local
 # As of now, this Dockerfile is only used for running locally with Docker Compose. So localhost is fine.
 # RUN echo "NEXT_PUBLIC_API_BASE_URL=https://bee-ci.karolak.cc/backend/api" >> .env.local
 # RUN echo "NEXT_PUBLIC_API_BASE_URL=http://server:8080/api" >> .env.local
-RUN echo "NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api" >> .env.local
+# RUN echo "NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api" >> .env.local
+RUN echo "NEXT_PUBLIC_API_BASE_URL=https://bee-ci.pacia.tech/backend/api" >> .env.local
 
 RUN pnpm build
 
