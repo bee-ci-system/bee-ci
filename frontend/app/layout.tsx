@@ -33,3 +33,6 @@ export default function RootLayout({
     </html>
   );
 }
+
+// Workaround for https://stackoverflow.com/q/79029275/7009800
+export const dynamic = 'force-dynamic';
