@@ -62,7 +62,6 @@ resource "digitalocean_app" "app" {
 
     ingress {
 
-      /*
       rule {
         component {
           name = "frontend"
@@ -73,7 +72,6 @@ resource "digitalocean_app" "app" {
           }
         }
       }
-       */
 
       rule {
         component {
@@ -105,10 +103,9 @@ resource "digitalocean_app" "app" {
     }
      */
 
-    /*
     service {
-      name               = "frontend"
-      instance_count     = 1
+      name           = "frontend"
+      instance_count = 1
       instance_size_slug = "apps-s-1vcpu-0.5gb" # doctl apps tier instance-size list
 
       http_port = 3000
@@ -131,7 +128,6 @@ resource "digitalocean_app" "app" {
         failure_threshold     = 3
       }
     }
-    */
 
     service {
       name               = "server"
