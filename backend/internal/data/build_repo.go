@@ -212,6 +212,7 @@ func (p PostgresBuildRepo) GetAllByUserID(ctx context.Context, userID int64) (bu
          		JOIN bee_schema.repos repos ON builds.repo_id = repos.id
          		JOIN bee_schema.users users ON repos.user_id = users.id
          		WHERE users.id = $1
+         		ORDER BY builds.created_at DESC
 		 	`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("executing SELECT query for userID %d: %v", userID, err)
@@ -231,6 +232,7 @@ func (p PostgresBuildRepo) GetAllByRepoID(ctx context.Context, userID, repoID in
          		JOIN bee_schema.repos repos ON builds.repo_id = repos.id
          		JOIN bee_schema.users users ON repos.user_id = users.id
          		WHERE users.id = $1 AND repos.id = $2
+         		ORDER BY builds.created_at DESC
 		 	`, userID, repoID)
 	if err != nil {
 		return nil, fmt.Errorf("executing SELECT query for userID %d and repo ID %d: %v", userID, repoID, err)
@@ -250,6 +252,7 @@ func (p PostgresBuildRepo) GetLatestByRepoID(ctx context.Context, userID, repoID
 				JOIN bee_schema.repos repos ON builds.repo_id = repos.id
 				JOIN bee_schema.users users ON repos.user_id = users.id
 				WHERE users.id = $1 AND repos.id = $2
+				ORDER BY builds.created_at DESC
 				LIMIT 1
 		`, userID, repoID)
 	if err != nil {
