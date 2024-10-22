@@ -31,7 +31,8 @@ func main() {
 	}
 	slog.Info("connected to Influx database", "url", influxURL)
 
-	query := fmt.Sprintf("from(bucket: \"%s\") |> range(start: -1h) |> filter(fn: (r) => r[\"_measurement\"] == \"%d", influxBucket, buildID)
+	query := fmt.Sprintf("from(bucket: \"%s\") |> range(start: -1h) |> filter(fn: (r) => r[\"_measurement\"] == \"%d\")", influxBucket, buildID)
+	fmt.Println("will execute query:", query)
 	queryAPI := influxClient.QueryAPI(influxOrg)
 	queryResult, err := queryAPI.Query(ctx, query)
 	if err != nil {
