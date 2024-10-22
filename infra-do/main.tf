@@ -85,24 +85,6 @@ resource "digitalocean_app" "app" {
       }
     }
 
-    /*
-    database {
-      engine       = "PG"
-      name         = digitalocean_database_db.postgres.name
-      db_name      = digitalocean_database_db.postgres.name
-      cluster_name = digitalocean_database_cluster.postgres.name
-      production   = true
-    }
-
-    database {
-      engine       = "REDIS"
-      name         = digitalocean_database_db.redis.name
-      db_name      = digitalocean_database_db.postgres.name
-      cluster_name = digitalocean_database_cluster.postgres.name
-      production   = true
-    }
-     */
-
     service {
       name           = "frontend"
       instance_count = 1
