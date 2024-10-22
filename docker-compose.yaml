@@ -36,10 +36,10 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
       DB_OPTS: sslmode=disable # sslmode=require for prod
-      INFLUXDB_URL: http://database-influx:8086
-      INFLUXDB_TOKEN: 9uNp_AJQknsl8OWY65VGyAVZ0wpLXrm9Ep9_4L4-LJJWkP4HJxQvgMCd0vIElfFVU-9cIMdPgPGuUZvaDJsn5g==
-      INFLUXDB_ORG: beeci
-      INFLUXDB_BUCKET: home
+      INFLUXDB_URL: ${INFLUXDB_URL}
+      INFLUXDB_TOKEN: ${INFLUXDB_TOKEN}
+      INFLUXDB_ORG: ${INFLUXDB_ORG}
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
       INFLUXDB_ENABLED: true
 
   gh-updater:
