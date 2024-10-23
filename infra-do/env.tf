@@ -15,7 +15,7 @@ locals {
     },
     {
       key   = "REDIRECT_URL",
-      value = "https://app.bee-ci.pacia.tech/dashboard",
+      value = "https://bee-ci.pacia.tech/dashboard",
       scope = "RUN_TIME"
     },
     /*
