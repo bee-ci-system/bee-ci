@@ -20,7 +20,7 @@ resource "digitalocean_droplet" "executor" {
 
     # From: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-22-04
     runcmd:
-      - echo "hello from cloud-init on executor! started! pwd is: $(pwd)" >> /root/hello.txt
+      - 'echo "hello from cloud-init on executor! started! pwd is: $(pwd)" >> /root/hello.txt'
 
     final_message: "executor ready!"
     EOF

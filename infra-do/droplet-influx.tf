@@ -20,7 +20,7 @@ resource "digitalocean_droplet" "influxdb" {
 
     # From: https://docs.influxdata.com/influxdb/v2/install
     runcmd:
-      - echo "hello from cloud-init on influx! started! pwd is: $(pwd)" >> /root/hello.txt
+      - 'echo "hello from cloud-init on influx! started! pwd is: $(pwd)" >> /root/hello.txt'
 
     final_message: "influx ready!"
     EOF
