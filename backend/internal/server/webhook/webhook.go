@@ -26,21 +26,22 @@ import (
 //go:embed redirect.html
 var redirectHTMLPage embed.FS
 
-type WebhookHandler struct {
+type Handler struct {
 	httpClient *http.Client
 	userRepo   data.UserRepo
 	repoRepo   data.RepoRepo
 	buildRepo  data.BuildRepo
 
-	// The domain where the auth cookie will be placed. For example
-	// ".pacia.tech" or ".karolak.cc".
+	// The domain where the auth cookie will be placed. For example:
+	// - .pacia.tech
+	// - .karolak.cc
 	//
 	// Must be empty for localhost.
 	mainDomain string
 
-	// The URL the user will be redirected to after successful auth. For example
-	// "https://bee-ci.pacia.tech/dashboard" or
-	// "http://localhost:8080/dashboard".
+	// The URL the user will be redirected to after successful auth. For example:
+	//  - https://bee-ci.pacia.tech/dashboard
+	//  - http://localhost:8080/dashboard
 	redirectURL string
 
 	githubAppClientID      string
@@ -61,8 +62,8 @@ func NewWebhookHandler(
 	githubAppClientSecret string,
 	githubAppWebhookSecret string,
 	jwtSecret []byte,
-) *WebhookHandler {
-	return &WebhookHandler{
+) *Handler {
+	return &Handler{
 		httpClient:             &http.Client{Timeout: 10 * time.Second},
 		userRepo:               userRepo,
 		repoRepo:               repoRepo,
@@ -76,7 +77,7 @@ func NewWebhookHandler(
 	}
 }
 
-func (h WebhookHandler) Mux() http.Handler {
+func (h Handler) Mux() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.Handle("GET /github/callback/", http.HandlerFunc(h.handleAuthCallback))
@@ -90,7 +91,7 @@ func (h WebhookHandler) Mux() http.Handler {
 	return mux
 }
 
-func (h WebhookHandler) exchangeCode(ctx context.Context, code string) (userAccessToken string, err error) {
+func (h Handler) exchangeCode(ctx context.Context, code string) (userAccessToken string, err error) {
 	const url = "https://github.com/login/oauth/access_token"
 
 	reqBody := map[string]interface{}{
@@ -144,7 +145,7 @@ func (h WebhookHandler) exchangeCode(ctx context.Context, code string) (userAcce
 // HandleAuthCallback exercises the [web application flow] for authorizing GitHub Apps.
 //
 // [web application flow]: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#web-application-flow
-func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Request) {
+func (h Handler) handleAuthCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger, _ := l.FromContext(ctx)
 
@@ -228,7 +229,7 @@ func (h WebhookHandler) handleAuthCallback(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
+func (h Handler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	logger, _ := l.FromContext(r.Context())
 
 	decoder := json.NewDecoder(r.Body)
@@ -395,7 +396,7 @@ func (h WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 // Function to create JWT tokens with claims
-func (h WebhookHandler) createToken(userID int64) (string, error) {
+func (h Handler) createToken(userID int64) (string, error) {
 	// Create a new JWT token with claims
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": strconv.FormatInt(userID, 10),
