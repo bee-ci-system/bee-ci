@@ -28,13 +28,24 @@ const MyRepositoriesCard = ({
         size='sm'
         className='ml-auto gap-1 bg-beeci-yellow-500 dark:bg-beeci-yellow-600'
       >
-        <Link href={routes.MY_REPOSITORIES}>
-          View All
+        <Link
+          href={
+            repositories.length === 0
+              ? 'https://github.com/apps/bee-ci-system'
+              : routes.MY_REPOSITORIES
+          }
+        >
+          {repositories.length === 0 ? 'Configure' : 'View All'}
           <ArrowUpRight className='h-4 w-4' />
         </Link>
       </Button>
     </CardHeader>
     <CardContent className='grid gap-8'>
+      {repositories.length === 0 && (
+        <p className='mb-4 h-full text-center text-sm text-muted-foreground'>
+          No repositories found
+        </p>
+      )}
       {repositories.map((repository) => (
         <div className='flex items-center gap-4' key={repository.id}>
           <div className='flex w-full justify-between'>

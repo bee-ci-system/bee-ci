@@ -28,7 +28,7 @@ const PipelinesCard = ({
       </div>
     </CardHeader>
     {pipelines.length === 0 ? (
-      <p className='mb-4 h-full text-center text-sm text-muted-foreground'>
+      <p className='mb-4 h-full pb-4 text-center text-sm text-muted-foreground'>
         No builds found
       </p>
     ) : (
