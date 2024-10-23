@@ -30,7 +30,6 @@ export const serverFetch = async (
   }
 
   const url = `${apiBaseUrl}${endpoint}`;
-  console.log(`serverFetch: will fetch from: ${url}`);
   const response = await fetch(url, {
     ...options,
     headers,

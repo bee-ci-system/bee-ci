@@ -9,13 +9,12 @@ export function middleware(request: NextRequest) {
     const response = NextResponse.redirect(
       new URL(routes.LANDING, request.url),
     );
-    response.cookies.set('jwt', '', { path: '/', expires: new Date(0) });
-    return response;
-  }
+    response.cookies.set('jwt', '', {
+      path: '/',
+      domain: 'pacia.tech',
+      expires: new Date(0),
+    });
 
-  if (pathname === '/log-out') {
-    const response = NextResponse.redirect(new URL('/', request.url));
-    response.cookies.set('jwt', '', { path: '/', expires: new Date(0) });
     return response;
   }
 

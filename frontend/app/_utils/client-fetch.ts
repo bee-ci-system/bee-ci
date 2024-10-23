@@ -18,16 +18,11 @@ export const clientFetch = async (
   }
 
   const url = `${apiBaseUrl}${endpoint}`;
-  console.log(`clientFetch: will fetch from: ${url}`);
   const response = await fetch(url, {
     ...options,
     headers,
     cache: 'no-store',
   });
-
-  console.log(
-    `clientFetch: did fetch from: ${url}, status: ${response.status}`,
-  );
 
   return response;
 };
