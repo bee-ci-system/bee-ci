@@ -6,15 +6,12 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname === routes.LOG_OUT) {
-    const response = NextResponse.redirect(
-      new URL(routes.LANDING, request.url),
-    );
+    const response = NextResponse.redirect(new URL('/', request.url));
     response.cookies.set('jwt', '', {
       path: '/',
-      domain: 'pacia.tech',
       expires: new Date(0),
+      sameSite: 'lax',
     });
-
     return response;
   }
 
