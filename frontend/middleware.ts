@@ -10,6 +10,7 @@ export function middleware(request: NextRequest) {
     response.cookies.set('jwt', '', {
       path: '/',
       expires: new Date(0),
+      domain: 'pacia.tech',
       sameSite: 'lax',
     });
     return response;
