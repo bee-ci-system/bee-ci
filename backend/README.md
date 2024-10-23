@@ -1,6 +1,6 @@
 # backend
 
-We try to keep them to a **reasonable** minimum.
+We try to keep dependencies to a **reasonable** minimum.
 
 [Project layout](https://go.dev/doc/modules/layout)
 
@@ -18,7 +18,7 @@ We try to keep them to a **reasonable** minimum.
 We use a thing called [web application flow].
 It's also explained from the practical side in [Build a "Login" button tutorial][login_btn].
 
-Overall it looks like this:
+Overall, it looks like this:
 
 - The user clicks the "Sign in with GitHub" button and is redirected
   [https://github.com/login/oauth/authorize?client_id=Iv23liiZSvMGEpgOlexa]([https://github.com/login/oauth/authorize?client_id=Iv23liiZSvMGEpgOlexa])
@@ -60,7 +60,7 @@ See also:
 
 ### What can the access token be used for?
 
-The access token lets us to make requests to the API on a behalf of a user.
+The access token lets us make requests to the API on behalf of a user.
 
 For example, we can use it to access user's private repositories:
 
@@ -72,19 +72,40 @@ curl \
   https://api.github.com/repos/bartekpacia/discover_rudy
 ```
 
-This token can be entirely unrelated to the how sign in works in our webapp.
+This token can be entirely unrelated to how sign in works in our webapp.
 
-Our webapp can issue a JWT that is completely independent from the access token.
+Our webapp can issue a JWT that is completely independent of the access token.
 
-## Database
+## Postgres database
 
 We don't use an ORM, instead we use [sqlx](https://jmoiron.github.io/sqlx).
 
 [pgcli](https://www.pgcli.com) is a good client for PostgreSQL.
 
+### Connect to the local database
+
 ```console
 pgcli -h localhost -p 5432 -u postgres -W -d bee
 ```
+
+### Connect to the production database
+
+The fastest way to get the connection string:
+
+```console
+$ terraform output db_uri
+"postgresql://doadmin:AVNS_VK_8D3KFy3dA2_8NjXw@bee-db-cluster-postgres-do-user-18862315-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require"
+```
+
+Copy and paste it for `pgcli`, replacing `defaultdb` with `bee`:
+
+```console
+pgcli "postgresql://doadmin:AVNS_VK_8D3KFy3dA2_8NjXw@bee-db-cluster-postgres-do-user-18862315-0.l.db.ondigitalocean.com:25060/defaultdb?sslmode=require"
+```
+
+Then 
+
+### Useful commands
 
 List schemas:
 
@@ -102,6 +123,12 @@ Example query:
 
 ```postgresql
 SELECT * FROM bee_schema.users
+```
+
+To not have to specify the schema `bee_schema` every time:
+
+```postgresql
+SET search_path to bee_schema, public
 ```
 
 ### Testing
