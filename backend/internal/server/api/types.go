@@ -52,7 +52,7 @@ type getRepositoryDTO struct {
 	Name             string     `json:"name"`
 	Description      string     `json:"description"`
 	URL              string     `json:"url"`
-	DateOfLastUpdate time.Time  `json:"dateOfLastUpdate"`
+	DateOfLastUpdate *time.Time `json:"dateOfLastUpdate"`
 	Pipelines        []pipeline `json:"pipelines"`
 }
 

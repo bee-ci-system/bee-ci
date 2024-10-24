@@ -228,12 +228,17 @@ func (a *App) getRepository(w http.ResponseWriter, r *http.Request) {
 		pipelines = append(pipelines, pipeline)
 	}
 
+	var dateOfLastUpdate *time.Time = nil
+	if len(pipelines) != 0 {
+		dateOfLastUpdate = &pipelines[0].StartDate
+	}
+
 	response := getRepositoryDTO{
 		ID:               strconv.FormatInt(repo.ID, 10),
 		Name:             repo.Name,
 		Description:      "Description not available",
 		URL:              "URL not available",
-		DateOfLastUpdate: time.Time{},
+		DateOfLastUpdate: dateOfLastUpdate,
 		Pipelines:        pipelines,
 	}
 
