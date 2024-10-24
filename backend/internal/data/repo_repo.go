@@ -25,12 +25,18 @@ func (r Repo) LogValue() slog.Value {
 type RepoRepo interface {
 	Upsert(ctx context.Context, repo []Repo) (err error)
 	Delete(ctx context.Context, id []int64) (err error)
+
+	// Get returns a repository with given id. It does not take user ownership into account, so be careful using it
+	// as to not expose additional data.
 	Get(ctx context.Context, id int64) (repo *Repo, err error)
 
-	// GetAll retrieves all repositories for a given user and whose names are substrings of searchRepo.
+	// GetForUser returns a repository belonging to a given user.
+	GetForUser(ctx context.Context, userID, repoID int64) (repo *Repo, err error)
+
+	// GetAllForUser retrieves all repositories for a given user and whose names are substrings of searchRepo.
 	//
 	// If searchRepo is empty, all repositories are considered.
-	GetAll(ctx context.Context, searchRepo string, userID int64) (repos []Repo, err error)
+	GetAllForUser(ctx context.Context, searchRepo string, userID int64) (repos []Repo, err error)
 }
 
 type PostgresRepoRepo struct {
@@ -87,7 +93,21 @@ func (p PostgresRepoRepo) Get(ctx context.Context, id int64) (repo *Repo, err er
 	return repo, nil
 }
 
-func (p PostgresRepoRepo) GetAll(ctx context.Context, searchRepo string, userID int64) (repos []Repo, err error) {
+func (p PostgresRepoRepo) GetForUser(ctx context.Context, userID, repoID int64) (repo *Repo, err error) {
+	repo = &Repo{}
+	err = p.db.GetContext(ctx, repo, `
+		SELECT id, name, user_id
+		FROM bee_schema.repos
+		WHERE user_id = $1 AND id = $2
+	`, userID, repoID)
+	if err != nil {
+		return nil, fmt.Errorf("selecting from repos: %v", err)
+	}
+
+	return repo, nil
+}
+
+func (p PostgresRepoRepo) GetAllForUser(ctx context.Context, searchRepo string, userID int64) (repos []Repo, err error) {
 	repos = make([]Repo, 0)
 
 	query := `

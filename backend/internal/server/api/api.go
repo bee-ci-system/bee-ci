@@ -115,7 +115,7 @@ func (a *App) getMyRepositories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allRepos, err := a.RepoRepo.GetAll(r.Context(), params.Search, userID)
+	allRepos, err := a.RepoRepo.GetAllForUser(r.Context(), params.Search, userID)
 	if err != nil {
 		msg := "failed to get my repositories"
 		logger.Debug(msg, slog.Any("error", err))
@@ -197,9 +197,9 @@ func (a *App) getRepository(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repo, err := a.RepoRepo.Get(r.Context(), repoID)
+	repo, err := a.RepoRepo.GetForUser(r.Context(), userID, repoID)
 	if err != nil {
-		msg := "failed to get repository"
+		msg := fmt.Sprintf("failed to get repository id=%d for user id=%d", repoID, userID)
 		logger.Debug(msg, slog.Any("error", err))
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
@@ -207,7 +207,7 @@ func (a *App) getRepository(w http.ResponseWriter, r *http.Request) {
 
 	builds, err := a.BuildRepo.GetAllByRepoID(r.Context(), userID, repoID)
 	if err != nil {
-		msg := "failed to get all builds for repository"
+		msg := fmt.Sprintf("failed to get all builds for repository id=%d for user id=%d", repoID, userID)
 		logger.Debug(msg, slog.Any("error", err))
 		http.Error(w, msg, http.StatusInternalServerError)
 		return
@@ -283,7 +283,7 @@ func (a *App) getDashboard(w http.ResponseWriter, r *http.Request) {
 		UnsuccessfulPipelines: len(builds) - successfulBuilds,
 	}
 
-	repos, err := a.RepoRepo.GetAll(r.Context(), "", userID)
+	repos, err := a.RepoRepo.GetAllForUser(r.Context(), "", userID)
 	if err != nil {
 		msg := "failed to get my repositories"
 		logger.Debug(msg, slog.Any("error", err))
@@ -368,7 +368,7 @@ func (a *App) getRepositories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repos, err := a.RepoRepo.GetAll(r.Context(), "", userID)
+	repos, err := a.RepoRepo.GetAllForUser(r.Context(), "", userID)
 	if err != nil {
 		msg := "failed to get repositories"
 		logger.Debug(msg, slog.Any("error", err))
