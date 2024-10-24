@@ -11,15 +11,15 @@ import { CircleChevronLeft, Clock3, SquareArrowOutUpRight } from 'lucide-react';
 import Link from 'next/link';
 
 const RepositoryInfoCard = ({
+  userName,
   name,
   description,
   dateOfLastUpdate,
-  url,
 }: {
+  userName: string;
   name: string;
   description: string;
   dateOfLastUpdate: string;
-  url: string;
 }) => (
   <Card className='flex w-full flex-col'>
     <CardHeader className='mb-8 border-b'>
@@ -34,12 +34,14 @@ const RepositoryInfoCard = ({
           <span className='flex items-center gap-2'>
             <Clock3 className='size-4' /> Date of last update:
           </span>
-          <span className='block w-full text-right text-base'>
-            {format(dateOfLastUpdate, 'HH:mm - dd MMM yyyy')}{' '}
-            <span className='font-light'>
-              ({formatDistance(new Date(dateOfLastUpdate), new Date())} ago)
+          {dateOfLastUpdate !== null && (
+            <span className='block w-full text-right text-base'>
+              {format(dateOfLastUpdate, 'HH:mm - dd MMM yyyy')}
+              <span className='ml-1 font-light'>
+                ({formatDistance(new Date(dateOfLastUpdate), new Date())} ago)
+              </span>
             </span>
-          </span>
+          )}
         </p>
       </div>
       <div>
@@ -47,12 +49,12 @@ const RepositoryInfoCard = ({
           <span className='flex w-full items-center gap-2'>
             <SquareArrowOutUpRight className='size-4' /> Url:
           </span>
-          <Link
+          <a
             className='mt-1 block w-full break-words text-right text-base underline'
-            href={url}
+            href={`https://www.github.com/${userName}/${name}`}
           >
-            {url}
-          </Link>
+            {`www.github.com/${userName}/${name}`}
+          </a>
         </p>
       </div>
     </CardContent>
