@@ -10,5 +10,9 @@ export const staticAssets = {
   icons: {
     GITHUB: '/icons/github.svg',
   },
+  // IMAGES
+  images: {
+    ERROR_BEE: '/images/error-bee.png',
+  },
   LOADER: '/loader.gif',
 };
