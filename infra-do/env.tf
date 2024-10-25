@@ -107,7 +107,7 @@ locals {
     },
     {
       key   = "INFLUXDB_ENABLED"
-      value = ""
+      value = "true"
       scope = "RUN_TIME"
     },
     {
