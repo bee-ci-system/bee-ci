@@ -2,9 +2,9 @@ FROM python:3.12-alpine
 
 RUN pip install uv
 
-WORKDIR /backend-executor
+WORKDIR /executor
 
-COPY . /backend-executor
+COPY . /executor
 
 RUN uv sync
 

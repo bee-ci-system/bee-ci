@@ -94,8 +94,8 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
 
-  backend-executor:
-    build: backend-executor
+  executor:
+    build: executor
     init: true
     depends_on:
       database-postgres:
