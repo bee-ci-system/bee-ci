@@ -87,7 +87,7 @@ locals {
     },
     {
       key   = "INFLUXDB_URL"
-      value = "http://influxdb2:8086"
+      value = format("http://%s:8086", digitalocean_droplet.influxdb.ipv4_address),
       scope = "RUN_TIME"
     },
     {
