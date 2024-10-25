@@ -50,7 +50,7 @@ resource "digitalocean_droplet" "executor" {
 
       # Start service
       - 'docker pull ghcr.io/bee-ci-system/bee-ci/executor:latest'
-      # - 'docker run --rm --name executor --volume /var/run/docker.sock:/var/run/docker.sock --env-file /root/.executor.env ghcr.io/bee-ci-system/bee-ci/executor:latest'
+      - 'docker run --rm --name executor --volume /var/run/docker.sock:/var/run/docker.sock --env-file /root/.executor.env ghcr.io/bee-ci-system/bee-ci/executor:latest'
 
       - 'echo "hello from cloud-init! done!" >> /root/hello.txt'
     final_message: "executor ready!"
