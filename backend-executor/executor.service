@@ -1,0 +1,20 @@
+# To install it: cp executor.service /etc/systemd/system/
+
+[Unit]
+Description=Bee CI executor container
+After=docker.service
+Requires=docker.service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+TimeoutStartSec=0
+Restart=on-failure
+RestartSec=20s
+#ExecStartPre=-/usr/bin/docker stop %n
+#ExecStartPre=-/usr/bin/docker rm %n
+#ExecStartPre=/usr/bin/docker pull redis
+ExecStart=/usr/bin/docker run --rm --name executor --volume /var/run/docker.sock:/var/run/docker.sock --env-file /root/.executor.env ghcr.io/bee-ci-system/bee-ci/executor:latest
+
+[Install]
+WantedBy=multi-user.target
