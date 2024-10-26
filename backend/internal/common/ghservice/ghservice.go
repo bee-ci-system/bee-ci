@@ -81,7 +81,7 @@ func (g GithubService) getInstallationAccessToken(ctx context.Context, installat
 	gh := github.NewClient(&appClient)
 	res, _, err := gh.Apps.CreateInstallationToken(ctx, installationID, nil)
 	if err != nil {
-		return "", fmt.Errorf("create app installation token: %w", err)
+		return "", fmt.Errorf("create new GitHub app installation token: %w", err)
 	}
 
 	return *res.Token, nil
