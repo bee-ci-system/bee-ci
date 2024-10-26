@@ -20,6 +20,10 @@ var githubAppID int64 = 938460
 
 func main() {
 	privateKeyBase64 := os.Getenv("GITHUB_APP_PRIVATE_KEY_BASE64")
+	slog.Info("DEBUG 1", slog.String("string1", "simple"))
+	slog.Info("DEBUG 1", slog.String("string with space", "simple with space"))
+	slog.Info("DEBUG 1", slog.String("string with equals", "simple="))
+	slog.Info("DEBUG 3", slog.String("GITHUB_APP_PRIVATE_KEY_BASE64", privateKeyBase64))
 	privateKey, err := base64.StdEncoding.DecodeString(privateKeyBase64)
 	if err != nil {
 		slog.Error("error decoding GitHub App private key from base64", slog.Any("error", err))
@@ -35,8 +39,6 @@ func main() {
 	if err != nil {
 		log.Fatalln("generate signed jwt:", err)
 	}
-
-	return
 
 	appClient := http.Client{Transport: &bearerTransport{Token: jwtString}}
 	gh := github.NewClient(&appClient)
