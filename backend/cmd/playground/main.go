@@ -36,6 +36,8 @@ func main() {
 		log.Fatalln("generate signed jwt:", err)
 	}
 
+	return
+
 	appClient := http.Client{Transport: &bearerTransport{Token: jwtString}}
 	gh := github.NewClient(&appClient)
 	res, _, err := gh.Apps.CreateInstallationToken(context.Background(), installationID, nil)
@@ -59,12 +61,14 @@ func generateSignedJWT(githubAppID int64, rsaPrivateKey *rsa.PrivateKey) (string
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	fmt.Printf("created a token: %#v\n", *token)
+	fmt.Printf("Created JWT struct: %#v\n\n", *token)
 
 	tokenStr, err := token.SignedString(rsaPrivateKey)
 	if err != nil {
 		return "", fmt.Errorf("sign jwt: %w", err)
 	}
+
+	fmt.Printf("generated signed JWT string: %s\n\n", tokenStr)
 
 	return tokenStr, nil
 }
