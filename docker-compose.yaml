@@ -47,6 +47,8 @@ services:
       context: backend
       dockerfile: gh-updater.dockerfile
     init: true
+    ports:
+      - "40001:40000" # debugger por
     depends_on:
       database-postgres:
         condition: service_healthy

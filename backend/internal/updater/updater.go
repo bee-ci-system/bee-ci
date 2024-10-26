@@ -190,7 +190,7 @@ func (u Updater) updateCheckRun(ctx context.Context, checkRunID int64, build dat
 	// TODO: Do I need to set these options again, or if I set them to null they will be removed?
 	checkRunUpdateOptions := github.UpdateCheckRunOptions{
 		Name:        build.CommitMsg + ", started at: " + fmt.Sprint(time.Now().Format(time.RFC822Z)),
-		DetailsURL:  github.String("https://bee-ci.vercel.app/dashboad/"), // TODO: Use actual URL of the backend
+		DetailsURL:  nil,
 		ExternalID:  nil,
 		Status:      nil,
 		Conclusion:  nil,
