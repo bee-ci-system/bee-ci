@@ -44,7 +44,7 @@ func (g GithubService) GetClientForInstallation(ctx context.Context, installatio
 	}
 
 	if token == "" {
-		g.logger.Debug("installation token not found in redis", slog.String("installationID", strconv.FormatInt(installationID, 10)))
+		g.logger.Debug("installation token not found in redis. Will get a new one.", slog.String("installationID", strconv.FormatInt(installationID, 10)))
 
 		token, err = g.getInstallationAccessToken(ctx, installationID)
 		if err != nil {
@@ -73,6 +73,9 @@ func (g GithubService) getInstallationAccessToken(ctx context.Context, installat
 	if err != nil {
 		return "", fmt.Errorf("generate signed jwt: %w", err)
 	}
+
+	// FIXME(bartekpacia): Remove this print!!!
+	g.logger.Debug("DEBUG: generated a signed JWT string", slog.String("jwt", jwtString))
 
 	appClient := http.Client{Transport: &bearerTransport{Token: jwtString}}
 	gh := github.NewClient(&appClient)
