@@ -221,6 +221,7 @@ func (a *App) getRepository(w http.ResponseWriter, r *http.Request) {
 			RepositoryID:   strconv.FormatInt(build.RepoID, 10),
 			CommitName:     build.CommitMsg,
 			Status:         build.Status,
+			Conclusion:     build.Conclusion,
 			StartDate:      build.CreatedAt,
 			EndDate:        &build.UpdatedAt,
 		}
@@ -548,6 +549,7 @@ func (a *App) getPipeline(w http.ResponseWriter, r *http.Request) {
 		RepositoryID:   strconv.FormatInt(fatBuild.RepoID, 10),
 		CommitName:     fatBuild.CommitMsg,
 		Status:         fatBuild.Status,
+		Conclusion:     fatBuild.Conclusion,
 		StartDate:      fatBuild.CreatedAt,
 		EndDate:        &fatBuild.UpdatedAt,
 	}

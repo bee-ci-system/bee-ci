@@ -62,6 +62,7 @@ type pipeline struct {
 	RepositoryID   string     `json:"repositoryId"`
 	CommitName     string     `json:"commitName"`
 	Status         string     `json:"status"`
+	Conclusion     *string    `json:"conclusion"`
 	StartDate      time.Time  `json:"startDate"`
 	EndDate        *time.Time `json:"endDate"`
 }
