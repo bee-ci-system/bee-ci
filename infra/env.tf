@@ -94,6 +94,7 @@ locals {
       key   = "INFLUXDB_TOKEN"
       value = var.influxdb_token
       scope = "RUN_TIME"
+      type  = "SECRET"
     },
     {
       key   = "INFLUXDB_ORG"
@@ -103,11 +104,6 @@ locals {
     {
       key   = "INFLUXDB_BUCKET"
       value = var.influxdb_bucket
-      scope = "RUN_TIME"
-    },
-    {
-      key   = "INFLUXDB_ENABLED"
-      value = "true"
       scope = "RUN_TIME"
     },
     {
