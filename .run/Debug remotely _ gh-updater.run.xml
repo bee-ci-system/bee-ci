@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Backend | Debug remotely" type="GoRemoteDebugConfigurationType" factoryName="Go Remote" port="40000">
+  <configuration default="false" name="Debug remotely | gh-updater" type="GoRemoteDebugConfigurationType" factoryName="Go Remote" port="40001">
     <option name="disconnectOption" value="LEAVE" />
     <disconnect value="LEAVE" />
     <method v="2" />
