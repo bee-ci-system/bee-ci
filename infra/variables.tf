@@ -30,12 +30,19 @@ variable "github_app_client_secret" {
 
 # InfluxDB-specific variables
 
+variable "influxdb_user" {
+  type    = string
+  default = "beeci"
+}
+
 variable "influxdb_org" {
-  type = string
+  type    = string
+  default = "beeci"
 }
 
 variable "influxdb_bucket" {
-  type = string
+  type    = string
+  default = "home"
 }
 
 variable "influxdb_password" {

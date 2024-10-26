@@ -35,17 +35,11 @@ resource "digitalocean_droplet" "influxdb" {
       # Create the config folder
       - 'mkdir -p /etc/influxdb2'
 
-      # Initialize InfluxDB with the provided environment variables
-      - 'INFLUXDB_INIT_SETUP=true'
-      - 'INFLUXDB_INIT_USERNAME=beeci'
-      - 'INFLUXDB_INIT_PASSWORD=${var.influxdb_password}'
-      - 'INFLUXDB_INIT_ADMIN_TOKEN=${var.influxdb_token}'
-      - 'INFLUXDB_INIT_ORG=${var.influxdb_org}'
-      - 'INFLUXDB_INIT_BUCKET=${var.influxdb_bucket}'
+      # Initialize InfluxDB
 
       - 'sudo systemctl enable influxdb'
       - 'sudo systemctl restart influxdb'
-      - 'influx setup --username beeci --password ${var.influxdb_password} --token ${var.influxdb_token} --org ${var.influxdb_org} --bucket ${var.influxdb_bucket} --force'
+      - 'influx setup --username ${var.influxdb_user} --password ${var.influxdb_password} --token ${var.influxdb_token} --org ${var.influxdb_org} --bucket ${var.influxdb_bucket} --force'
 
       - 'echo "hello from cloud-init! done!" >> /root/hello.txt'
 

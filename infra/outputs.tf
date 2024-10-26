@@ -20,10 +20,18 @@ output "db_redis_uri" {
   sensitive   = true
 }
 
+output "db_influx_config_cmd" {
+  description = "Command to create a configuration for InfluxDB database"
+  value       = "influx config create -n bee_influx_prod -u http://${digitalocean_droplet.influxdb.ipv4_address}:8086 -o ${var.influxdb_org} -t ${var.influxdb_token} -a"
+  sensitive   = true
+}
+
 output "droplet_executor_ip" {
-  value = digitalocean_droplet.executor.ipv4_address
+  description = "IP address of the droplet running executor. Usually used to `ssh` into the droplet for debugging."
+  value       = digitalocean_droplet.executor.ipv4_address
 }
 
 output "droplet_influxdb_ip" {
-  value = digitalocean_droplet.influxdb.ipv4_address
+  description = "IP address of the droplet running InfluxDB. Usually used to `ssh` into the droplet for debugging."
+  value       = digitalocean_droplet.influxdb.ipv4_address
 }
