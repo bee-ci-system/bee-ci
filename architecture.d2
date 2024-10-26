@@ -1,0 +1,27 @@
+browser -> backend.server: REST API
+
+GitHub: {
+  shape: cloud
+  icon: https://icons.terrastruct.com/dev%2Fgithub.svg
+}
+
+GitHub -> backend.server: webhook events
+
+backend.server <-> backend.storage.Postgres: read/write data
+backend.server <-> backend.storage.Redis: store KV data
+backend.server <-> backend.storage.Influx: read data
+
+backend.storage.Postgres.shape: cylinder
+backend.storage.Redis.shape: cylinder
+backend.storage.Influx.shape: cylinder
+
+backend.gh-updater -- backend.storage.Postgres: listen to build status changes
+backend.gh-updater -> GitHub: write check status
+
+backend.executors.executor 1 -> backend.storage.Postgres: build status data
+backend.executors.executor 2 -> backend.storage.Postgres: build status data
+backend.executors.executor n -> backend.storage.Postgres: build status data
+
+backend.executors.executor 1 -> backend.storage.Influx: build logs
+backend.executors.executor 2 -> backend.storage.Influx: build logs
+backend.executors.executor n -> backend.storage.Influx: build logs
