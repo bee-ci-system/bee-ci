@@ -41,10 +41,11 @@ type statsDTO struct {
 }
 
 type pipelineDashboardData struct {
-	ID             string `json:"id"`
-	RepositoryName string `json:"repositoryName"`
-	CommitName     string `json:"commitName"`
-	Status         string `json:"status"`
+	ID             string  `json:"id"`
+	RepositoryName string  `json:"repositoryName"`
+	CommitName     string  `json:"commitName"`
+	Status         string  `json:"status"`
+	Conclusion     *string `json:"conclusion"`
 }
 
 type getRepositoryDTO struct {

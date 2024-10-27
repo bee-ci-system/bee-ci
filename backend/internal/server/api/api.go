@@ -273,7 +273,7 @@ func (a *App) getDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 	successfulBuilds := 0
 	for _, build := range builds {
-		if build.Status == "success" {
+		if build.Conclusion != nil && *build.Conclusion == "success" {
 			successfulBuilds++
 		}
 	}
@@ -311,6 +311,7 @@ func (a *App) getDashboard(w http.ResponseWriter, r *http.Request) {
 			RepositoryName: repo.Name,
 			CommitName:     build.CommitMsg,
 			Status:         build.Status,
+			Conclusion:     build.Conclusion,
 		}
 		pipelines = append(pipelines, pipeline)
 	}
