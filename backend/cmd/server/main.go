@@ -2,11 +2,17 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"encoding/base64"
 	"fmt"
+	"github.com/bee-ci/bee-ci-system/internal/common/ghservice"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/redis/go-redis/v9"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
@@ -24,16 +30,25 @@ var jwtSecret = []byte("your-very-secret-key")
 
 func main() {
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
-
 	slog.SetDefault(setUpLogging())
+	slog.Debug("server is starting...")
 
 	serverURL := mustGetenv("SERVER_URL")
 	port := mustGetenv("PORT")
-
 	mainDomain := os.Getenv("MAIN_DOMAIN")
 	frontendURL := mustGetenv("FRONTEND_URL")
 
-	slog.Debug("server is starting...")
+	githubAppID := mustGetenvInt64("GITHUB_APP_ID")
+	privateKeyBase64 := mustGetenv("GITHUB_APP_PRIVATE_KEY_BASE64")
+	privateKey, err := base64.StdEncoding.DecodeString(privateKeyBase64)
+	if err != nil {
+		slog.Error("error decoding GitHub App private key from base64", slog.Any("error", err))
+		os.Exit(1)
+	}
+	rsaPrivateKey, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
+	if err != nil {
+		slog.Error("error parsing GitHub App RSA private key from PEM", slog.Any("error", err))
+	}
 
 	githubAppClientID := mustGetenv("GITHUB_APP_CLIENT_ID")
 	githubAppWebhookSecret := mustGetenv("GITHUB_APP_WEBHOOK_SECRET")
@@ -52,6 +67,28 @@ func main() {
 		os.Exit(1)
 	}
 	slog.Info("connected to Postgres database", "host", dbHost, "port", dbPort, "user", dbUser, "name", dbName, "options", dbOpts)
+
+	redisAddr := mustGetenv("REDIS_ADDRESS")
+	redisPassword := mustGetenv("REDIS_PASSWORD")
+
+	var tlsConfig *tls.Config
+	if mustGetenv("REDIS_USE_TLS") == "true" {
+		tlsConfig = &tls.Config{}
+	}
+
+	redisDB := redis.NewClient(&redis.Options{
+		Addr:      redisAddr,
+		Password:  redisPassword,
+		TLSConfig: tlsConfig,
+		DB:        0, // use default DB
+	})
+
+	err = redisDB.Ping(ctx).Err()
+	if err != nil {
+		slog.Error("error connecting to Redis database", slog.Any("error", err))
+		os.Exit(1)
+	}
+	slog.Info("connected to Redis database", "address", redisAddr)
 
 	influxURL := mustGetenv("INFLUXDB_URL")
 	influxToken := mustGetenv("INFLUXDB_TOKEN")
@@ -72,7 +109,9 @@ func main() {
 	repoRepo := data.NewPostgresRepoRepo(db)
 	logsRepo := data.NewInfluxLogsRepo(influxClient, influxOrg, influxBucket)
 
-	webhooks, err := webhook.NewHandler(userRepo, repoRepo, buildRepo, mainDomain, frontendURL, githubAppClientID, githubAppClientSecret, githubAppWebhookSecret, jwtSecret)
+	githubService := ghservice.NewGithubService(githubAppID, rsaPrivateKey, redisDB)
+
+	webhooks, err := webhook.NewHandler(userRepo, repoRepo, buildRepo, githubService, mainDomain, frontendURL, githubAppClientID, githubAppClientSecret, githubAppWebhookSecret, jwtSecret)
 	if err != nil {
 		slog.Error("error creating webhook handler", slog.Any("error", err))
 		os.Exit(1)
@@ -150,4 +189,14 @@ func mustGetenv(varname string) string {
 		os.Exit(1)
 	}
 	return value
+}
+
+func mustGetenvInt64(varname string) int64 {
+	value := mustGetenv(varname)
+	i, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		slog.Error(varname+" env var is not a valid int64", slog.Any("error", err))
+		os.Exit(1)
+	}
+	return i
 }

@@ -7,12 +7,14 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"github.com/bee-ci/bee-ci-system/internal/common/ghservice"
 	"html/template"
 	"io"
 	"log"
 	"log/slog"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"time"
 
@@ -28,14 +30,13 @@ import (
 var redirectHTMLPage embed.FS
 
 type Handler struct {
-	httpClient *http.Client
-	userRepo   data.UserRepo
-	repoRepo   data.RepoRepo
-	buildRepo  data.BuildRepo
+	httpClient    *http.Client
+	userRepo      data.UserRepo
+	repoRepo      data.RepoRepo
+	buildRepo     data.BuildRepo
+	githubService *ghservice.GithubService
 
-	// The domain where the auth cookie will be placed. For example:
-	// - .pacia.tech
-	// - .karolak.cc
+	// The domain where the auth cookie will be placed, for example ".pacia.tech" or .karolak.cc".
 	//
 	// Must be empty for localhost.
 	mainDomain string
@@ -57,6 +58,7 @@ func NewHandler(
 	userRepo data.UserRepo,
 	repoRepo data.RepoRepo,
 	buildRepo data.BuildRepo,
+	githubService *ghservice.GithubService,
 	mainDomain string,
 	frontendURL string,
 	githubAppClientID string,
@@ -74,6 +76,7 @@ func NewHandler(
 		userRepo:               userRepo,
 		repoRepo:               repoRepo,
 		buildRepo:              buildRepo,
+		githubService:          githubService,
 		mainDomain:             mainDomain,
 		redirectURL:            redirectURL,
 		githubAppClientID:      githubAppClientID,
@@ -367,7 +370,36 @@ func (h Handler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			slog.Int64("sender.id", userID),
 		)
 
-		// Create build
+		repoOwner := *event.Repo.Owner.Login
+		repoName := *event.Repo.Name
+
+		// Check if the config file exists. If it does, parse it.
+		ghClient, err := h.githubService.GetClientForInstallation(r.Context(), *installation.ID)
+		if err != nil {
+			logger.Error("error getting github client", slog.Any("error", err))
+			http.Error(w, "error getting github client", http.StatusInternalServerError)
+			return
+		}
+
+		// Validate that the config file exists
+		_, files, _, err := ghClient.Repositories.GetContents(r.Context(), repoOwner, repoName, "/", nil)
+		if err != nil {
+			logger.Error("error getting repo's root directory content", slog.Any("error", err))
+			http.Error(w, "error getting repo's directory content", http.StatusInternalServerError)
+			return
+		}
+		hasConfigFile := slices.ContainsFunc(files, func(file *github.RepositoryContent) bool {
+			return *file.Name == ".bee-ci.json"
+		})
+
+		if !hasConfigFile {
+			logger.Debug(".bee-ci.json config file does not exist, skipping execution")
+			return
+		}
+
+		logger.Debug(".bee-ci.json config file exists, proceeding with execution...")
+
+		// Create a new build
 		if *event.Action == "requested" || *event.Action == "rerequested" {
 			headSHA := *event.CheckSuite.HeadSHA
 			message := *event.CheckSuite.HeadCommit.Message
