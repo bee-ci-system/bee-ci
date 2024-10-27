@@ -25,7 +25,7 @@ const DashboardPage = async () => {
           <StatsCard
             title='Successful builds'
             value={dashboardData.stats.successfulPipelines}
-            icon={<BadgeCheck className='h-4 w-4 text-muted-foreground' />}
+            icon={<BadgeCheck className='h-4 w-4 text-emerald-500' />}
             percent={calculatePercent(
               dashboardData.stats.successfulPipelines,
               dashboardData.stats.totalPipelines,
@@ -34,7 +34,7 @@ const DashboardPage = async () => {
           <StatsCard
             title='Unsuccessful builds'
             value={dashboardData.stats.unsuccessfulPipelines}
-            icon={<BadgeX className='h-4 w-4 text-muted-foreground' />}
+            icon={<BadgeX className='h-4 w-4 text-red-500' />}
             percent={calculatePercent(
               dashboardData.stats.unsuccessfulPipelines,
               dashboardData.stats.totalPipelines,
