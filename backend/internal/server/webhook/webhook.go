@@ -98,7 +98,7 @@ func (h Handler) Mux() http.Handler {
 }
 
 func (h Handler) exchangeCode(ctx context.Context, code string) (userAccessToken string, err error) {
-	const url = "https://github.com/login/oauth/access_token"
+	const githubAuthURL = "https://github.com/login/oauth/access_token"
 
 	reqBody := map[string]interface{}{
 		"client_id":     h.githubAppClientID,
@@ -110,7 +110,7 @@ func (h Handler) exchangeCode(ctx context.Context, code string) (userAccessToken
 		return "", fmt.Errorf("marshalling request body: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(reqBodyBytes))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, githubAuthURL, bytes.NewBuffer(reqBodyBytes))
 	if err != nil {
 		return "", fmt.Errorf("creating new request: %w", err)
 	}

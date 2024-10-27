@@ -332,7 +332,7 @@ func (a *App) getDashboard(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		var dateOfLastUpdate *time.Time = nil
+		var dateOfLastUpdate *time.Time
 		if wasFound {
 			dateOfLastUpdate = &latestBuild.UpdatedAt
 		}
