@@ -1,8 +1,12 @@
 export enum PipelineStatus {
-  SUCCESS = 'success',
-  FAILURE = 'failure',
+  COMPLETED = 'completed',
   IN_PROGRESS = 'in progress',
   QUEUED = 'queued',
+}
+
+export enum PipelineConclusion {
+  FAILURE = 'failure',
+  SUCCESS = 'success',
 }
 
 export interface Pipeline {
@@ -11,6 +15,7 @@ export interface Pipeline {
   repositoryId: string;
   commitName: string;
   status: PipelineStatus;
+  conclusion: PipelineConclusion | null;
   startDate: string;
   endDate?: string;
 }

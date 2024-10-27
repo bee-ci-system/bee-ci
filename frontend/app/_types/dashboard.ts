@@ -1,11 +1,12 @@
 import { Repository } from './my-repositories';
-import { PipelineStatus } from './pipeline';
+import { PipelineConclusion, PipelineStatus } from './pipeline';
 
 export interface PipelineDashboardData {
   id: string;
   repositoryName: string;
   commitName: string;
   status: PipelineStatus;
+  conclusion: PipelineConclusion | null;
 }
 
 export interface GetDashboardDataDto {

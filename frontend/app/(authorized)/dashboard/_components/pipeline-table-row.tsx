@@ -1,6 +1,7 @@
 import { buttonVariants } from '@/app/_components/button';
 import { TableCell, TableRow } from '@/app/_components/table';
 import { PipelineDashboardData } from '@/app/_types/dashboard';
+import { PipelineStatus } from '@/app/_types/pipeline';
 import { cn } from '@/app/_utils/cn';
 import { PipelineStatusToIcon } from '@/app/_utils/pipeline-status-to-icon';
 import { routeGenerators } from '@/app/_utils/routes';
@@ -20,7 +21,13 @@ const PipelineTableRow = ({
       </div>
     </TableCell>
     <TableCell className='flex items-center justify-between gap-4 px-0'>
-      <p>{PipelineStatusToIcon(pipeline.status)}</p>
+      <p>
+        {PipelineStatusToIcon(
+          pipeline.status === PipelineStatus.COMPLETED && pipeline.conclusion
+            ? pipeline.conclusion
+            : pipeline.status,
+        )}
+      </p>
       <Link
         href={routeGenerators.pipeline(pipeline.id)}
         aria-label='open info about pipeline'

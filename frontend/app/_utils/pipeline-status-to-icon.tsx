@@ -1,13 +1,13 @@
 import { CircleCheck, CircleX, LoaderCircle } from 'lucide-react';
-import { PipelineStatus } from '../_types/pipeline';
+import { PipelineConclusion, PipelineStatus } from '../_types/pipeline';
 
-const PipelineStatusToIcon = (status: PipelineStatus) => {
+const PipelineStatusToIcon = (status: PipelineStatus | PipelineConclusion) => {
   switch (status) {
-    case PipelineStatus.SUCCESS:
+    case PipelineConclusion.SUCCESS:
       return (
         <CircleCheck width={24} height={24} className='text-emerald-500' />
       );
-    case PipelineStatus.FAILURE:
+    case PipelineConclusion.FAILURE:
       return <CircleX width={24} height={24} className='text-red-500' />;
     case PipelineStatus.IN_PROGRESS:
       return (
