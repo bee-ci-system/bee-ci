@@ -346,7 +346,7 @@ func (a *App) getDashboard(w http.ResponseWriter, r *http.Request) {
 
 	sort.Slice(repositories, func(i, j int) bool {
 		if repositories[i].DateOfLastUpdate == nil || repositories[j].DateOfLastUpdate == nil {
-			return false
+			return true
 		}
 		return repositories[i].DateOfLastUpdate.After(*repositories[j].DateOfLastUpdate)
 	})
