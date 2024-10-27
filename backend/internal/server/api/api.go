@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -342,6 +343,13 @@ func (a *App) getDashboard(w http.ResponseWriter, r *http.Request) {
 			DateOfLastUpdate: dateOfLastUpdate,
 		})
 	}
+
+	sort.Slice(repositories, func(i, j int) bool {
+		if repositories[i].DateOfLastUpdate == nil || repositories[j].DateOfLastUpdate == nil {
+			return false
+		}
+		return repositories[i].DateOfLastUpdate.After(*repositories[j].DateOfLastUpdate)
+	})
 
 	response := getDashboardDataDTO{
 		Stats:        stats,
