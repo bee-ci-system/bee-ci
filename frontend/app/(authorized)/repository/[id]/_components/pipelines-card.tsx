@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader } from '@/app/_components/card';
 import { ScrollArea } from '@/app/_components/scroll-area';
-import { Pipeline, PipelineStatus } from '@/app/_types/pipeline';
+import { Pipeline } from '@/app/_types/pipeline';
 import { PipelineStatusToIcon } from '@/app/_utils/pipeline-status-to-icon';
+import { PipelineStatusToText } from '@/app/_utils/pipeline-status-to-text';
 import { routeGenerators } from '@/app/_utils/routes';
 import { format } from 'date-fns';
 import Link from 'next/link';
@@ -35,18 +36,9 @@ const PipelinesCard = ({ pipelines }: { pipelines: Pipeline[] }) => (
               <div className='flex w-2/5 justify-end'>
                 <p className='flex items-center gap-2'>
                   <span className='text-sm'>
-                    {' '}
-                    {pipeline.status === PipelineStatus.COMPLETED &&
-                    pipeline.conclusion
-                      ? pipeline.conclusion
-                      : pipeline.status}
+                    {PipelineStatusToText(pipeline)}
                   </span>
-                  {PipelineStatusToIcon(
-                    pipeline.status === PipelineStatus.COMPLETED &&
-                      pipeline.conclusion
-                      ? pipeline.conclusion
-                      : pipeline.status,
-                  )}
+                  {PipelineStatusToIcon(pipeline)}
                 </p>
               </div>
             </Link>

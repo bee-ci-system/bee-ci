@@ -5,8 +5,9 @@ import {
   CardFooter,
   CardHeader,
 } from '@/app/_components/card';
-import { Pipeline, PipelineStatus } from '@/app/_types/pipeline';
+import { Pipeline } from '@/app/_types/pipeline';
 import { PipelineStatusToIcon } from '@/app/_utils/pipeline-status-to-icon';
+import { PipelineStatusToText } from '@/app/_utils/pipeline-status-to-text';
 import { routeGenerators } from '@/app/_utils/routes';
 import { format, formatDistance } from 'date-fns';
 import {
@@ -33,17 +34,9 @@ const PipelineInfoCard = ({ pipeline }: { pipeline: Pipeline }) => (
             <BookCheck className='size-4' /> Status
           </span>
           <span className='flex w-full items-center justify-end gap-2'>
-            {PipelineStatusToIcon(
-              pipeline.status === PipelineStatus.COMPLETED &&
-                pipeline.conclusion
-                ? pipeline.conclusion
-                : pipeline.status,
-            )}
+            {PipelineStatusToIcon(pipeline)}
             <span className='text-sm font-medium'>
-              {pipeline.status === PipelineStatus.COMPLETED &&
-              pipeline.conclusion
-                ? pipeline.conclusion
-                : pipeline.status}
+              {PipelineStatusToText(pipeline)}
             </span>
           </span>
         </p>

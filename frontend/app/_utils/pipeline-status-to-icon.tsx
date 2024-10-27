@@ -1,8 +1,17 @@
 import { CircleCheck, CircleX, LoaderCircle } from 'lucide-react';
-import { PipelineConclusion, PipelineStatus } from '../_types/pipeline';
+import { PipelineDashboardData } from '../_types/dashboard';
+import {
+  Pipeline,
+  PipelineConclusion,
+  PipelineStatus,
+} from '../_types/pipeline';
 
-const PipelineStatusToIcon = (status: PipelineStatus | PipelineConclusion) => {
-  switch (status) {
+const PipelineStatusToIcon = (pipeline: Pipeline | PipelineDashboardData) => {
+  const state =
+    pipeline.status === PipelineStatus.COMPLETED && pipeline.conclusion
+      ? pipeline.conclusion
+      : pipeline.status;
+  switch (state) {
     case PipelineConclusion.SUCCESS:
       return (
         <CircleCheck width={24} height={24} className='text-emerald-500' />

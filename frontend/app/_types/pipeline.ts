@@ -1,6 +1,6 @@
 export enum PipelineStatus {
   COMPLETED = 'completed',
-  IN_PROGRESS = 'in progress',
+  IN_PROGRESS = 'in_progress',
   QUEUED = 'queued',
 }
 
