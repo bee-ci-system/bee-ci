@@ -39,11 +39,6 @@ func main() {
 		slog.Error("error decoding GitHub App private key from base64", slog.Any("error", err))
 		os.Exit(1)
 	}
-
-	// FIXME: remove this!!!
-	slog.Debug("DEBUG: ", slog.Int64("GITHUB_APP_ID", githubAppID))
-	slog.Debug("DEBUG: ", slog.String("GITHUB_APP_PRIVATE_KEY_BASE64", privateKeyBase64))
-
 	rsaPrivateKey, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
 	if err != nil {
 		slog.Error("error parsing GitHub App RSA private key from PEM", slog.Any("error", err))

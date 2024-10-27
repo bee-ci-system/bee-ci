@@ -40,6 +40,9 @@ services:
       INFLUXDB_TOKEN: ${INFLUXDB_TOKEN}
       INFLUXDB_ORG: ${INFLUXDB_ORG}
       INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
+      REDIS_ADDRESS: ${REDIS_ADDRESS}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_USE_TLS: false
 
   gh-updater:
     build:

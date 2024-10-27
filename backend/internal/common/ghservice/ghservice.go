@@ -74,9 +74,6 @@ func (g GithubService) getInstallationAccessToken(ctx context.Context, installat
 		return "", fmt.Errorf("generate signed jwt: %w", err)
 	}
 
-	// FIXME(bartekpacia): Remove this print!!!
-	g.logger.Debug("DEBUG: generated a signed JWT string", slog.String("jwt", jwtString))
-
 	appClient := http.Client{Transport: &bearerTransport{Token: jwtString}}
 	gh := github.NewClient(&appClient)
 	res, _, err := gh.Apps.CreateInstallationToken(ctx, installationID, nil)
