@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -30,7 +31,7 @@ type Updater struct {
 	userRepo      data.UserRepo
 	buildRepo     data.BuildRepo
 	githubService *ghs.GithubService
-	dashboardURL  string
+	frontendURL   string
 }
 
 func New(
@@ -39,7 +40,7 @@ func New(
 	userRepo data.UserRepo,
 	buildRepo data.BuildRepo,
 	githubService *ghs.GithubService,
-	dashboardURL string,
+	frontendURL string,
 ) *Updater {
 	return &Updater{
 		logger:        slog.Default(), // TODO: add some "subsystem name" to this logger
@@ -50,7 +51,7 @@ func New(
 		userRepo:      userRepo,
 		buildRepo:     buildRepo,
 		githubService: githubService,
-		dashboardURL:  dashboardURL,
+		frontendURL:   frontendURL,
 	}
 }
 
@@ -136,13 +137,20 @@ func (u Updater) createCheckRun(ctx context.Context, build data.Build) (checkRun
 		return 0, fmt.Errorf("get client for installation: %w", err)
 	}
 
+	buildID := strconv.FormatInt(build.ID, 10)
+
+	detailsURL, err := url.JoinPath(u.frontendURL, "pipeline", buildID)
+	if err != nil {
+		return 0, fmt.Errorf("join paths to create details URL: %w", err)
+	}
+
 	createCheckRunOptions := github.CreateCheckRunOptions{
 		// TODO: Get name from the BeeCI config file?
 		Name:        build.CommitMsg + ", started at: " + fmt.Sprint(time.Now().Format(time.RFC822Z)),
 		HeadSHA:     build.CommitSHA,
-		DetailsURL:  github.String(fmt.Sprintf("%s/pipeline/%d", u.dashboardURL, build.ID)),
-		ExternalID:  github.String(strconv.FormatInt(build.ID, 10)),
-		Status:      github.String(build.Status),
+		DetailsURL:  &detailsURL,
+		ExternalID:  &buildID,
+		Status:      &build.Status,
 		Conclusion:  nil,
 		StartedAt:   &github.Timestamp{Time: build.CreatedAt},
 		CompletedAt: nil,

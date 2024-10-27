@@ -12,6 +12,7 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -52,17 +53,22 @@ type Handler struct {
 	jwtSecret []byte
 }
 
-func NewWebhookHandler(
+func NewHandler(
 	userRepo data.UserRepo,
 	repoRepo data.RepoRepo,
 	buildRepo data.BuildRepo,
 	mainDomain string,
-	redirectURL string,
+	frontendURL string,
 	githubAppClientID string,
 	githubAppClientSecret string,
 	githubAppWebhookSecret string,
 	jwtSecret []byte,
-) *Handler {
+) (*Handler, error) {
+	redirectURL, err := url.JoinPath(frontendURL, "dashboard")
+	if err != nil {
+		return nil, fmt.Errorf("could not join path valid to create a redirect URL: %v", err)
+	}
+
 	return &Handler{
 		httpClient:             &http.Client{Timeout: 10 * time.Second},
 		userRepo:               userRepo,
@@ -74,7 +80,7 @@ func NewWebhookHandler(
 		githubAppClientSecret:  githubAppClientSecret,
 		githubAppWebhookSecret: githubAppWebhookSecret,
 		jwtSecret:              jwtSecret,
-	}
+	}, nil
 }
 
 func (h Handler) Mux() http.Handler {

@@ -13,8 +13,8 @@ locals {
       scope = "RUN_TIME",
     },
     {
-      key   = "REDIRECT_URL",
-      value = "https://bee-ci.pacia.tech/dashboard",
+      key   = "FRONTEND_URL",
+      value = "https://bee-ci.pacia.tech",
       scope = "RUN_TIME"
     },
     {

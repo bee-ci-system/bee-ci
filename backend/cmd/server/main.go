@@ -31,7 +31,7 @@ func main() {
 	port := mustGetenv("PORT")
 
 	mainDomain := os.Getenv("MAIN_DOMAIN")
-	redirectURL := mustGetenv("REDIRECT_URL")
+	frontendURL := mustGetenv("FRONTEND_URL")
 
 	slog.Debug("server is starting...")
 
@@ -72,13 +72,17 @@ func main() {
 	repoRepo := data.NewPostgresRepoRepo(db)
 	logsRepo := data.NewInfluxLogsRepo(influxClient, influxOrg, influxBucket)
 
-	webhooks := webhook.NewWebhookHandler(userRepo, repoRepo, buildRepo, mainDomain, redirectURL, githubAppClientID, githubAppClientSecret, githubAppWebhookSecret, jwtSecret)
+	webhooks, err := webhook.NewHandler(userRepo, repoRepo, buildRepo, mainDomain, frontendURL, githubAppClientID, githubAppClientSecret, githubAppWebhookSecret, jwtSecret)
+	if err != nil {
+		slog.Error("error creating webhook handler", slog.Any("error", err))
+		os.Exit(1)
+	}
 	app := api.NewApp(buildRepo, logsRepo, repoRepo, userRepo, jwtSecret)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprintf(w, "hello world\n\nthis is bee-ci backend server!\n\n")
-		_, _ = fmt.Fprintf(w, "SERVER_URL: %s\nMAIN_DOMAIN: %s\nREDIRECT_URL: %s\n", serverURL, mainDomain, redirectURL)
+		_, _ = fmt.Fprintf(w, "SERVER_URL: %s\nMAIN_DOMAIN: %s\nFRONTEND_URL: %s\n", serverURL, mainDomain, frontendURL)
 	})
 	mux.Handle("/webhook/", http.StripPrefix("/webhook", webhooks.Mux()))
 	mux.Handle("/api/", http.StripPrefix("/api", app.Mux()))
