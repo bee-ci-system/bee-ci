@@ -3,6 +3,7 @@ import { TableCell, TableRow } from '@/app/_components/table';
 import { PipelineDashboardData } from '@/app/_types/dashboard';
 import { cn } from '@/app/_utils/cn';
 import { PipelineStatusToIcon } from '@/app/_utils/pipeline-status-to-icon';
+import { PipelineStatusToText } from '@/app/_utils/pipeline-status-to-text';
 import { routeGenerators } from '@/app/_utils/routes';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -20,7 +21,9 @@ const PipelineTableRow = ({
       </div>
     </TableCell>
     <TableCell className='flex items-center justify-between gap-4 px-0'>
-      <p>{PipelineStatusToIcon(pipeline)}</p>
+      <p className='flex flex-row gap-1'>
+        {PipelineStatusToIcon(pipeline)} {PipelineStatusToText(pipeline)}
+      </p>
       <Link
         href={routeGenerators.pipeline(pipeline.id)}
         aria-label='open info about pipeline'
