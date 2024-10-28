@@ -75,9 +75,10 @@ class DockerExecutor:
 
         try:
             for line in container.logs(stream=True):
-                self.logger.debug(line.strip())
+                decoded_line = line.strip().decode("utf-8")
+                self.logger.debug(decoded_line)
                 self.influxdbHandler.log_to_influxdb(
-                    build_info.build_id, str(line.strip())
+                    build_info.build_id, str(decoded_line)
                 )
 
                 # Check for timeout
