@@ -9,6 +9,7 @@ import {
 import { Repository } from '@/app/_types/my-repositories';
 import { cn } from '@/app/_utils/cn';
 import { routeGenerators, routes } from '@/app/_utils/routes';
+import { format } from 'date-fns';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -54,7 +55,8 @@ const MyRepositoriesCard = ({
                 {repository.name}
               </p>
               <p className='text-sm text-muted-foreground'>
-                {repository.dateOfLastUpdate || 'no updates'}
+                {format(repository.dateOfLastUpdate, 'HH:mm - dd MMM yyyy') ||
+                  'no updates'}
               </p>
             </div>
             <Link
