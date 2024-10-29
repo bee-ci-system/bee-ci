@@ -55,8 +55,9 @@ const MyRepositoriesCard = ({
                 {repository.name}
               </p>
               <p className='text-sm text-muted-foreground'>
-                {format(repository.dateOfLastUpdate, 'HH:mm - dd MMM yyyy') ||
-                  'no updates'}
+                {repository.dateOfLastUpdate !== null
+                  ? format(repository.dateOfLastUpdate, 'HH:mm - dd MMM yyyy')
+                  : 'no updates'}
               </p>
             </div>
             <Link
