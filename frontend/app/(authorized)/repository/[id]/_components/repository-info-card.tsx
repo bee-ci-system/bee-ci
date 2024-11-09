@@ -34,12 +34,16 @@ const RepositoryInfoCard = ({
           <span className='flex items-center gap-2'>
             <Clock3 className='size-4' /> Date of last update:
           </span>
-          {dateOfLastUpdate !== null && (
+          {dateOfLastUpdate !== null ? (
             <span className='block w-full text-right text-base'>
               {format(dateOfLastUpdate, 'HH:mm - dd MMM yyyy')}
               <span className='ml-1 font-light'>
                 ({formatDistance(new Date(dateOfLastUpdate), new Date())} ago)
               </span>
+            </span>
+          ) : (
+            <span className='block w-full text-right text-base text-muted-foreground'>
+              no updates
             </span>
           )}
         </p>

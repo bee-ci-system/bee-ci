@@ -39,7 +39,7 @@ const TerminalWindow = ({
 
   return (
     <div className='h-full w-full'>
-      <div className='coding inverse-toggle h-full rounded-lg bg-slate-100 px-5 pb-6 pt-4 font-mono text-sm leading-normal text-foreground subpixel-antialiased shadow-lg dark:bg-gray-800'>
+      <div className='coding inverse-toggle h-full rounded-lg border bg-slate-100 px-5 pb-6 pt-4 font-mono text-sm leading-normal text-foreground subpixel-antialiased shadow-lg dark:bg-card'>
         {/* <div className='top mb-2 flex'>
           <TooltipProvider>
             <Tooltip>
