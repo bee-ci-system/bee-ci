@@ -7,7 +7,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"github.com/bee-ci/bee-ci-system/internal/common/ghservice"
 	"html/template"
 	"io"
 	"log"
@@ -17,6 +16,8 @@ import (
 	"slices"
 	"strconv"
 	"time"
+
+	"github.com/bee-ci/bee-ci-system/internal/common/ghservice"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-github/v64/github"
