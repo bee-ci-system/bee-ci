@@ -1,49 +1,16 @@
 ---
 title: Introduction
-description: This section provides an overview of Introduction.
+description: This section describes the BeeCI project and its features.
 ---
 
-Lorem ipsum dolor sit amet consectetur adipisicing elit. Numquam iste dolorum tempore consectetur explicabo tempora provident quia maxime, molestiae, facilis aperiam et, error illum vel ullam? Quis architecto dolore ullam
+## Welcome to BeeCI!
 
-## Blockquotes
+Welcome to Bee-CI, a cutting-edge continuous integration (CI) system designed to streamline your development workflow. Bee-CI simplifies the process of building and testing code, integrating seamlessly with GitHub to provide a user-friendly and powerful experience.
 
-Blockquotes are useful for emphasizing key points or quoting external sources:
+At its core, Bee-CI automates the most critical aspects of CI. Builds are triggered automatically in response to code pushes, ensuring that your application remains in a consistent, high-quality state without manual intervention.
 
-> "Documentation is a love letter that you write to your future self." - Damian Conway
+Bee-CI is built as a GitHub App, making it easy to integrate into your existing development pipeline. By leveraging GitHub's API, the system provides advanced functionality, such as detailed build statuses directly tied to individual commits. This deep integration allows you to track your project's progress and catch issues early.
 
-Feel free to use blockquotes to highlight important information or quotes relevant to your documentation.
+Configuration is straightforward, thanks to a simple JSON-based approach. Users define their workflows in a clear, intuitive configuration file, ensuring that setting up Bee-CI is as efficient as the application itself.
 
-## Project Structure
-
-This file serves as the introduction to your documentation. Customize it to provide an overview of your project, highlight key features, and guide users on what to expect from the documentation. Start here to set the tone and direction for your documentation portal.
-
-```plaintext
-root
-├── app
-├── content
-│   └── docs
-│       └── getting-started
-│           ├── introduction.mdx     /*Get started by editing this file*/
-│           └── installation.mdx
-└── package.json
-```
-
-The structure ought to be obvious and simple to comprehend thanks to this representation. In the event that you wish to add new routes or a routes section, you can edit the `routes.config.ts` file as necessary.
-
-```ts:lib/routes-config.ts {8}
-export const ROUTES = [
-  {
-    title: "Getting Started",
-    href: "getting-started",
-    items: [
-      { title: "Introduction", href: "/introduction" },
-    - { title: "Installation", href: "/installation" },
-    + { title: "Refrences", href: "/refrences" },
-    ],
-  },
-]
-```
-
-## Conclusion
-
-Lorem ipsum dolor sit amet consectetur adipisicing elit. Numquam iste dolorum tempore consectetur explicabo tempora provident quia maxime, molestiae, facilis aperiam et, error illum vel ullam? Quis architecto dolore ullam
+Bee-CI is the perfect choice for teams looking to enhance their development process with a reliable, feature-rich CI solution tailored to modern workflows.

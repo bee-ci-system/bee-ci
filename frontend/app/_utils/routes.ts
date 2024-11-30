@@ -12,13 +12,7 @@ export const routes = {
       items: [
         { title: 'Introduction', href: '/introduction' },
         { title: 'Installation', href: '/installation' },
-        { title: 'Project Structure', href: '/project-structure' },
       ],
-    },
-    {
-      title: 'React Hooks',
-      href: 'react-hooks',
-      items: [{ title: 'useRouter', href: '/use-router' }],
     },
   ],
 };
