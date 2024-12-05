@@ -1,79 +1,73 @@
 ---
-title: Installation
-description: Installation guide for our application.
+title: BeeCI Installation Guide
+description: Step-by-step instructions to set up BeeCI.
 ---
 
-To get started with our application, follow these simple steps:
-Lorem ipsum dolor sit amet consectetur adipisicing elit. Numquam iste dolorum tempore consectetur explicabo tempora provident quia maxime, molestiae, facilis aperiam et, error illum vel ullam? Quis architecto dolore ullam
+Follow this guide to start using BeeCI and integrate it with your GitHub projects effortlessly.
 
 ## Prerequisites
 
-Before installing our application, make sure you have the following:
+Before you begin, ensure you have the following:
 
-- Node.js installed on your machine
+- A GitHub account
+- Administrative access to the GitHub repository where you want to install BeeCI
 
-<Note title='Remember' type='danger'>
-  Lorem ipsum dolor sit amet consectetur adipisicing elit Numquam iste dolorum
-  tempore consectetur explicabo.
+<Note title='Important' type='info'>
+  BeeCI requires access to your GitHub repositories. Ensure you have the
+  appropriate permissions before proceeding.
 </Note>
 
 ## Installation Steps
 
 <Stepper>
-<StepperItem title="Clone the Repository">
-Start by creating a new React project using vite:
+<StepperItem title="Visit the Landing Page">
+Go to the BeeCI landing page:
 
-```bash
-git clone https://github.com/your-repo/your-project.git
+```plaintext
+https://bee-ci.pacia.tech
 ```
 
-</StepperItem>
-<StepperItem title="Navigate to the Project Directory">
-Install `tailwindcss` and its peer dependencies, then add your `tailwind.config.js` and postcss.config.js files:
-
-```tsx
-import "@/styles/globals.css";
-import { Inter as FontSans } from "next/font/google";
-
-import { cn } from "@/lib/utils";
-
-const fontSans = FontSans({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
-
-export default function RootLayout({ children }: RootLayoutProps) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <head />
-      <body
-        className={cn(
-          "min-h-screen bg-background font-sans antialiased",
-          fontSans.variable
-        )}
-      >
-        ...
-      </body>
-    </html>
-  );
-}
-```
+On this page, you'll find a brief introduction to BeeCI's features. Click the **Sign in with GitHub** button to begin.
 
 </StepperItem>
 
-<StepperItem title="Install Dependencies">
- Install the necessary dependencies using npm or yarn.
+<StepperItem title="Authenticate via GitHub">
+After clicking the sign-in button, you'll be redirected to GitHub's authorization page. If you're not logged in, sign in to GitHub or create an account.
 
-```bash
-npm install
-# or
-yarn install
-```
+- Review the access permissions requested by BeeCI.
+- Click **Authorize** to continue.
+
+</StepperItem>
+
+<StepperItem title="Configure BeeCI on Your GitHub Account">
+After successful authentication, you'll be redirected to BeeCI's main page. If no repositories appear, you need to install the BeeCI GitHub App:
+
+1. Click the **Configure** button on the main page.
+2. Select the account where you want to install BeeCI.
+3. Choose specific repositories or grant access to all repositories.
+4. Click **Install**.
+
+</StepperItem>
+
+<StepperItem title="Access Your Repositories">
+Once installed, return to the BeeCI dashboard. You will see a list of your repositories.
+
+- Use the search bar to find specific repositories.
+- Click on a repository to view detailed build logs and status.
 
 </StepperItem>
 
 </Stepper>
 
-## Additional Information
+## Additional Features
 
-For more detailed instructions and troubleshooting tips, refer to our [documentation](#).
+BeeCI includes:
+
+- A comprehensive dashboard summarizing build processes.
+- Detailed repository views with build history.
+- Integrated documentation accessible from the sidebar menu.
+
+<Note title='Tip' type='success'>
+  You can switch between light and dark modes from the sidebar to match your
+  preference.
+</Note>
