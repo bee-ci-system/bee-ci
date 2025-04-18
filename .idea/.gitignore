@@ -5,10 +5,9 @@
 
 dataSources/
 httpRequests/
-inspectionProfiles/
 bee-ci.iml
 dataSources.local.xml
 misc.xml
-workspace.xml
-google-java-format.xml
 modules.xml
+terraform.xml
+workspace.xml
