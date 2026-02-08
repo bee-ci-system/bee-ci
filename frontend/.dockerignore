@@ -1,0 +1,10 @@
+.DS_Store
+Dockerfile
+.dockerignore
+.git/
+.gitignore
+.husky/
+.next/
+node_modules/
+.env.local
+next-env.d.ts
