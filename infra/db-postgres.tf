@@ -3,7 +3,7 @@ resource "digitalocean_database_cluster" "postgres" {
   engine     = "pg"
   version    = "16"
   size       = "db-s-1vcpu-1gb"
-  region     = "sfo2"
+  region     = "sfo3"
   node_count = 1
 }
 
@@ -20,11 +20,11 @@ resource "digitalocean_database_db" "postgres" {
     EOF
 
     environment = {
-      "PGUSER" = digitalocean_database_cluster.postgres.user # -U
-      "PGHOST" = digitalocean_database_cluster.postgres.host # -h
-      "PGPORT" = digitalocean_database_cluster.postgres.port # -p
-      "PGDATABASE" = digitalocean_database_db.postgres.name  # -d
-      "PGSSLMODE" = "require"                                # -c sslmode=require
+      "PGUSER"     = digitalocean_database_cluster.postgres.user # -U
+      "PGHOST"     = digitalocean_database_cluster.postgres.host # -h
+      "PGPORT"     = digitalocean_database_cluster.postgres.port # -p
+      "PGDATABASE" = digitalocean_database_db.postgres.name      # -d
+      "PGSSLMODE"  = "require"                                   # -c sslmode=require
       "PGPASSWORD" = digitalocean_database_cluster.postgres.password
     }
   }

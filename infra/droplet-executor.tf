@@ -2,11 +2,11 @@ resource "digitalocean_droplet" "executor" {
   name          = "vm-executor"
   region        = "sfo3"
   image         = "ubuntu-24-04-x64"
-  size = "s-1vcpu-2gb" # doctl compute size list
-  volume_ids = []
-  tags = []
+  size          = "s-1vcpu-2gb" # doctl compute size list
+  volume_ids    = []
+  tags          = []
   vpc_uuid      = digitalocean_vpc.default.id
-  ssh_keys = [digitalocean_ssh_key.default.fingerprint]
+  ssh_keys      = [digitalocean_ssh_key.default.fingerprint]
   droplet_agent = true
 
   user_data = <<-EOF
