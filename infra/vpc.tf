@@ -5,7 +5,7 @@ resource "digitalocean_vpc" "default" {
 }
 
 resource "digitalocean_ssh_key" "default" {
-  name       = "main key"
+  name       = "bee-ci droplets key"
   public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILlmPPetLfPL/eTOI5wLcO3sBiY6wtjhwgm/wlQSd2LP"
   # "bee-ci droplets key" in 1Password
 }
