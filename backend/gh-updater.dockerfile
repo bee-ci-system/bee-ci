@@ -4,7 +4,7 @@ ARG CGO_ENABLED=0
 
 WORKDIR /tmp/gh-updater
 
-RUN go install github.com/go-delve/delve/cmd/dlv@v1.23.0
+RUN go install github.com/go-delve/delve/cmd/dlv@v1.24.0
 
 # Copy source files necessary to download dependencies
 COPY go.mod ./
