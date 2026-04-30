@@ -1,4 +1,1 @@
-infra/terraform.tfvars
-infra/.terraform
-
 .env
