@@ -19,8 +19,8 @@ services:
       - "8080:8080"
       - "40000:40000" # debugger port
     depends_on:
-      database-postgres:
-        condition: service_healthy
+      database-migrate:
+        condition: service_completed_successfully
       database-influx:
         condition: service_healthy
     env_file:
@@ -52,8 +52,8 @@ services:
     ports:
       - "40001:40000" # debugger port
     depends_on:
-      database-postgres:
-        condition: service_healthy
+      database-migrate:
+        condition: service_completed_successfully
       database-influx:
         condition: service_healthy
     env_file:
@@ -82,13 +82,30 @@ services:
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
 
+  database-migrate:
+    build:
+      context: backend
+      dockerfile: server.dockerfile
+    command: [ "/usr/local/bin/migrate", "up" ]
+    depends_on:
+      database-postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_OPTS: sslmode=disable
+
   database-postgres:
     image: postgres:17.0-alpine3.20
     ports:
       - "5432:5432" # only needed to connect to the database during local development
     volumes:
       - bee-postgres-data:/var/lib/postgresql/data
-      - ./backend/sql-scripts:/docker-entrypoint-initdb.d
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 3s
@@ -97,13 +114,14 @@ services:
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
 
   executor:
     build: executor
     init: true
     depends_on:
-      database-postgres:
-        condition: service_healthy
+      database-migrate:
+        condition: service_completed_successfully
       database-influx:
         condition: service_healthy
     env_file:
