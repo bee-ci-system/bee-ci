@@ -1,6 +1,6 @@
 module github.com/bee-ci/bee-ci-system
 
-go 1.24
+go 1.26
 
 require (
 	github.com/felixge/httpsnoop v1.0.4
