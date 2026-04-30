@@ -86,6 +86,33 @@ We don't use an ORM, instead we use [sqlx](https://jmoiron.github.io/sqlx).
 
 [pgcli](https://www.pgcli.com) is a good client for PostgreSQL.
 
+#### Migrations
+
+Database schema changes live in `migrations/`.
+They are applied by the custom Go command in `cmd/migrate`.
+
+Run all pending migrations:
+
+```console
+go run ./cmd/migrate up
+```
+
+Print the current migration version:
+
+```console
+go run ./cmd/migrate version
+```
+
+Roll back the latest migration:
+
+```console
+go run ./cmd/migrate down
+```
+
+The migration command accepts either `DATABASE_URL`
+or the same `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`,
+and `DB_OPTS` environment variables used by the backend server.
+
 #### Connect to the local database
 
 ```console
