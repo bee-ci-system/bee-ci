@@ -147,6 +147,31 @@ resource "digitalocean_app" "app" {
       }
     }
 
+    job {
+      name               = "db-migrate"
+      kind               = "PRE_DEPLOY"
+      instance_size_slug = "apps-s-1vcpu-0.5gb" # doctl apps tier instance-size list
+      run_command        = "/usr/local/bin/migrate up"
+
+      dynamic "env" {
+        for_each = local.env_vars
+        content {
+          key   = env.value.key
+          value = env.value.value
+          scope = env.value.scope
+          type  = lookup(env.value, "type", null)
+        }
+      }
+
+      github {
+        repo           = "bee-ci-system/bee-ci"
+        branch         = "master"
+        deploy_on_push = true
+      }
+
+      source_dir      = "./backend"
+      dockerfile_path = "./backend/server.dockerfile"
+    }
 
     worker {
       name               = "gh-updater"
