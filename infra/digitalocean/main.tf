@@ -5,15 +5,6 @@ terraform {
       version = "~> 2.0"
     }
   }
-
-  cloud {
-    organization = "bpacia"
-
-    workspaces {
-      project = "bee-ci"
-      name    = "bee-ci-workspace"
-    }
-  }
 }
 
 provider "digitalocean" {
