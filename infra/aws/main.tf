@@ -29,6 +29,10 @@ data "aws_ami" "ubuntu" {
 resource "aws_security_group" "box_sg" {
   name = "bee-ci-box"
 
+  tags = {
+    Name = "bee-ci"
+  }
+
   ingress {
     description = "SSH from anywhere"
     from_port   = 22
@@ -57,6 +61,23 @@ resource "aws_instance" "box" {
   ami                    = data.aws_ami.ubuntu.id
   key_name               = aws_key_pair.box.key_name
   vpc_security_group_ids = [aws_security_group.box_sg.id]
+
+  tags = {
+    Name = "bee-ci"
+  }
+
+  user_data = <<EOF
+    #cloud-config
+    package_update: true
+    packages:
+      - curl
+      - git
+      - docker.io
+
+    runcmd:
+      - echo "hello from cloud-init" > /home/ubuntu/hello.txt
+      - chown ubuntu:ubuntu /home/ubuntu/hello.txt
+  EOF
 }
 
 output "box_public_ip" {
