@@ -26,8 +26,56 @@ data "aws_ami" "ubuntu" {
   }
 }
 
+resource "aws_vpc" "main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  tags = {
+    Name = "bee-ci"
+  }
+}
+
+resource "aws_subnet" "public" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "us-east-1a"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "bee-ci-public"
+  }
+}
+
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "bee-ci"
+  }
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = {
+    Name = "bee-ci-public"
+  }
+}
+
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
 resource "aws_security_group" "box_sg" {
-  name = "bee-ci-box"
+  name   = "bee-ci-box"
+  vpc_id = aws_vpc.main.id
 
   tags = {
     Name = "bee-ci"
@@ -50,17 +98,59 @@ resource "aws_security_group" "box_sg" {
   }
 }
 
+resource "aws_eip" "box" {
+  instance = aws_instance.box.id
+  domain   = "vpc"
+
+  tags = {
+    Name = "bee-ci"
+  }
+}
+
 resource "aws_key_pair" "box" {
   key_name   = "bee-ci-box"
   public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILlmPPetLfPL/eTOI5wLcO3sBiY6wtjhwgm/wlQSd2LP"
 }
 
+resource "aws_iam_role" "box" {
+  name = "bee-ci-box"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = {
+    Name = "bee-ci"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "box_read_only" {
+  role       = aws_iam_role.box.name
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+}
+
+resource "aws_iam_instance_profile" "box" {
+  name = "bee-ci-box"
+  role = aws_iam_role.box.name
+}
+
 resource "aws_instance" "box" {
-  availability_zone      = "us-east-1a"
-  instance_type          = "t3.micro"
-  ami                    = data.aws_ami.ubuntu.id
-  key_name               = aws_key_pair.box.key_name
-  vpc_security_group_ids = [aws_security_group.box_sg.id]
+  instance_type               = "t3.micro"
+  ami                         = data.aws_ami.ubuntu.id
+  key_name                    = aws_key_pair.box.key_name
+  vpc_security_group_ids      = [aws_security_group.box_sg.id]
+  subnet_id                   = aws_subnet.public.id
+  associate_public_ip_address = true
+  iam_instance_profile        = aws_iam_instance_profile.box.name
 
   tags = {
     Name = "bee-ci"
@@ -82,5 +172,5 @@ resource "aws_instance" "box" {
 
 output "box_public_ip" {
   description = "Public IPv4 address of the EC2 box"
-  value       = aws_instance.box.public_ip
+  value       = aws_eip.box.public_ip
 }
