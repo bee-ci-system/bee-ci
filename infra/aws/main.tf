@@ -98,12 +98,14 @@ resource "aws_security_group" "box_sg" {
   }
 }
 
-resource "aws_eip" "box" {
-  instance = aws_instance.box.id
+resource "aws_eip" "box_eip" {
+  for_each = toset(["1", "2", "3"])
+
+  instance = aws_instance.box[each.value].id
   domain   = "vpc"
 
   tags = {
-    Name = "bee-ci"
+    Name = "bee-ci-${each.value}"
   }
 }
 
@@ -144,6 +146,8 @@ resource "aws_iam_instance_profile" "box" {
 }
 
 resource "aws_instance" "box" {
+  for_each = toset(["1", "2", "3"])
+
   instance_type               = "t3.micro"
   ami                         = data.aws_ami.ubuntu.id
   key_name                    = aws_key_pair.box.key_name
@@ -153,7 +157,7 @@ resource "aws_instance" "box" {
   iam_instance_profile        = aws_iam_instance_profile.box.name
 
   tags = {
-    Name = "bee-ci"
+    Name = "bee-ci-${each.value}"
   }
 
   user_data = <<EOF
@@ -172,5 +176,7 @@ resource "aws_instance" "box" {
 
 output "box_public_ip" {
   description = "Public IPv4 address of the EC2 box"
-  value       = aws_eip.box.public_ip
+  value = {
+    for key, eip in aws_eip.box_eip : "IP of box ${key}" => eip.public_ip
+  }
 }
