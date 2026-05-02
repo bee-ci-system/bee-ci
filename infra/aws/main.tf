@@ -11,21 +11,6 @@ provider "aws" {
   region = "us-east-1"
 }
 
-data "aws_ami" "ubuntu" {
-  most_recent = true
-  owners      = ["099720109477"] # Canonical
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-}
-
 resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_support   = true
@@ -105,7 +90,7 @@ locals {
 resource "aws_eip" "box_eip" {
   for_each = local.names
 
-  instance = aws_instance.box[each.value].id
+  instance = module.box[each.key].instance_id
   domain   = "vpc"
 
   tags = {
@@ -139,6 +124,19 @@ resource "aws_iam_role" "box" {
   }
 }
 
+module "box" {
+  source = "./ec2_box"
+
+  for_each = toset(["1", "2", "3"])
+
+  name                   = "box-${each.value}"
+  subnet_id              = aws_subnet.public.id
+  key_name               = aws_key_pair.box.key_name
+  vpc_security_group_ids = [aws_security_group.box_sg.id]
+  # iam_instance_profile = aws_iam_instance_profile.box.name
+  instance_profile = aws_iam_instance_profile.box.name
+}
+
 resource "aws_iam_role_policy_attachment" "box_read_only" {
   role       = aws_iam_role.box.name
   policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
@@ -147,35 +145,6 @@ resource "aws_iam_role_policy_attachment" "box_read_only" {
 resource "aws_iam_instance_profile" "box" {
   name = "bee-ci-box"
   role = aws_iam_role.box.name
-}
-
-resource "aws_instance" "box" {
-  for_each = local.names
-
-  instance_type               = "t3.micro"
-  ami                         = data.aws_ami.ubuntu.id
-  key_name                    = aws_key_pair.box.key_name
-  vpc_security_group_ids      = [aws_security_group.box_sg.id]
-  subnet_id                   = aws_subnet.public.id
-  associate_public_ip_address = true
-  iam_instance_profile        = aws_iam_instance_profile.box.name
-
-  tags = {
-    Name = "bee-ci-${each.value}"
-  }
-
-  user_data = <<EOF
-    #cloud-config
-    package_update: true
-    packages:
-      - curl
-      - git
-      - docker.io
-
-    runcmd:
-      - echo "hello from cloud-init" > /home/ubuntu/hello.txt
-      - chown ubuntu:ubuntu /home/ubuntu/hello.txt
-  EOF
 }
 
 output "box_public_ip" {
