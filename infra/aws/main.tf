@@ -98,8 +98,12 @@ resource "aws_security_group" "box_sg" {
   }
 }
 
+locals {
+  names = toset(["1", "2", "3"])
+}
+
 resource "aws_eip" "box_eip" {
-  for_each = toset(["1", "2", "3"])
+  for_each = local.names
 
   instance = aws_instance.box[each.value].id
   domain   = "vpc"
@@ -146,7 +150,7 @@ resource "aws_iam_instance_profile" "box" {
 }
 
 resource "aws_instance" "box" {
-  for_each = toset(["1", "2", "3"])
+  for_each = local.names
 
   instance_type               = "t3.micro"
   ami                         = data.aws_ami.ubuntu.id
