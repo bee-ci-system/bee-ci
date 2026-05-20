@@ -44,3 +44,35 @@ resource "aws_route_table_association" "external_public" {
   subnet_id      = aws_subnet.external_public.id
   route_table_id = aws_route_table.external_public.id
 }
+
+# --- PrivateLink stuff
+
+resource "aws_security_group" "external_privatelink_endpoint" {
+  name   = "bee-ci-external-privatelink-endpoint"
+  vpc_id = aws_vpc.external.id
+
+  ingress {
+    description = "HTTP from external VPC"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = [aws_vpc.external.cidr_block]
+  }
+
+  egress {
+    description = "Allow all outbound"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_vpc_endpoint" "main_service" {
+  vpc_id             = aws_vpc.external.id
+  service_name       = aws_vpc_endpoint_service.main.service_name
+  vpc_endpoint_type  = "Interface"
+  subnet_ids         = [aws_subnet.external_public.id]
+  security_group_ids = [aws_security_group.external_privatelink_endpoint.id]
+
+}
