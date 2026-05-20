@@ -29,6 +29,14 @@ resource "aws_security_group" "box_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    description = "HTTP for dummy nginx page"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     description = "Allow all outbound"
     from_port   = 0
@@ -91,26 +99,52 @@ resource "aws_instance" "box" {
   subnet_id                   = aws_subnet.public.id
   associate_public_ip_address = true
   iam_instance_profile        = aws_iam_instance_profile.box.name
+  user_data_replace_on_change = true
 
   tags = {
     Name = "bee-ci"
   }
 
-  user_data = <<EOF
-    #cloud-config
-    package_update: true
-    packages:
-      - curl
-      - git
-      - docker.io
+  user_data = <<-EOF
+#cloud-config
+package_update: true
+packages:
+  - curl
+  - git
+  - docker.io
+  - nginx
 
-    runcmd:
-      - echo "hello from cloud-init" > /home/ubuntu/hello.txt
-      - chown ubuntu:ubuntu /home/ubuntu/hello.txt
-  EOF
+write_files:
+  - path: /var/www/html/index.html
+    owner: www-data:www-data
+    permissions: "0644"
+    content: |
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <title>bee-ci box-1</title>
+      </head>
+      <body>
+        <h1>bee-ci box-1</h1>
+        <p>Dummy nginx page (PrivateLink lab).</p>
+      </body>
+      </html>
+
+runcmd:
+  - systemctl enable nginx
+  - systemctl restart nginx
+  - echo "hello from cloud-init" > /home/ubuntu/hello.txt
+  - chown ubuntu:ubuntu /home/ubuntu/hello.txt
+EOF
 }
 
 output "box_public_ip" {
   description = "Public IPv4 address of the EC2 box"
   value       = aws_eip.box.public_ip
+}
+
+output "box_http_url" {
+  description = "Dummy nginx page on box-1"
+  value       = "http://${aws_eip.box.public_ip}/"
 }
