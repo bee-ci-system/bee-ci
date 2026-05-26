@@ -15,10 +15,10 @@ resource "aws_lb" "internal" {
 }
 
 resource "aws_lb_target_group" "internal" {
-  port        = 80
-  protocol    = "TCP"
-  vpc_id      = aws_vpc.internal.id
-  target_type = "instance"
+  port               = 80
+  protocol           = "TCP"
+  vpc_id             = aws_vpc.internal.id
+  target_type        = "instance"
   preserve_client_ip = false
 }
 
@@ -76,6 +76,11 @@ resource "aws_route_table" "internal" {
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.internal.id
+  }
+
+  route {
+    cidr_block                = aws_vpc.external.cidr_block
+    vpc_peering_connection_id = aws_vpc_peering_connection.internal_and_external.id
   }
 
   tags = {
