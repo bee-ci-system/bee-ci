@@ -15,7 +15,7 @@ data "aws_ami" "ubuntu" {
 
 resource "aws_security_group" "box_sg" {
   name   = "bee-ci-box"
-  vpc_id = aws_vpc.main.id
+  vpc_id = aws_vpc.internal.id
 
   tags = {
     Name = "bee-ci"
@@ -96,7 +96,7 @@ resource "aws_instance" "box" {
   ami                         = data.aws_ami.ubuntu.id
   key_name                    = aws_key_pair.box.key_name
   vpc_security_group_ids      = [aws_security_group.box_sg.id]
-  subnet_id                   = aws_subnet.public.id
+  subnet_id                   = aws_subnet.internal-1.id
   associate_public_ip_address = true
   iam_instance_profile        = aws_iam_instance_profile.box.name
   user_data_replace_on_change = true
