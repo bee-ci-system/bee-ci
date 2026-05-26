@@ -35,6 +35,8 @@ resource "aws_instance" "external_box" {
   vpc_security_group_ids      = [aws_security_group.external_box_sg.id]
   subnet_id                   = aws_subnet.external_public.id
   associate_public_ip_address = true
+  iam_instance_profile        = aws_iam_instance_profile.main.name
+  user_data_replace_on_change = true
 
   tags = {
     Name = "bee-ci-external"

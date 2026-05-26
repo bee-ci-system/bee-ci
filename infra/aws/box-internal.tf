@@ -13,7 +13,7 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-resource "aws_security_group" "box_sg" {
+resource "aws_security_group" "box_internal_sg" {
   name   = "bee-ci-box"
   vpc_id = aws_vpc.internal.id
 
@@ -46,8 +46,8 @@ resource "aws_security_group" "box_sg" {
   }
 }
 
-resource "aws_eip" "box" {
-  instance = aws_instance.box.id
+resource "aws_eip" "box_internal" {
+  instance = aws_instance.box_internal.id
   domain   = "vpc"
 
   tags = {
@@ -55,50 +55,19 @@ resource "aws_eip" "box" {
   }
 }
 
-resource "aws_key_pair" "box" {
+resource "aws_key_pair" "box_internal" {
   key_name   = "bee-ci-box"
   public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILlmPPetLfPL/eTOI5wLcO3sBiY6wtjhwgm/wlQSd2LP"
 }
 
-resource "aws_iam_role" "box" {
-  name = "bee-ci-box"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-
-  tags = {
-    Name = "bee-ci"
-  }
-}
-
-resource "aws_iam_role_policy_attachment" "box_read_only" {
-  role       = aws_iam_role.box.name
-  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
-}
-
-resource "aws_iam_instance_profile" "box" {
-  name = "bee-ci-box"
-  role = aws_iam_role.box.name
-}
-
-resource "aws_instance" "box" {
+resource "aws_instance" "box_internal" {
   instance_type               = "t3.micro"
   ami                         = data.aws_ami.ubuntu.id
-  key_name                    = aws_key_pair.box.key_name
-  vpc_security_group_ids      = [aws_security_group.box_sg.id]
+  key_name                    = aws_key_pair.box_internal.key_name
+  vpc_security_group_ids      = [aws_security_group.box_internal_sg.id]
   subnet_id                   = aws_subnet.internal-1.id
   associate_public_ip_address = true
-  iam_instance_profile        = aws_iam_instance_profile.box.name
+  iam_instance_profile        = aws_iam_instance_profile.main.name
   user_data_replace_on_change = true
 
   tags = {
@@ -140,11 +109,11 @@ EOF
 }
 
 output "box_public_ip" {
-  description = "Public IPv4 address of the EC2 box"
-  value       = aws_eip.box.public_ip
+  description = "Public IPv4 address of the EC2 instance: box-internal"
+  value       = aws_eip.box_internal.public_ip
 }
 
 output "box_http_url" {
-  description = "Dummy nginx page on box-1"
-  value       = "http://${aws_eip.box.public_ip}/"
+  description = "Dummy nginx page on box-internal"
+  value       = "http://${aws_eip.box_internal.public_ip}/"
 }

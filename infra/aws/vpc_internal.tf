@@ -24,7 +24,7 @@ resource "aws_lb_target_group" "internal" {
 
 resource "aws_lb_target_group_attachment" "internal" {
   target_group_arn = aws_lb_target_group.internal.id
-  target_id        = aws_instance.box.id
+  target_id        = aws_instance.box_internal.id
   port             = 80
 }
 
