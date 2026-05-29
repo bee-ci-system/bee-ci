@@ -12,6 +12,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/lmittmann/tint v1.0.7
 	github.com/redis/go-redis/v9 v9.7.3
+	golang.org/x/term v0.43.0
 )
 
 require (
@@ -23,4 +24,5 @@ require (
 	github.com/influxdata/line-protocol v0.0.0-20210922203350-b1ad95c89adf // indirect
 	github.com/oapi-codegen/runtime v1.1.1 // indirect
 	golang.org/x/net v0.47.0 // indirect
+	golang.org/x/sys v0.44.0 // indirect
 )
