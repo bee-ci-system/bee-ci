@@ -1,4 +1,9 @@
 .DS_Store
 .env
+
 infra/digitalocean/terraform.tfvars
 infra/digitalocean/.terraform/
+
+infra/aws/terraform.tfvars
+infra/aws/.terraform/
+infra/aws/terraform.tfstate*

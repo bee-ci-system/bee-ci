@@ -22,6 +22,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/lmittmann/tint"
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/term"
 )
 
 func main() {
@@ -133,14 +134,23 @@ func setUpLogging() *slog.Logger {
 	if flyioProd {
 		// TODO: Remove time since it's provided by fly.io
 		//  https://github.com/lmittmann/tint/issues/73
-		opts := tint.Options{Level: logLevel, TimeFormat: time.TimeOnly, AddSource: true}
+		opts := tintOptions(logLevel)
 		handler := tint.NewHandler(os.Stdout, &opts)
 		return slog.New(handler)
 	}
 
-	opts := tint.Options{Level: logLevel, TimeFormat: time.TimeOnly, AddSource: true}
+	opts := tintOptions(logLevel)
 	handler := tint.NewHandler(os.Stdout, &opts)
 	return slog.New(handler)
+}
+
+func tintOptions(logLevel slog.Level) tint.Options {
+	return tint.Options{
+		Level:      logLevel,
+		TimeFormat: time.TimeOnly,
+		AddSource:  true,
+		NoColor:    !term.IsTerminal(int(os.Stdout.Fd())),
+	}
 }
 
 func mustGetenv(varname string) string {

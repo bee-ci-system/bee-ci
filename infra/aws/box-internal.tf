@@ -1,0 +1,119 @@
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+resource "aws_security_group" "box_internal_sg" {
+  name   = "bee-ci-box"
+  vpc_id = aws_vpc.internal.id
+
+  tags = {
+    Name = "bee-ci"
+  }
+
+  ingress {
+    description = "SSH from anywhere"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTP for dummy nginx page"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow all outbound"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_eip" "box_internal" {
+  instance = aws_instance.box_internal.id
+  domain   = "vpc"
+
+  tags = {
+    Name = "bee-ci"
+  }
+}
+
+resource "aws_key_pair" "box_internal" {
+  key_name   = "bee-ci-box"
+  public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILlmPPetLfPL/eTOI5wLcO3sBiY6wtjhwgm/wlQSd2LP"
+}
+
+resource "aws_instance" "box_internal" {
+  instance_type               = "t3.micro"
+  ami                         = data.aws_ami.ubuntu.id
+  key_name                    = aws_key_pair.box_internal.key_name
+  vpc_security_group_ids      = [aws_security_group.box_internal_sg.id]
+  subnet_id                   = aws_subnet.internal-1.id
+  associate_public_ip_address = true
+  iam_instance_profile        = aws_iam_instance_profile.main.name
+  user_data_replace_on_change = true
+
+  tags = {
+    Name = "bee-ci"
+  }
+
+  user_data = <<-EOF
+#cloud-config
+package_update: true
+packages:
+  - curl
+  - git
+  - docker.io
+  - nginx
+
+write_files:
+  - path: /var/www/html/index.html
+    owner: www-data:www-data
+    permissions: "0644"
+    content: |
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <title>bee-ci box-1</title>
+      </head>
+      <body>
+        <h1>bee-ci box-1</h1>
+        <p>Dummy nginx page (PrivateLink lab).</p>
+      </body>
+      </html>
+
+runcmd:
+  - systemctl enable nginx
+  - systemctl restart nginx
+  - echo "hello from cloud-init" > /home/ubuntu/hello.txt
+  - chown ubuntu:ubuntu /home/ubuntu/hello.txt
+EOF
+}
+
+output "box_public_ip" {
+  description = "Public IPv4 address of the EC2 instance: box-internal"
+  value       = aws_eip.box_internal.public_ip
+}
+
+output "box_http_url" {
+  description = "Dummy nginx page on box-internal"
+  value       = "http://${aws_eip.box_internal.public_ip}/"
+}
